@@ -1,25 +1,34 @@
-export type Role = "FARMER" | "MANDI_OPERATOR" | "ADMIN" | "TRADER" | "TRANSPORTER";
+export type UserRole = "FARMER" | "MANDI_OPERATOR" | "ADMIN";
 
-export type OtpVerificationType = "EMAIL_VERIFICATION" | "LOGIN_OTP" | "PASSWORD_RESET";
-
-export interface User {
+export interface UserSession {
   id: string;
   name: string;
   email: string;
   phone?: string | null;
-  role: Role;
+  role: UserRole;
   isVerified: boolean;
-  createdAt?: string;
+  createdAt: string;
   updatedAt?: string;
 }
 
-export interface RegisterPayload {
-  name: string;
-  email: string;
-  phone?: string;
-  password: string;
-  role: Role;
-  location?: string;
+export interface AuthTokens {
+  accessToken: string;
+  refreshToken: string;
+}
+
+export interface AuthResponseData {
+  user: UserSession;
+  accessToken: string;
+  refreshToken: string;
+  message?: string;
+}
+
+export interface ApiResponse<T = unknown> {
+  success: boolean;
+  message?: string;
+  data?: T;
+  code?: string;
+  errors?: Array<{ field: string; message: string }>;
 }
 
 export interface LoginPayload {
@@ -27,55 +36,21 @@ export interface LoginPayload {
   password: string;
 }
 
-export interface SendOtpPayload {
-  identifier: string;
-  type?: OtpVerificationType;
+export interface RegisterMandiPayload {
+  name: string;
+  email: string;
+  phone?: string;
+  password: string;
+  role: "MANDI_OPERATOR";
 }
 
 export interface VerifyOtpPayload {
   identifier: string;
   code: string;
-  type?: OtpVerificationType;
+  type: "EMAIL_VERIFICATION" | "LOGIN_OTP" | "PASSWORD_RESET";
 }
 
-export interface ForgotPasswordPayload {
-  email: string;
-}
-
-export interface ResetPasswordPayload {
-  email: string;
-  token: string; // 6-digit OTP code or reset token
-  newPassword: string;
-}
-
-export interface AuthResponseData {
-  user: User;
-  accessToken: string;
-  refreshToken?: string;
-  message?: string;
-}
-
-export interface ApiResponse<T = any> {
-  success: boolean;
-  message?: string;
-  code?: string;
-  data?: T;
-  error?: {
-    code: string;
-    message: string;
-    details?: any;
-  };
-}
-
-export interface AuthState {
-  user: User | null;
-  accessToken: string | null;
-  isAuthenticated: boolean;
-  isLoading: boolean;
-  otpSent: boolean;
-  pendingIdentifier: string | null;
-  pendingOtpType: OtpVerificationType;
-  error: string | null;
-  errorCode: string | null;
-  successMessage: string | null;
+export interface SendOtpPayload {
+  identifier: string;
+  type: "EMAIL_VERIFICATION" | "LOGIN_OTP" | "PASSWORD_RESET";
 }

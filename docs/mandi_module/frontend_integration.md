@@ -192,3 +192,11 @@ When weighing is complete at the electronic weighbridge:
 | **Full Operational Access** | `mandi.approved@agrimarket.gov.in` / `Password@123` | Dashboard unlocked, create slots enabled, gate scanner active. |
 | **Pending Admin Approval** | `mandi.pending@agrimarket.gov.in` / `Password@123` | Glance dashboard banner shown; Settings shows submitted documents. |
 | **Fresh Un-onboarded** | `mandi.new@agrimarket.gov.in` / `Password@123` | Glance dashboard directs to Settings to fill Mandi yard details. |
+
+---
+
+## 7. Production Frontend Implementation Reference
+
+For component hierarchies, state models (`mandiSlice`), visual design specifications, and offline fallbacks, refer to:
+- [Mandi Operator Frontend Portal Specification (`frontend_specification.md`)](./frontend_specification.md)
+

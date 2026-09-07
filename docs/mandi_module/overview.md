@@ -28,6 +28,7 @@ The Mandi Module provides APMC Market Yards with a modern digital infrastructure
 
 ## 3. Module File Structure
 
+### Backend Core (`apps/backend/`)
 ```text
 apps/backend/src/
 ├── controllers/
@@ -49,3 +50,29 @@ apps/backend/src/
 └── scripts/
     └── seed.ts                 # Database seed script for test data
 ```
+
+### Frontend Operator Portal (`apps/frontend/`)
+```text
+apps/frontend/src/
+├── components/
+│   ├── layout/MandiLayout.tsx                 # Navigation sidebar, header & dark theme toggle
+│   ├── dashboard/MandiDashboardView.tsx      # Metrics, commodity pipelines, dual bookings table
+│   ├── slots/MandiSlotsView.tsx              # Slot window configuration & buffer tolerance
+│   ├── gate/MandiGateScannerView.tsx         # Token barcode scanner & intake bay statuses
+│   ├── verification/MandiVerificationStatusView.tsx # Aadhaar KYC, legal docs & ID badges
+│   ├── farmers/MandiFarmersView.tsx          # Verified farmer directory & historical volumes
+│   ├── rating/MandiRatingView.tsx            # Farmer reviews & gate precision metrics
+│   └── settings/MandiSettingsView.tsx        # Yard facility address & statutory licenses
+├── store/slices/mandiSlice.ts                # Redux Toolkit state, async thunks & offline fallbacks
+└── services/mandi.api.ts                     # Axios client integration
+```
+
+---
+
+## 4. Documentation Index
+
+- [Frontend Specification (`frontend_specification.md`)](./frontend_specification.md) — Comprehensive functional guide for the web portal.
+- [Frontend Integration Guide (`frontend_integration.md`)](./frontend_integration.md) — API client connection, authentication, and error codes.
+- [API Reference (`api_reference.md`)](./api_reference.md) — REST endpoint schemas, payloads, and responses.
+- [Technical Summary V1 (`SummaryV1.md`)](./SummaryV1.md) — Complete architectural and operational reference.
+

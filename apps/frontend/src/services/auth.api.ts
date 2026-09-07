@@ -1,79 +1,68 @@
-import { apiClient } from "./apiClient";
-import type {
-  ApiResponse,
-  AuthResponseData,
+import { apiClient, setTokens, clearTokens, getRefreshToken } from "./apiClient";
+import {
   LoginPayload,
-  RegisterPayload,
-  SendOtpPayload,
-  User,
+  RegisterMandiPayload,
   VerifyOtpPayload,
+  SendOtpPayload,
+  AuthResponseData,
+  UserSession,
+  ApiResponse,
 } from "../interfaces";
 
-/**
- * Register a new user using Axios
- */
-export async function apiRegister(payload: RegisterPayload): Promise<ApiResponse<AuthResponseData>> {
-  const response = await apiClient.post<ApiResponse<AuthResponseData>>("/api/v1/auth/register", payload);
-  return response.data;
-}
+export const authApi = {
+  login: async (payload: LoginPayload): Promise<ApiResponse<AuthResponseData>> => {
+    const response = await apiClient.post<ApiResponse<AuthResponseData>>("/auth/login", payload);
+    if (response.data.success && response.data.data) {
+      setTokens(response.data.data.accessToken, response.data.data.refreshToken);
+    }
+    return response.data;
+  },
 
-/**
- * Log in with email/phone & password using Axios
- */
-export async function apiLogin(payload: LoginPayload): Promise<ApiResponse<AuthResponseData>> {
-  const response = await apiClient.post<ApiResponse<AuthResponseData>>("/api/v1/auth/login", payload);
-  return response.data;
-}
+  registerMandi: async (payload: RegisterMandiPayload): Promise<ApiResponse<AuthResponseData>> => {
+    const response = await apiClient.post<ApiResponse<AuthResponseData>>("/user/mandi", payload);
+    if (response.data.success && response.data.data) {
+      setTokens(response.data.data.accessToken, response.data.data.refreshToken);
+    }
+    return response.data;
+  },
 
-/**
- * Send or resend 6-digit OTP code using Axios
- */
-export async function apiSendOtp(payload: SendOtpPayload): Promise<ApiResponse<{ message: string; otp?: string }>> {
-  const response = await apiClient.post<ApiResponse<{ message: string; otp?: string }>>("/api/v1/auth/send-otp", {
-    identifier: payload.identifier,
-    type: payload.type || "EMAIL_VERIFICATION",
-  });
-  return response.data;
-}
+  verifyOtp: async (payload: VerifyOtpPayload): Promise<ApiResponse<{ isVerified: boolean; message: string }>> => {
+    const response = await apiClient.post<ApiResponse<{ isVerified: boolean; message: string }>>(
+      "/auth/verify-otp",
+      payload
+    );
+    return response.data;
+  },
 
-/**
- * Verify 6-digit OTP code using Axios
- */
-export async function apiVerifyOtp(payload: VerifyOtpPayload): Promise<ApiResponse<AuthResponseData>> {
-  const response = await apiClient.post<ApiResponse<AuthResponseData>>("/api/v1/auth/verify-otp", {
-    identifier: payload.identifier,
-    code: payload.code,
-    type: payload.type || "EMAIL_VERIFICATION",
-  });
-  return response.data;
-}
+  sendOtp: async (payload: SendOtpPayload): Promise<ApiResponse<{ message: string }>> => {
+    const response = await apiClient.post<ApiResponse<{ message: string }>>("/auth/send-otp", payload);
+    return response.data;
+  },
 
-/**
- * Fetch currently authenticated user session using Axios
- */
-export async function apiGetCurrentUser(): Promise<ApiResponse<{ user: User }>> {
-  const response = await apiClient.get<ApiResponse<{ user: User }>>("/api/v1/auth/me");
-  return response.data;
-}
+  getMe: async (): Promise<ApiResponse<{ user: UserSession }>> => {
+    const response = await apiClient.get<ApiResponse<{ user: UserSession }>>("/auth/me");
+    return response.data;
+  },
 
-/**
- * Request password recovery email and OTP using Axios
- */
-export async function apiForgotPassword(email: string): Promise<ApiResponse<{ message: string }>> {
-  const response = await apiClient.post<ApiResponse<{ message: string }>>("/api/v1/auth/forgot-password", {
-    email,
-  });
-  return response.data;
-}
+  logout: async (): Promise<void> => {
+    const refreshToken = getRefreshToken();
+    if (refreshToken) {
+      try {
+        await apiClient.post("/auth/logout", { refreshToken });
+      } catch {
+        // Ignore logout errors and clean local state
+      }
+    }
+    clearTokens();
+  },
 
-/**
- * Submit password reset with OTP code and new password using Axios
- */
-export async function apiResetPassword(payload: {
-  email: string;
-  token: string;
-  newPassword: string;
-}): Promise<ApiResponse<{ message: string }>> {
-  const response = await apiClient.post<ApiResponse<{ message: string }>>("/api/v1/auth/reset-password", payload);
-  return response.data;
-}
+  forgotPassword: async (email: string): Promise<ApiResponse<{ message: string }>> => {
+    const response = await apiClient.post<ApiResponse<{ message: string }>>("/auth/forgot-password", { email });
+    return response.data;
+  },
+
+  resetPassword: async (payload: { email: string; token: string; newPassword: string }): Promise<ApiResponse<{ message: string }>> => {
+    const response = await apiClient.post<ApiResponse<{ message: string }>>("/auth/reset-password", payload);
+    return response.data;
+  },
+};
