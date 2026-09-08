@@ -283,8 +283,9 @@ export const AiSectionView = memo(function AiSectionView() {
   return (
     <KeyboardAvoidingView
       style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}>
+      behavior={Platform.OS === 'ios' ? 'padding' : Platform.OS === 'android' ? 'height' : undefined}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 20}
+      automaticallyAdjustKeyboardInsets={true}>
       {/* Header Bar */}
       <View style={styles.aiHeaderBanner}>
         <View style={styles.bannerLeft}>
@@ -796,7 +797,7 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: '#E2E8F0',
     gap: 10,
-    marginBottom: Platform.OS === 'ios' ? 70 : 60,
+    marginBottom: Platform.OS === 'ios' ? 104 : 88,
   },
   textInput: {
     flex: 1,
