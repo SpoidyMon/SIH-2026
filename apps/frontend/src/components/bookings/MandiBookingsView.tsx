@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   Search,
   Filter,
@@ -26,6 +26,8 @@ import {
   verifyGateTokenThunk,
   completeBookingThunk,
   fetchFarmerDetailsThunk,
+  fetchCurrentBookingsThunk,
+  fetchPreviousBookingsThunk,
   setSelectedFarmerDetails,
 } from "../../store/slices/mandiSlice";
 import { Booking } from "../../interfaces";
@@ -38,6 +40,11 @@ export function MandiBookingsView() {
   const { currentBookings, previousBookings, selectedFarmerDetails, isActionLoading } = useAppSelector(
     (state) => state.mandi
   );
+
+  useEffect(() => {
+    dispatch(fetchCurrentBookingsThunk());
+    dispatch(fetchPreviousBookingsThunk());
+  }, [dispatch]);
 
   const [activeTab, setActiveTab] = useState<"active" | "history">("active");
   const [searchQuery, setSearchQuery] = useState("");

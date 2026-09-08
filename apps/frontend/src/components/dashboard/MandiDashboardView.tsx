@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   QrCode,
   Search,
@@ -29,6 +29,10 @@ import {
   verifyGateTokenThunk,
   completeBookingThunk,
   applyDefaultPresetsThunk,
+  fetchCurrentBookingsThunk,
+  fetchPreviousBookingsThunk,
+  fetchDashboardStatsThunk,
+  fetchSlotsThunk,
   setActiveNavTab,
 } from "../../store/slices/mandiSlice";
 import { Booking } from "../../interfaces";
@@ -38,6 +42,13 @@ export function MandiDashboardView() {
   const { stats, currentBookings, previousBookings, isActionLoading } = useAppSelector(
     (state) => state.mandi
   );
+
+  useEffect(() => {
+    dispatch(fetchDashboardStatsThunk());
+    dispatch(fetchCurrentBookingsThunk());
+    dispatch(fetchPreviousBookingsThunk());
+    dispatch(fetchSlotsThunk());
+  }, [dispatch]);
 
   // Filter & Search state
   const [activeTab, setActiveTab] = useState<"current" | "previous">("current");
@@ -230,7 +241,7 @@ export function MandiDashboardView() {
             >
               <span>Current Bookings</span>
               <span className="w-5 h-5 flex items-center justify-center rounded-full bg-emerald-100 dark:bg-black border dark:border-emerald-800/60 text-emerald-700 dark:text-emerald-400 text-[10px] font-extrabold">
-                4
+                {currentBookings.length}
               </span>
             </button>
             <button
@@ -243,7 +254,7 @@ export function MandiDashboardView() {
             >
               <span>Previous Logs</span>
               <span className="w-5 h-5 flex items-center justify-center rounded-full bg-slate-200 dark:bg-neutral-800 text-slate-600 dark:text-neutral-300 text-[10px] font-bold">
-                2
+                {previousBookings.length}
               </span>
             </button>
           </div>
