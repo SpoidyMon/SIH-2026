@@ -20,6 +20,23 @@ export const SettlementSlipModal: React.FC<SettlementSlipModalProps> = ({
   const ratePerKg = booking.crop.includes("Wheat") ? 23 : 54;
   const totalPayout = booking.finalPayoutAmount || Math.round(netKg * ratePerKg);
 
+  const rawId = booking.id.replace("BK-", "");
+  const shortId = rawId.length > 8 ? rawId.slice(-8).toUpperCase() : rawId.toUpperCase();
+  const tokenPrefix = booking.token ? booking.token.split("-")[0] : "WGH";
+  const slipNumber = `SLIP-${tokenPrefix}-${shortId}`;
+
+  const formattedFarmerId =
+    booking.farmerId && !booking.farmerId.startsWith("cm")
+      ? booking.farmerId
+      : `FARM-${booking.farmerId ? booking.farmerId.slice(-6).toUpperCase() : "9081"}`;
+
+  const formattedTruck =
+    booking.vehicleNumber && booking.vehicleNumber.trim()
+      ? booking.vehicleNumber
+      : "MH-12-AB-1234";
+
+  const formattedDate = booking.arrivalDate && booking.arrivalDate.trim() ? booking.arrivalDate : "Today";
+
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-[9999] animate-fade-in">
       <div className="bg-white dark:bg-[#121212] border border-neutral-300 dark:border-neutral-800 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden animate-slide-up">
@@ -52,14 +69,14 @@ export const SettlementSlipModal: React.FC<SettlementSlipModalProps> = ({
           <div className="flex justify-between items-center bg-neutral-50 dark:bg-black p-3 rounded-xl border border-neutral-200 dark:border-neutral-800 font-mono">
             <div>
               <span className="text-[11px] text-neutral-400 uppercase block font-medium">Slip Number</span>
-              <span className="font-semibold text-black dark:text-[#E5E5E5]">
-                SLIP-{booking.id.replace("BK-", "")}-WGH
+              <span className="font-semibold text-black dark:text-[#E5E5E5] tracking-tight">
+                {slipNumber}
               </span>
             </div>
             <div className="text-right">
               <span className="text-[11px] text-neutral-400 uppercase block font-medium">Token / Date</span>
               <span className="font-semibold text-[#059669] dark:text-[#5CE65C]">
-                {booking.token} • {booking.arrivalDate}
+                {booking.token} • {formattedDate}
               </span>
             </div>
           </div>
@@ -68,15 +85,15 @@ export const SettlementSlipModal: React.FC<SettlementSlipModalProps> = ({
           <div className="grid grid-cols-2 gap-3">
             <div className="p-3 bg-neutral-50 dark:bg-black rounded-xl border border-neutral-200 dark:border-neutral-800">
               <span className="text-[11px] text-neutral-400 uppercase font-medium block">Farmer</span>
-              <span className="font-semibold text-neutral-900 dark:text-[#E5E5E5] text-xs">{booking.farmerName}</span>
+              <span className="font-semibold text-neutral-900 dark:text-[#E5E5E5] text-xs block truncate">{booking.farmerName}</span>
               <span className="text-neutral-500 dark:text-neutral-400 block text-xs">{booking.farmerPhone}</span>
-              <span className="text-xs font-mono text-neutral-400">{booking.farmerId}</span>
+              <span className="text-xs font-mono text-neutral-400 block mt-0.5">{formattedFarmerId}</span>
             </div>
             <div className="p-3 bg-neutral-50 dark:bg-black rounded-xl border border-neutral-200 dark:border-neutral-800">
               <span className="text-[11px] text-neutral-400 uppercase font-medium block">Consignment</span>
-              <span className="font-semibold text-neutral-900 dark:text-[#E5E5E5] text-xs">{booking.crop}</span>
-              <span className="text-[#059669] dark:text-[#5CE65C] font-semibold block text-xs">{booking.variety || "Standard Grade"}</span>
-              <span className="text-xs font-mono text-neutral-500">Truck: {booking.vehicleNumber}</span>
+              <span className="font-semibold text-neutral-900 dark:text-[#E5E5E5] text-xs block truncate">{booking.crop}</span>
+              <span className="text-[#059669] dark:text-[#5CE65C] font-semibold block text-xs">{booking.variety || "Grade-A Standard"}</span>
+              <span className="text-xs font-mono text-neutral-500 block mt-0.5">Truck: {formattedTruck}</span>
             </div>
           </div>
 
@@ -121,26 +138,29 @@ export const SettlementSlipModal: React.FC<SettlementSlipModalProps> = ({
             </div>
           </div>
 
-          <div className="flex justify-between items-center pt-2">
-            <div className="flex items-center gap-2">
-              <span className="text-2xl font-bold text-black dark:text-[#E5E5E5]">
+          {/* Footer Actions */}
+          <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-neutral-200 dark:border-neutral-800">
+            <div className="flex items-center gap-2 shrink-0">
+              <span className="text-sm font-extrabold text-neutral-900 dark:text-[#E5E5E5] font-mono tracking-tight bg-neutral-100 dark:bg-neutral-900 px-2.5 py-1 rounded-lg border border-neutral-200 dark:border-neutral-800">
                 {booking.token}
               </span>
-              <span className="px-3 py-1 rounded-full text-xs font-semibold bg-[#059669] text-white">
+              <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-[#059669] text-white tracking-wide uppercase">
                 Cleared &amp; Settled
               </span>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 shrink-0">
               <button
+                type="button"
                 onClick={() => window.print()}
-                className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-neutral-700 dark:text-neutral-300 bg-neutral-100 dark:bg-black border border-neutral-200 dark:border-neutral-800 rounded-xl hover:bg-neutral-200 dark:hover:bg-neutral-900 cursor-pointer"
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-neutral-700 dark:text-neutral-300 bg-neutral-100 dark:bg-black border border-neutral-200 dark:border-neutral-800 rounded-xl hover:bg-neutral-200 dark:hover:bg-neutral-900 cursor-pointer"
               >
                 <Printer className="w-3.5 h-3.5" />
                 <span>Print Slip</span>
               </button>
               <button
+                type="button"
                 onClick={onClose}
-                className="px-4 py-2 text-xs font-semibold bg-[#059669] hover:bg-[#047857] text-white rounded-xl cursor-pointer"
+                className="px-4 py-1.5 text-xs font-semibold bg-[#059669] hover:bg-[#047857] text-white rounded-xl cursor-pointer"
               >
                 Close
               </button>
