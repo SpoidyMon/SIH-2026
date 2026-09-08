@@ -220,6 +220,19 @@ export const GROQ_TOOLS = [
 ];
 
 /**
+ * Extracts mandi name / location keywords from user prompt text.
+ */
+export function extractMandiQuery(text: string): string {
+  let cleaned = (text || "").toLowerCase();
+  cleaned = cleaned
+    .replace(/\b(book|booking|slot|slots|wheat|gehu|gehun|rice|mustard|cotton|soyabean|maize|chana|kg|kilo|kilogram|quintal|tomorrow|today|parso|udya|kal|in|at|for|the|me|a|an|please|can|you|show|available|list|my|mandi|mandis|apmc|yard|bazaar|market)\b/gi, " ")
+    .replace(/\b\d+(:\d+)?\s*(am|pm)?\b/gi, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  return cleaned;
+}
+
+/**
  * Main state machine runner processing conversation step and tool execution.
  */
 export async function runBookingAgent(state: BookingAgentState): Promise<BookingAgentState> {
@@ -309,9 +322,10 @@ export async function runBookingAgent(state: BookingAgentState): Promise<Booking
   const cropNorm = normalizeCropName(userText);
 
   // Search mandis in PostgreSQL
+  const extractedQuery = state.mandiQuery || extractMandiQuery(userText);
   let mandis: AgentMandiInfo[] = state.mandiMatches || [];
   if (!state.mandiId) {
-    mandis = await toolSearchMandis({ query: state.mandiQuery || userText || "" });
+    mandis = await toolSearchMandis({ query: extractedQuery });
   }
 
   if (mandis.length === 0 && !state.mandiId) {
