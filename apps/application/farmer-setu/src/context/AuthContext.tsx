@@ -7,7 +7,16 @@ import React, {
   useEffect,
   type ReactNode,
 } from 'react';
-import { getStorageItem, setStorageItem, removeStorageItem } from '@/utils/storage';
+import {
+  getStorageItem,
+  setStorageItem,
+  removeStorageItem,
+  AUTH_TOKEN_KEY,
+  REFRESH_TOKEN_KEY,
+  USER_STORAGE_KEY,
+  PROFILE_STORAGE_KEY,
+} from '@/utils/storage';
+import { addTokenListener } from '@/services/api';
 import type {
   AuthContextType,
   FarmerUser,
@@ -29,24 +38,25 @@ import {
   updateFarmerProfileApi,
 } from '@/services/farmer.service';
 
-const TOKEN_STORAGE_KEY = '@kisan_setu_auth_token';
-const USER_STORAGE_KEY = '@kisan_setu_user_profile';
-const PROFILE_STORAGE_KEY = '@kisan_setu_farmer_profile';
-
 async function persistStoredAuth(
   user: FarmerUser | null,
   token: string | null,
+  refreshToken?: string | null,
   profile?: FarmerProfileData | null
 ): Promise<void> {
   try {
     if (user && token) {
-      await setStorageItem(TOKEN_STORAGE_KEY, token);
+      await setStorageItem(AUTH_TOKEN_KEY, token);
       await setStorageItem(USER_STORAGE_KEY, JSON.stringify(user));
+      if (refreshToken) {
+        await setStorageItem(REFRESH_TOKEN_KEY, refreshToken);
+      }
       if (profile) {
         await setStorageItem(PROFILE_STORAGE_KEY, JSON.stringify(profile));
       }
     } else {
-      await removeStorageItem(TOKEN_STORAGE_KEY);
+      await removeStorageItem(AUTH_TOKEN_KEY);
+      await removeStorageItem(REFRESH_TOKEN_KEY);
       await removeStorageItem(USER_STORAGE_KEY);
       await removeStorageItem(PROFILE_STORAGE_KEY);
     }
@@ -80,13 +90,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  // Listen to silent background token refreshes or invalidations
+  useEffect(() => {
+    const unsubscribe = addTokenListener((newToken) => {
+      setToken(newToken);
+      if (!newToken) {
+        setUser(null);
+        setFarmerProfile(null);
+      }
+    });
+    return unsubscribe;
+  }, []);
+
   // Rehydrate auth state from storage on app startup
   useEffect(() => {
     let isMounted = true;
 
     async function loadAuth() {
       try {
-        const storedToken = await getStorageItem(TOKEN_STORAGE_KEY);
+        const storedToken = await getStorageItem(AUTH_TOKEN_KEY);
         const storedUser = await getStorageItem(USER_STORAGE_KEY);
         const storedProfile = await getStorageItem(PROFILE_STORAGE_KEY);
 
@@ -105,7 +127,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           }
         }
       } catch (err) {
-        console.warn('Failed to rehydrate auth from AsyncStorage:', err);
+        console.warn('Failed to rehydrate auth from storage:', err);
       } finally {
         if (isMounted) {
           setIsInitializing(false);
@@ -173,10 +195,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return false;
       }
 
-      const { user: authenticatedUser, accessToken } = response.data;
+      const { user: authenticatedUser, accessToken, refreshToken } = response.data;
       setUser(authenticatedUser);
       setToken(accessToken);
-      await persistStoredAuth(authenticatedUser, accessToken);
+      await persistStoredAuth(authenticatedUser, accessToken, refreshToken);
 
       // Fetch profile to get farmerCode and completion status
       await fetchProfile(accessToken);
@@ -219,9 +241,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (response.data.user && response.data.accessToken) {
         const authenticatedUser = response.data.user;
         const accessToken = response.data.accessToken;
+        const refreshToken = response.data.refreshToken;
         setUser(authenticatedUser);
         setToken(accessToken);
-        await persistStoredAuth(authenticatedUser, accessToken);
+        await persistStoredAuth(authenticatedUser, accessToken, refreshToken);
         await fetchProfile(accessToken);
       }
       return true;
@@ -261,38 +284,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     () => ({
       user,
       farmerProfile,
-      farmerCode,
-      isProfileComplete,
       token,
       isLoading,
       isInitializing,
       error,
+      farmerCode,
+      isProfileComplete,
       login,
       register,
       verifyOtp,
       sendOtp,
-      refreshFarmerProfile,
-      updateProfile,
       logout,
       clearError,
+      refreshFarmerProfile,
+      updateProfile,
     }),
     [
       user,
       farmerProfile,
-      farmerCode,
-      isProfileComplete,
       token,
       isLoading,
       isInitializing,
       error,
+      farmerCode,
+      isProfileComplete,
       login,
       register,
       verifyOtp,
       sendOtp,
-      refreshFarmerProfile,
-      updateProfile,
       logout,
       clearError,
+      refreshFarmerProfile,
+      updateProfile,
     ]
   );
 

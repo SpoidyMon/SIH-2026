@@ -261,8 +261,8 @@ export function isSlotExpired(dateStr?: string, endTimeStr?: string, startTimeSt
 
   const match = timeToCheck.match(/(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
   if (match) {
-    let h = parseInt(match[1], 10);
-    const m = parseInt(match[2], 10);
+    let h = parseInt(match[1] || "0", 10);
+    const m = parseInt(match[2] || "0", 10);
     const meridiem = match[3] ? match[3].toUpperCase() : null;
 
     if (meridiem === "PM" && h < 12) h += 12;
