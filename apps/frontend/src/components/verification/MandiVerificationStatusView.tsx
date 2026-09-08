@@ -236,7 +236,7 @@ export function MandiVerificationStatusView() {
               <span className="p-2 rounded-xl bg-emerald-50 dark:bg-black border border-emerald-200 dark:border-emerald-800/60 text-emerald-600 dark:text-emerald-400">
                 <ShieldCheck className="w-5 h-5" />
               </span>
-              <h1 className="text-2xl font-extrabold text-slate-900 dark:text-[#E5E5E5] tracking-tight">
+              <h1 className="text-2xl font-bold text-slate-900 dark:text-[#E5E5E5] tracking-tight">
                 Mandi Statutory Verification &amp; KYC Hub
               </h1>
             </div>
@@ -255,7 +255,7 @@ export function MandiVerificationStatusView() {
                 <span className="text-sm font-bold text-slate-900 dark:text-[#E5E5E5]">
                   Tier-1 APMC Certified
                 </span>
-                <span className="px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-black border dark:border-emerald-800/60 text-emerald-700 dark:text-emerald-400 text-[10px] font-extrabold">
+                <span className="px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-black border dark:border-emerald-800/60 text-emerald-700 dark:text-emerald-400 text-[10px] font-semibold">
                   ACTIVE
                 </span>
               </div>
@@ -279,7 +279,7 @@ export function MandiVerificationStatusView() {
                   Mandi Officer Profile Photo
                 </h2>
               </div>
-              <span className="text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full bg-emerald-50 dark:bg-black border border-emerald-200 dark:border-emerald-800/60 text-emerald-700 dark:text-emerald-400">
+              <span className="text-[10px] font-semibold uppercase px-2.5 py-0.5 rounded-full bg-emerald-50 dark:bg-black border border-emerald-200 dark:border-emerald-800/60 text-emerald-700 dark:text-emerald-400">
                 ● Identity Verified
               </span>
             </div>
@@ -365,7 +365,7 @@ export function MandiVerificationStatusView() {
                 </h2>
               </div>
               <span
-                className={`text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full ${
+                className={`text-[10px] font-semibold uppercase px-2.5 py-0.5 rounded-full ${
                   isAadhaarVerified
                     ? "bg-emerald-50 dark:bg-black border border-emerald-200 dark:border-emerald-800/60 text-emerald-700 dark:text-emerald-400"
                     : "bg-amber-50 dark:bg-black border border-amber-300 dark:border-amber-700/60 text-amber-700 dark:text-amber-400"
@@ -499,7 +499,7 @@ export function MandiVerificationStatusView() {
           <div>
             <div className="flex items-center gap-2.5">
               <Building2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-              <h2 className="text-base font-extrabold text-slate-900 dark:text-[#E5E5E5] tracking-tight">
+              <h2 className="text-base font-bold text-slate-900 dark:text-[#E5E5E5] tracking-tight">
                 APMC Legal &amp; Statutory Accreditation Documents
               </h2>
             </div>
@@ -573,7 +573,7 @@ export function MandiVerificationStatusView() {
 
                     {/* Status Badge */}
                     <td className="py-4 px-4 align-middle text-center whitespace-nowrap">
-                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-extrabold bg-emerald-50 dark:bg-black border border-emerald-200 dark:border-emerald-800/60 text-emerald-700 dark:text-emerald-400">
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-50 dark:bg-black border border-emerald-200 dark:border-emerald-800/60 text-emerald-700 dark:text-emerald-400">
                         <Check className="w-3 h-3 stroke-[3]" />
                         <span>VERIFIED &amp; VALID</span>
                       </span>
@@ -765,7 +765,7 @@ export function MandiVerificationStatusView() {
                   value={aadhaarOtpInput}
                   onChange={(e) => setAadhaarOtpInput(e.target.value)}
                   placeholder="e.g. 123456"
-                  className="w-full text-center tracking-widest text-lg font-mono font-black py-2.5 bg-slate-50 dark:bg-black border border-slate-300 dark:border-neutral-800 rounded-xl text-slate-900 dark:text-[#E5E5E5] focus:outline-none focus:border-emerald-500"
+                  className="w-full text-center tracking-widest text-lg font-mono font-bold py-2.5 bg-slate-50 dark:bg-black border border-slate-300 dark:border-neutral-800 rounded-xl text-slate-900 dark:text-[#E5E5E5] focus:outline-none focus:border-emerald-500"
                 />
                 {aadhaarOtpError && (
                   <p className="text-red-500 text-[11px] font-semibold mt-1">
@@ -832,7 +832,7 @@ export function MandiVerificationStatusView() {
             {/* Document Certificate Simulator Preview */}
             <div className="p-8 space-y-6 bg-slate-50/70 dark:bg-black/80 text-xs">
               <div className="border-2 border-dashed border-slate-300 dark:border-neutral-800 p-8 rounded-2xl bg-white dark:bg-[#161616] text-center space-y-4 shadow-sm relative overflow-hidden">
-                <div className="absolute top-2 right-2 px-3 py-1 bg-emerald-50 dark:bg-black border border-emerald-300 dark:border-emerald-800/60 rounded-full text-emerald-700 dark:text-emerald-400 font-extrabold text-[10px]">
+                <div className="absolute top-2 right-2 px-3 py-1 bg-emerald-50 dark:bg-black border border-emerald-300 dark:border-emerald-800/60 rounded-full text-emerald-700 dark:text-emerald-400 font-semibold text-[10px]">
                   GOVERNMENT APMC VERIFIED
                 </div>
 
@@ -841,7 +841,7 @@ export function MandiVerificationStatusView() {
                 </div>
 
                 <div className="space-y-1">
-                  <h4 className="text-base font-extrabold text-slate-900 dark:text-[#E5E5E5]">
+                  <h4 className="text-base font-bold text-slate-900 dark:text-[#E5E5E5]">
                     Agricultural Produce Market Committee (APMC)
                   </h4>
                   <p className="text-xs text-slate-500 dark:text-neutral-400">
@@ -864,7 +864,7 @@ export function MandiVerificationStatusView() {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-400">Verification Status:</span>
-                    <span className="text-emerald-600 font-extrabold">AUTHENTICATED &amp; CURRENT</span>
+                    <span className="text-emerald-600 font-semibold">AUTHENTICATED &amp; CURRENT</span>
                   </div>
                 </div>
 

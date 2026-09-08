@@ -108,7 +108,7 @@ export function MandiSettingsView() {
     <div className="space-y-6 max-w-5xl mx-auto animate-fade-in pb-12">
       {/* ═══ TITLE ═══ */}
       <div className="border-b border-gray-200 dark:border-neutral-800 pb-3">
-        <h1 className="text-xl font-black text-black dark:text-[#E5E5E5] tracking-tight">
+        <h1 className="text-xl font-bold text-black dark:text-[#E5E5E5] tracking-tight">
           Mandi & KYC Settings
         </h1>
         <p className="text-xs text-gray-500 dark:text-neutral-400 mt-0.5 font-medium">
@@ -186,7 +186,7 @@ export function MandiSettingsView() {
               <ShieldCheck className="w-4 h-4 text-[#15803D] dark:text-emerald-400" />
               <h2 className="text-sm font-bold text-black dark:text-[#E5E5E5]">Aadhaar Identity Verification</h2>
             </div>
-            <span className="text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full bg-[#5CE65C]/20 text-[#15803D] dark:text-[#5CE65C] border border-[#5CE65C]/40">
+            <span className="text-[10px] font-semibold uppercase px-2.5 py-0.5 rounded-full bg-[#5CE65C]/20 text-[#15803D] dark:text-[#5CE65C] border border-[#5CE65C]/40">
               ✓ Aadhaar Verified
             </span>
           </div>
@@ -196,7 +196,7 @@ export function MandiSettingsView() {
               <div className="text-[11px] font-bold text-gray-500 dark:text-neutral-400 uppercase">
                 Linked Aadhaar Identification:
               </div>
-              <div className="font-mono text-base font-black text-black dark:text-[#E5E5E5]">
+              <div className="font-mono text-base font-bold text-black dark:text-[#E5E5E5]">
                 {profile?.aadhaarNumber || "•••• •••• 8912"}
               </div>
               <div className="text-[11px] text-gray-500 dark:text-neutral-400 flex items-center gap-1.5">
@@ -257,7 +257,7 @@ export function MandiSettingsView() {
                 </div>
 
                 <div className="flex items-center gap-3">
-                  <span className="text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full bg-[#5CE65C]/20 text-[#15803D] dark:text-[#5CE65C] border border-[#5CE65C]/40">
+                  <span className="text-[10px] font-semibold uppercase px-2.5 py-0.5 rounded-full bg-[#5CE65C]/20 text-[#15803D] dark:text-[#5CE65C] border border-[#5CE65C]/40">
                     {doc.status || "VERIFIED"}
                   </span>
                   <button
@@ -279,7 +279,7 @@ export function MandiSettingsView() {
           <button
             type="submit"
             disabled={isActionLoading}
-            className="btn-primary-green px-6 py-2.5 text-xs font-black cursor-pointer shadow-sm flex items-center gap-2"
+            className="btn-primary-green px-6 py-2.5 text-xs font-semibold cursor-pointer shadow-sm flex items-center gap-2"
           >
             <Save className="w-4 h-4" />
             <span>Save Mandi Settings</span>

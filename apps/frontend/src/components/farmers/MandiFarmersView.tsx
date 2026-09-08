@@ -184,7 +184,7 @@ export function MandiFarmersView() {
                     </div>
                   </td>
                   <td className="px-5 py-4 align-middle">
-                    <div className="text-sm font-extrabold text-gray-900 dark:text-[#E5E5E5]">
+                    <div className="text-sm font-semibold text-gray-900 dark:text-[#E5E5E5]">
                       {farmer.totalQuintalsSupplied} Qtl
                     </div>
                     <div className="text-xs text-neutral-400">{farmer.totalConsignments} Consignments</div>

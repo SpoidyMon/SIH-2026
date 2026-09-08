@@ -82,11 +82,11 @@ export function AuthPage() {
       {/* Top Simple Header */}
       <header className="h-20 px-8 flex items-center justify-between border-b border-[#E5EAE5] bg-white">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-[#5CE65C] flex items-center justify-center text-[#0D1F12] font-black text-xl shadow-xs">
+          <div className="w-10 h-10 rounded-xl bg-[#5CE65C] flex items-center justify-center text-[#0D1F12] font-bold text-xl shadow-xs">
             M
           </div>
           <div>
-            <span className="text-xl font-extrabold tracking-tight text-[#0D1F12]">Agrovia Mandi</span>
+            <span className="text-xl font-bold tracking-tight text-[#0D1F12]">Agrovia Mandi</span>
             <span className="ml-2.5 text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-[#EDFDF0] text-[#14532D] border border-[#5CE65C]/30">
               APMC Portal
             </span>
@@ -108,7 +108,7 @@ export function AuthPage() {
               <div className="w-12 h-12 rounded-2xl bg-[#EDFDF0] border border-[#5CE65C]/40 flex items-center justify-center text-[#14532D] mb-4">
                 <Mail className="w-6 h-6 text-[#14532D]" />
               </div>
-              <h2 className="text-2xl font-black text-[#0D1F12] mb-1">Verify Mandi Email</h2>
+              <h2 className="text-2xl font-bold text-[#0D1F12] mb-1">Verify Mandi Email</h2>
               <p className="text-xs text-[#526655] mb-6">
                 Enter the 6-digit OTP code dispatched to <span className="font-bold text-[#0D1F12]">{otpRequiredForEmail}</span>.
               </p>
@@ -146,7 +146,7 @@ export function AuthPage() {
                 <button
                   type="submit"
                   disabled={isLoading || otpCode.length !== 6}
-                  className="w-full py-3.5 px-4 bg-[#5CE65C] hover:bg-[#4ED64E] text-[#0D1F12] font-black rounded-xl flex items-center justify-center gap-2 transition-all disabled:opacity-50 shadow-xs cursor-pointer"
+                  className="w-full py-3.5 px-4 bg-[#5CE65C] hover:bg-[#4ED64E] text-[#0D1F12] font-semibold rounded-xl flex items-center justify-center gap-2 transition-all disabled:opacity-50 shadow-xs cursor-pointer"
                 >
                   {isLoading ? <RefreshCw className="w-4 h-4 animate-spin" /> : "Verify & Enter Mandi Cockpit"}
                 </button>
@@ -175,7 +175,7 @@ export function AuthPage() {
               <div className="w-12 h-12 rounded-2xl bg-[#F9FAF9] border border-[#E5EAE5] flex items-center justify-center text-[#0D1F12] mb-4">
                 <KeyRound className="w-6 h-6" />
               </div>
-              <h2 className="text-2xl font-black text-[#0D1F12] mb-1">Password Recovery</h2>
+              <h2 className="text-2xl font-bold text-[#0D1F12] mb-1">Password Recovery</h2>
               <p className="text-xs text-[#526655] mb-6">
                 Enter your registered APMC Mandi operator email address to receive reset instructions.
               </p>
@@ -205,7 +205,7 @@ export function AuthPage() {
 
                 <button
                   type="submit"
-                  className="w-full py-3 bg-[#5CE65C] hover:bg-[#4ED64E] text-[#0D1F12] font-black rounded-xl transition-all shadow-xs cursor-pointer"
+                  className="w-full py-3 bg-[#5CE65C] hover:bg-[#4ED64E] text-[#0D1F12] font-semibold rounded-xl transition-all shadow-xs cursor-pointer"
                 >
                   Send Recovery Link
                 </button>
@@ -229,7 +229,7 @@ export function AuthPage() {
             <div>
               <div className="flex items-center justify-between mb-6">
                 <div>
-                  <h2 className="text-2xl font-black text-[#0D1F12]">Register APMC Mandi</h2>
+                  <h2 className="text-2xl font-bold text-[#0D1F12]">Register APMC Mandi</h2>
                   <p className="text-xs text-[#526655] mt-0.5">Create your market yard operator account</p>
                 </div>
                 <div className="w-10 h-10 rounded-xl bg-[#EDFDF0] border border-[#5CE65C]/30 flex items-center justify-center text-[#14532D]">
@@ -307,7 +307,7 @@ export function AuthPage() {
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full mt-2 py-3 bg-[#5CE65C] hover:bg-[#4ED64E] text-[#0D1F12] font-black rounded-xl flex items-center justify-center gap-2 transition-all shadow-xs cursor-pointer"
+                  className="w-full mt-2 py-3 bg-[#5CE65C] hover:bg-[#4ED64E] text-[#0D1F12] font-semibold rounded-xl flex items-center justify-center gap-2 transition-all shadow-xs cursor-pointer"
                 >
                   {isLoading ? <RefreshCw className="w-4 h-4 animate-spin" /> : "Register Mandi Account"}
                   <ArrowRight className="w-4 h-4" />
@@ -333,7 +333,7 @@ export function AuthPage() {
             <div>
               <div className="flex items-center justify-between mb-6">
                 <div>
-                  <h2 className="text-2xl font-black text-[#0D1F12]">Mandi Sign In</h2>
+                  <h2 className="text-2xl font-bold text-[#0D1F12]">Mandi Sign In</h2>
                   <p className="text-xs text-[#526655] mt-0.5">Enter credentials to open APMC cockpit</p>
                 </div>
                 <div className="w-10 h-10 rounded-xl bg-[#EDFDF0] border border-[#5CE65C]/30 flex items-center justify-center text-[#14532D]">
@@ -391,7 +391,7 @@ export function AuthPage() {
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full py-3 bg-[#5CE65C] hover:bg-[#4ED64E] text-[#0D1F12] font-black rounded-xl flex items-center justify-center gap-2 transition-all shadow-xs cursor-pointer"
+                  className="w-full py-3 bg-[#5CE65C] hover:bg-[#4ED64E] text-[#0D1F12] font-semibold rounded-xl flex items-center justify-center gap-2 transition-all shadow-xs cursor-pointer"
                 >
                   {isLoading ? <RefreshCw className="w-4 h-4 animate-spin" /> : "Sign In to Mandi Cockpit"}
                   <ArrowRight className="w-4 h-4" />
