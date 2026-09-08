@@ -1,20 +1,19 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
-import { UserSession, LoginPayload, RegisterMandiPayload, VerifyOtpPayload } from "../../interfaces";
+import {
+  UserSession,
+  LoginPayload,
+  RegisterMandiPayload,
+  VerifyOtpPayload,
+  CompleteMandiOnboardingPayload,
+  AuthState,
+} from "../../interfaces";
 import { authApi } from "../../services/auth.api";
 import { getAccessToken, clearTokens } from "../../services/apiClient";
-
-export interface AuthState {
-  user: UserSession | null;
-  isAuthenticated: boolean;
-  isLoading: boolean;
-  isInitializing: boolean;
-  error: string | null;
-  otpRequiredForEmail: string | null;
-}
 
 const initialState: AuthState = {
   user: null,
   isAuthenticated: false,
+  isOnboarding: false,
   isLoading: false,
   isInitializing: true,
   error: null,
@@ -89,9 +88,25 @@ export const verifyOtpThunk = createAsyncThunk(
   }
 );
 
+export const completeMandiOnboardingThunk = createAsyncThunk(
+  "auth/completeMandiOnboarding",
+  async (payload: CompleteMandiOnboardingPayload, { rejectWithValue }) => {
+    try {
+      const response = await authApi.completeMandiOnboarding(payload);
+      if (response.success && response.data) {
+        return response.data;
+      }
+      return rejectWithValue(response.message || "Onboarding failed");
+    } catch (err: any) {
+      return rejectWithValue(err.response?.data?.message || err.message || "Onboarding failed");
+    }
+  }
+);
+
 export const logoutThunk = createAsyncThunk("auth/logout", async () => {
   await authApi.logout();
 });
+
 
 export const authSlice = createSlice({
   name: "auth",
@@ -102,6 +117,18 @@ export const authSlice = createSlice({
     },
     clearAuthError: (state) => {
       state.error = null;
+    },
+    startOnboarding: (state) => {
+      state.isOnboarding = true;
+      state.isAuthenticated = false;
+    },
+    completeOnboarding: (state) => {
+      state.isOnboarding = false;
+      state.isAuthenticated = true;
+    },
+    cancelOnboarding: (state) => {
+      state.isOnboarding = false;
+      state.isAuthenticated = false;
     },
   },
   extraReducers: (builder) => {
@@ -132,12 +159,16 @@ export const authSlice = createSlice({
         state.isLoading = false;
         state.user = action.payload.user;
         state.isAuthenticated = true;
+        state.isOnboarding = false;
         state.error = null;
         state.otpRequiredForEmail = null;
       })
       .addCase(loginMandiThunk.rejected, (state, action: any) => {
         state.isLoading = false;
-        if (action.payload?.code === "ACCOUNT_NOT_VERIFIED") {
+        if (
+          action.payload?.code === "ACCOUNT_NOT_VERIFIED" ||
+          action.payload?.code === "ONBOARDING_INCOMPLETE"
+        ) {
           state.otpRequiredForEmail = action.payload.email;
           state.error = action.payload.message;
         } else {
@@ -154,7 +185,8 @@ export const authSlice = createSlice({
       .addCase(registerMandiThunk.fulfilled, (state, action) => {
         state.isLoading = false;
         state.user = action.payload.user;
-        state.isAuthenticated = false; // Requires OTP verification
+        state.isAuthenticated = false; // Requires OTP verification + onboarding
+        state.isOnboarding = true;
         state.otpRequiredForEmail = action.payload.email;
       })
       .addCase(registerMandiThunk.rejected, (state, action) => {
@@ -168,15 +200,36 @@ export const authSlice = createSlice({
         state.isLoading = true;
         state.error = null;
       })
-      .addCase(verifyOtpThunk.fulfilled, (state) => {
+      .addCase(verifyOtpThunk.fulfilled, (state, action) => {
         state.isLoading = false;
         if (state.user) {
           state.user.isVerified = true;
         }
-        state.isAuthenticated = true;
+        // If OTP response indicates ongoing onboarding or no tokens were returned, do not mark authenticated yet
+        if (!state.isOnboarding && (action.payload as any)?.accessToken) {
+          state.isAuthenticated = true;
+        }
         state.otpRequiredForEmail = null;
       })
       .addCase(verifyOtpThunk.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload as string;
+      });
+
+    // completeMandiOnboarding
+    builder
+      .addCase(completeMandiOnboardingThunk.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(completeMandiOnboardingThunk.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.user = action.payload.user;
+        state.isAuthenticated = true;
+        state.isOnboarding = false;
+        state.error = null;
+      })
+      .addCase(completeMandiOnboardingThunk.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload as string;
       });
@@ -185,11 +238,12 @@ export const authSlice = createSlice({
     builder.addCase(logoutThunk.fulfilled, (state) => {
       state.user = null;
       state.isAuthenticated = false;
+      state.isOnboarding = false;
       state.error = null;
       state.otpRequiredForEmail = null;
     });
   },
 });
 
-export const { setOtpEmail, clearAuthError } = authSlice.actions;
+export const { setOtpEmail, clearAuthError, startOnboarding, completeOnboarding, cancelOnboarding } = authSlice.actions;
 export default authSlice.reducer;

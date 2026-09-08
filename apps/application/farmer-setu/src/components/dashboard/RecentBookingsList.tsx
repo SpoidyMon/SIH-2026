@@ -21,32 +21,43 @@ export const RecentBookingsList = memo(function RecentBookingsList({
 }: RecentBookingsListProps) {
   const { language, t } = useLanguage();
 
-  const getStatusBadge = (status: BookingStatus) => {
+  const getStatusBadge = (status: BookingStatus | string) => {
     switch (status) {
+      case 'PENDING':
       case 'in_progress':
         return {
-          bg: '#FFE8C6',
-          text: '#8D4004',
-          label: t('status.in_progress'),
+          bg: '#FEF3C7',
+          text: '#B45309',
+          label: 'Awaiting Approval',
         };
+      case 'ACCEPTED':
+      case 'VERIFIED':
       case 'confirmed':
         return {
-          bg: '#D8F7D9',
-          text: '#1B5E20',
-          label: t('status.confirmed'),
+          bg: '#DCFCE7',
+          text: '#15803D',
+          label: 'Gate Pass Active',
         };
+      case 'COMPLETED':
       case 'completed':
         return {
           bg: '#EAECEE',
           text: '#374151',
-          label: t('status.completed'),
+          label: 'Completed',
         };
+      case 'REJECTED':
+        return {
+          bg: '#FEE2E2',
+          text: '#991B1B',
+          label: 'Rejected',
+        };
+      case 'CANCELLED':
       case 'cancelled':
       default:
         return {
           bg: '#FEE2E2',
           text: '#991B1B',
-          label: t('status.cancelled'),
+          label: 'Cancelled',
         };
     }
   };
@@ -89,6 +100,7 @@ export const RecentBookingsList = memo(function RecentBookingsList({
         <View style={styles.cardsList}>
           {bookings.map((booking) => {
             const statusStyle = getStatusBadge(booking.status);
+            const qtyKg = booking.quantityKg ?? ((booking.quantityQuintals || 0) * 100);
 
             return (
               <Pressable
@@ -115,11 +127,21 @@ export const RecentBookingsList = memo(function RecentBookingsList({
 
                 {/* Crop & Mandi info */}
                 <Text style={styles.cropTitle}>
-                  {translateCropName(booking.cropName, language)} ({booking.cropVariety})
+                  {translateCropName(booking.cropName, language)} {booking.cropVariety ? `(${booking.cropVariety})` : ''}
                 </Text>
                 <Text style={styles.mandiSubtitle}>
                   {translateMandiName(booking.mandiName, language)} • {booking.gateNo}
                 </Text>
+
+                {/* Rejection Reason Notice */}
+                {booking.rejectionReason && (
+                  <View style={styles.rejectionNotice}>
+                    <Ionicons name="alert-circle" size={14} color="#B91C1C" />
+                    <Text style={styles.rejectionText}>
+                      Reason: {booking.rejectionReason} (Slot reapplication blocked)
+                    </Text>
+                  </View>
+                )}
 
                 {/* Details footer */}
                 <View style={styles.cardFooter}>
@@ -133,7 +155,7 @@ export const RecentBookingsList = memo(function RecentBookingsList({
                   </View>
                   <View style={styles.infoCol}>
                     <Ionicons name="cube-outline" size={13} color={ThemeColors.textSecondary} />
-                    <Text style={styles.infoText}>{booking.quantityQuintals} {t('dash.qtl')}</Text>
+                    <Text style={styles.infoText}>{qtyKg.toLocaleString('en-IN')} KG</Text>
                   </View>
                 </View>
               </Pressable>
@@ -291,7 +313,24 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: ThemeColors.textSecondary,
     marginTop: 2,
-    marginBottom: 10,
+    marginBottom: 8,
+  },
+  rejectionNotice: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#FEE2E2',
+    padding: 8,
+    borderRadius: 8,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: '#FCA5A5',
+  },
+  rejectionText: {
+    fontSize: 11,
+    color: '#991B1B',
+    fontWeight: '700',
+    flex: 1,
   },
   cardFooter: {
     flexDirection: 'row',

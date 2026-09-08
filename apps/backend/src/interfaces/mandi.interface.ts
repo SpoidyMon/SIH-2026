@@ -135,17 +135,22 @@ export interface LegalDocUploadInput {
 // Mandi Slot DTOs & Models
 export interface SlotCropItem {
   crop: string;
+  quantityKg?: number;
   quantityQuintals?: number;
+  ratePerKg?: number;
+  instructions?: string;
   isFixed?: boolean;
 }
 
 export interface CreateSlotInput {
   crop: string;
   allowedCrops?: SlotCropItem[];
+  instructions?: string;
   date: string; // YYYY-MM-DD
   startTime: string; // HH:mm
   endTime: string; // HH:mm
-  totalCapacityQuintals: number;
+  totalCapacityQuintals?: number;
+  totalCapacityKg?: number;
   maxFarmers: number;
   bufferMinutes?: number;
   bufferPercentage?: number;
@@ -154,10 +159,12 @@ export interface CreateSlotInput {
 export interface UpdateSlotInput {
   crop?: string;
   allowedCrops?: SlotCropItem[];
+  instructions?: string;
   date?: string;
   startTime?: string;
   endTime?: string;
   totalCapacityQuintals?: number;
+  totalCapacityKg?: number;
   maxFarmers?: number;
   bufferMinutes?: number;
   bufferPercentage?: number;
@@ -175,11 +182,14 @@ export interface MandiSlotDto {
   mandiProfileId: string;
   crop: string;
   allowedCrops?: SlotCropItem[] | null;
+  instructions?: string | null;
   date: string;
   startTime: string;
   endTime: string;
   totalCapacityQuintals: number;
+  totalCapacityKg?: number | null;
   bookedCapacityQuintals: number;
+  bookedCapacityKg?: number | null;
   capacityPercentage: number;
   maxFarmers: number;
   bookedFarmers: number;
@@ -195,6 +205,7 @@ export interface MandiSlotDto {
 export interface UpdateBookingStatusInput {
   status: BookingStatus;
   notes?: string;
+  rejectionReason?: string;
 }
 
 export interface VerifyQrTokenInput {
@@ -223,7 +234,10 @@ export interface BookingDto {
   farmerPhone?: string | null;
   crop: string;
   variety?: string | null;
+  cropsList?: Array<{ crop: string; quantityKg: number; ratePerKg?: number; estimatedAmount?: number }> | null;
+  quantityKg?: number | null;
   quantityQuintals: number;
+  estimatedPayout?: number | null;
   capacityPercentage: number;
   slotId: string;
   slotTime?: string;
@@ -231,6 +245,7 @@ export interface BookingDto {
   vehicleNumber?: string | null;
   status: BookingStatus;
   notes?: string | null;
+  rejectionReason?: string | null;
   verifiedAt?: Date | null;
   completedAt?: Date | null;
   createdAt: Date;
@@ -244,8 +259,12 @@ export interface DashboardMetricsDto {
   arrivalsToday: number;
   completedToday: number;
   pendingApprovals: number;
+  acceptedCount?: number;
   totalCapacityUtilizedPercentage: number;
+  netTurnoverLakhs?: number;
+  avgSettlementMins?: number;
 }
+
 
 export interface MandiDashboardData {
   metrics: DashboardMetricsDto;

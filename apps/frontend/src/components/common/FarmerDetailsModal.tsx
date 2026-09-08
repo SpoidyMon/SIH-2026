@@ -66,7 +66,7 @@ export function FarmerDetailsModal({
               <div className="p-4 rounded-xl bg-emerald-50/60 dark:bg-emerald-950/20 border border-emerald-200/70 dark:border-emerald-800/40 flex items-center justify-between">
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="font-mono text-xs font-black text-emerald-800 dark:text-emerald-400 bg-white dark:bg-black px-2 py-0.5 rounded-md border border-emerald-300 dark:border-emerald-800/60">
+                    <span className="font-mono text-xs font-semibold text-emerald-800 dark:text-emerald-400 bg-white dark:bg-black px-2 py-0.5 rounded-md border border-emerald-300 dark:border-emerald-800/60">
                       {farmer.farmerCode || "FAR001"}
                     </span>
                     <span className="font-bold text-slate-900 dark:text-[#E5E5E5] text-sm">{farmer.name}</span>

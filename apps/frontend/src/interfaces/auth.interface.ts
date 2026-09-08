@@ -16,11 +16,22 @@ export interface AuthTokens {
   refreshToken: string;
 }
 
+export interface AuthState {
+  user: UserSession | null;
+  isAuthenticated: boolean;
+  isOnboarding: boolean;
+  isLoading: boolean;
+  isInitializing: boolean;
+  error: string | null;
+  otpRequiredForEmail: string | null;
+}
+
 export interface AuthResponseData {
   user: UserSession;
-  accessToken: string;
-  refreshToken: string;
+  accessToken?: string;
+  refreshToken?: string;
   message?: string;
+  isOnboarding?: boolean;
 }
 
 export interface ApiResponse<T = unknown> {
@@ -42,6 +53,7 @@ export interface RegisterMandiPayload {
   phone?: string;
   password: string;
   role: "MANDI_OPERATOR";
+  mandiName?: string;
 }
 
 export interface VerifyOtpPayload {
@@ -54,3 +66,29 @@ export interface SendOtpPayload {
   identifier: string;
   type: "EMAIL_VERIFICATION" | "LOGIN_OTP" | "PASSWORD_RESET";
 }
+
+export interface CompleteMandiOnboardingPayload {
+  email: string;
+  address: string;
+  pincode: string;
+  district?: string;
+  state?: string;
+  latitude: number;
+  longitude: number;
+  operatingHours?: string;
+  closedDays?: string[];
+  closedHours?: string;
+  capacity?: number;
+  slots?: Array<{
+    crop: string;
+    date: string;
+    startTime: string;
+    endTime: string;
+    totalCapacityQuintals: number;
+    maxFarmers?: number;
+    bufferMinutes?: number;
+    bufferPercentage?: number;
+    allowedCrops?: Array<{ crop: string; isFixed?: boolean }>;
+  }>;
+}
+

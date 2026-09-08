@@ -9,6 +9,7 @@ import {
   forgotPassword,
   resetPassword,
   getCurrentUser,
+  completeMandiOnboarding,
 } from "../services/auth.service.js";
 import {
   registerSchema,
@@ -18,6 +19,7 @@ import {
   refreshTokenSchema,
   forgotPasswordSchema,
   resetPasswordSchema,
+  completeMandiOnboardingSchema,
 } from "../schemas/auth.schema.js";
 
 /**
@@ -169,3 +171,25 @@ export async function getMe(req: Request, res: Response, next: NextFunction): Pr
     next(error);
   }
 }
+
+/**
+ * Handle completing Mandi Operator onboarding & issuing session tokens.
+ */
+export async function completeMandiOnboardingHandler(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const validatedData = completeMandiOnboardingSchema.parse(req.body);
+    const result = await completeMandiOnboarding(validatedData);
+    res.status(200).json({
+      success: true,
+      message: "Mandi onboarding completed successfully.",
+      data: result,
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+

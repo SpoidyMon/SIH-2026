@@ -4,6 +4,7 @@ import {
   RegisterMandiPayload,
   VerifyOtpPayload,
   SendOtpPayload,
+  CompleteMandiOnboardingPayload,
   AuthResponseData,
   UserSession,
   ApiResponse,
@@ -12,22 +13,30 @@ import {
 export const authApi = {
   login: async (payload: LoginPayload): Promise<ApiResponse<AuthResponseData>> => {
     const response = await apiClient.post<ApiResponse<AuthResponseData>>("/auth/login", payload);
-    if (response.data.success && response.data.data) {
+    if (response.data.success && response.data.data?.accessToken && response.data.data?.refreshToken) {
       setTokens(response.data.data.accessToken, response.data.data.refreshToken);
     }
     return response.data;
   },
 
   registerMandi: async (payload: RegisterMandiPayload): Promise<ApiResponse<AuthResponseData>> => {
-    const response = await apiClient.post<ApiResponse<AuthResponseData>>("/user/mandi", payload);
-    if (response.data.success && response.data.data) {
+    const response = await apiClient.post<ApiResponse<AuthResponseData>>("/auth/register", payload);
+    if (response.data.success && response.data.data?.accessToken && response.data.data?.refreshToken) {
       setTokens(response.data.data.accessToken, response.data.data.refreshToken);
     }
     return response.data;
   },
 
-  verifyOtp: async (payload: VerifyOtpPayload): Promise<ApiResponse<{ isVerified: boolean; message: string }>> => {
-    const response = await apiClient.post<ApiResponse<{ isVerified: boolean; message: string }>>(
+  completeMandiOnboarding: async (payload: CompleteMandiOnboardingPayload): Promise<ApiResponse<AuthResponseData>> => {
+    const response = await apiClient.post<ApiResponse<AuthResponseData>>("/auth/complete-mandi-onboarding", payload);
+    if (response.data.success && response.data.data?.accessToken && response.data.data?.refreshToken) {
+      setTokens(response.data.data.accessToken, response.data.data.refreshToken);
+    }
+    return response.data;
+  },
+
+  verifyOtp: async (payload: VerifyOtpPayload): Promise<ApiResponse<{ isVerified: boolean; message: string; isOnboarding?: boolean }>> => {
+    const response = await apiClient.post<ApiResponse<{ isVerified: boolean; message: string; isOnboarding?: boolean }>>(
       "/auth/verify-otp",
       payload
     );

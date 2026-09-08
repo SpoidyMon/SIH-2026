@@ -56,13 +56,22 @@ export interface FarmerFullProfileResponse {
   farmerProfile: FarmerProfileData | null;
 }
 
+export interface CropBookingItem {
+  crop: string;
+  variety?: string;
+  quantityKg: number;
+  ratePerKg?: number;
+  estimatedPayout?: number;
+}
+
 export interface CreateBookingPayload {
   mandiProfileId: string;
   slotId: string;
-  crop: string;
+  crop?: string;
   variety?: string;
-  quantityQuintals: number;
-  vehicleNumber?: string;
+  quantityKg?: number;
+  quantityQuintals?: number;
+  cropsList?: CropBookingItem[];
   notes?: string;
 }
 
@@ -73,10 +82,19 @@ export interface MandiSlotData {
   date: string;
   startTime: string;
   endTime: string;
+  totalCapacityKg?: number;
+  bookedCapacityKg?: number;
   totalCapacityQuintals: number;
   bookedCapacityQuintals: number;
   maxFarmers: number;
   bookedFarmers: number;
+  currentFarmersBooked?: number;
   availableBookings: number;
+  allowedCrops?: Array<{
+    crop: string;
+    variety?: string;
+    ratePerKg?: number;
+    quantityKg?: number;
+  }>;
   isActive: boolean;
 }

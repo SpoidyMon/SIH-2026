@@ -9,6 +9,7 @@ import {
   requestForgotPassword,
   submitResetPassword,
   getMe,
+  completeMandiOnboardingHandler,
 } from "../controllers/auth.controller.js";
 import { authenticate } from "../middlewares/auth.middleware.js";
 import {
@@ -28,6 +29,7 @@ router.post("/logout", logout);
 // OTP & Verification Endpoints
 router.post("/send-otp", otpLimiter, sendOtpCode);
 router.post("/verify-otp", verifyOtpCode);
+router.post("/complete-mandi-onboarding", authLimiter, completeMandiOnboardingHandler);
 
 // Password Recovery Endpoints
 router.post("/forgot-password", otpLimiter, requestForgotPassword);
@@ -37,3 +39,4 @@ router.post("/reset-password", submitResetPassword);
 router.get("/me", authenticate, getMe);
 
 export default router;
+

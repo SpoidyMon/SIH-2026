@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { Routes, Route, Navigate } from "react-router";
+import { Routes, Route, Navigate } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from "./store";
 import { checkAuthSessionThunk } from "./store/slices/authSlice";
 import { AuthPage } from "./components/auth/AuthPage";
@@ -44,7 +44,8 @@ export function App() {
   if (!isAuthenticated || !user) {
     return (
       <Routes>
-        <Route path="/login" element={<AuthPage />} />
+        <Route path="/login" element={<AuthPage initialMode="LOGIN" />} />
+        <Route path="/register" element={<AuthPage initialMode="REGISTER" />} />
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     );
@@ -55,9 +56,11 @@ export function App() {
     <Routes>
       <Route element={<MandiLayout />}>
         <Route path="/mandi/dashboard" element={<MandiDashboardView />} />
+        <Route path="/mandi/bookings" element={<MandiBookingsView />} />
         <Route path="/mandi/manageSlot" element={<MandiSlotsView />} />
         <Route path="/mandi/GateScanner" element={<MandiGateScannerView />} />
         <Route path="/mandi/verification" element={<MandiVerificationStatusView />} />
+        <Route path="/mandi/farmers" element={<MandiFarmersView />} />
         <Route path="/mandi/history" element={<MandiHistoryView />} />
         <Route path="/mandi/settings" element={<MandiSettingsView />} />
         <Route path="/mandi/rating" element={<MandiRatingView />} />

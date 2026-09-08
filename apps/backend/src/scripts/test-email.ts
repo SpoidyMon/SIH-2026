@@ -19,7 +19,6 @@ const recipients = process.argv.slice(2).length > 0
       "rupeshjagtap157@gmail.com",
       "rupeshwillbepro@gmail.com",
       "rupeshmhtcet@gmail.com",
-      "rupeshcoding01@gmail.com",
     ];
 
 async function sendTestEmails() {

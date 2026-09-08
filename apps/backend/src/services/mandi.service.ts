@@ -207,47 +207,98 @@ export async function getMandiDashboardStats(userId: string): Promise<MandiDashb
   const profile = await getOrCreateMandiProfile(userId);
   const todayStr = new Date().toISOString().split("T")[0] || "2026-08-30";
 
+  // 1. Live Slots for Today
   const rawSlots = await prisma.mandiSlot.findMany({
     where: { mandiProfileId: profile.id, date: todayStr, isActive: true },
   });
   const todaySlots = Array.isArray(rawSlots) ? rawSlots : [];
-
   const totalSlotsToday = todaySlots.length;
 
-  const totalCapacity = todaySlots.reduce((sum, s) => sum + s.totalCapacityQuintals, 0);
-  const bookedCapacity = todaySlots.reduce((sum, s) => sum + s.bookedCapacityQuintals, 0);
+  const totalCapacity = todaySlots.reduce(
+    (sum, s) => sum + (s.totalCapacityKg ? s.totalCapacityKg / 100 : s.totalCapacityQuintals),
+    0
+  );
+  const bookedCapacity = todaySlots.reduce(
+    (sum, s) => sum + (s.bookedCapacityKg ? s.bookedCapacityKg / 100 : s.bookedCapacityQuintals),
+    0
+  );
   const totalCapacityUtilizedPercentage =
     totalCapacity > 0 ? Number(((bookedCapacity / totalCapacity) * 100).toFixed(1)) : 0;
 
-  const activeBookings = await prisma.booking.count({
-    where: {
-      mandiProfileId: profile.id,
-      status: { in: [BookingStatus.PENDING, BookingStatus.ACCEPTED, BookingStatus.ARRIVED, BookingStatus.VERIFIED] },
-    },
-  });
+  // 2. Active Bookings & Breakdown
+  const [activeBookings, pendingApprovals, acceptedCount] = await Promise.all([
+    prisma.booking.count({
+      where: {
+        mandiProfileId: profile.id,
+        status: { in: [BookingStatus.PENDING, BookingStatus.ACCEPTED, BookingStatus.ARRIVED, BookingStatus.VERIFIED] },
+      },
+    }),
+    prisma.booking.count({
+      where: {
+        mandiProfileId: profile.id,
+        status: BookingStatus.PENDING,
+      },
+    }),
+    prisma.booking.count({
+      where: {
+        mandiProfileId: profile.id,
+        status: { in: [BookingStatus.ACCEPTED, BookingStatus.VERIFIED] },
+      },
+    }),
+  ]);
 
-  const arrivalsToday = await prisma.booking.count({
-    where: {
-      mandiProfileId: profile.id,
-      slot: { date: todayStr },
-      status: { in: [BookingStatus.ARRIVED, BookingStatus.VERIFIED, BookingStatus.COMPLETED] },
-    },
-  });
+  // 3. Yard Clearance Today (Completed and Weighed/Verified)
+  const [arrivalsToday, completedToday, completedBookings] = await Promise.all([
+    prisma.booking.count({
+      where: {
+        mandiProfileId: profile.id,
+        slot: { date: todayStr },
+        status: { in: [BookingStatus.ARRIVED, BookingStatus.VERIFIED, BookingStatus.COMPLETED] },
+      },
+    }),
+    prisma.booking.count({
+      where: {
+        mandiProfileId: profile.id,
+        status: BookingStatus.COMPLETED,
+      },
+    }),
+    prisma.booking.findMany
+      ? prisma.booking.findMany({
+          where: {
+            mandiProfileId: profile.id,
+            status: BookingStatus.COMPLETED,
+          },
+          select: {
+            estimatedPayout: true,
+            quantityKg: true,
+            quantityQuintals: true,
+            verifiedAt: true,
+            completedAt: true,
+          },
+        })
+      : Promise.resolve([]),
+  ]);
 
-  const completedToday = await prisma.booking.count({
-    where: {
-      mandiProfileId: profile.id,
-      slot: { date: todayStr },
-      status: BookingStatus.COMPLETED,
-    },
-  });
+  // 4. Net Turnover calculation from DB
+  const safeCompletedBookings = completedBookings || [];
+  const totalPayout = safeCompletedBookings.reduce((sum, b) => {
+    if (b.estimatedPayout && b.estimatedPayout > 0) return sum + b.estimatedPayout;
+    const kg = b.quantityKg || (b.quantityQuintals ? b.quantityQuintals * 100 : 0);
+    return sum + kg * 28;
+  }, 0);
 
-  const pendingApprovals = await prisma.booking.count({
-    where: {
-      mandiProfileId: profile.id,
-      status: BookingStatus.PENDING,
-    },
-  });
+  const netTurnoverLakhs = totalPayout > 0 ? Number((totalPayout / 100000).toFixed(1)) : 0;
+
+  // 5. Avg Settlement time in minutes
+  let avgSettlementMins = 18;
+  const timed = safeCompletedBookings.filter((b) => b.verifiedAt && b.completedAt);
+  if (timed.length > 0) {
+    const totalMins = timed.reduce((sum, b) => {
+      const diffMs = new Date(b.completedAt!).getTime() - new Date(b.verifiedAt!).getTime();
+      return sum + Math.max(5, Math.round(diffMs / 60000));
+    }, 0);
+    avgSettlementMins = Math.round(totalMins / timed.length);
+  }
 
   return {
     metrics: {
@@ -256,7 +307,10 @@ export async function getMandiDashboardStats(userId: string): Promise<MandiDashb
       arrivalsToday,
       completedToday,
       pendingApprovals,
+      acceptedCount,
       totalCapacityUtilizedPercentage,
+      netTurnoverLakhs,
+      avgSettlementMins,
     },
     mandi: {
       id: profile.id,
@@ -324,7 +378,10 @@ export async function getCurrentBookings(userId: string, filters: BookingFilterQ
     farmerPhone: b.farmer.phone,
     crop: b.crop,
     variety: b.variety,
+    cropsList: b.cropsList,
+    quantityKg: b.quantityKg || (b.quantityQuintals ? b.quantityQuintals * 100 : 0),
     quantityQuintals: b.quantityQuintals,
+    estimatedPayout: b.estimatedPayout,
     capacityPercentage: b.capacityPercentage,
     slotId: b.slotId,
     slotTime: `${b.slot.startTime} - ${b.slot.endTime}`,
@@ -332,6 +389,7 @@ export async function getCurrentBookings(userId: string, filters: BookingFilterQ
     vehicleNumber: b.vehicleNumber,
     status: b.status,
     notes: b.notes,
+    rejectionReason: b.rejectionReason,
     verifiedAt: b.verifiedAt,
     servedAt: b.servedAt,
     completedAt: b.completedAt,
@@ -396,7 +454,10 @@ export async function getPreviousBookings(userId: string, filters: BookingFilter
       farmerPhone: b.farmer.phone,
       crop: b.crop,
       variety: b.variety,
+      cropsList: b.cropsList,
+      quantityKg: b.quantityKg || (b.quantityQuintals ? b.quantityQuintals * 100 : 0),
       quantityQuintals: b.quantityQuintals,
+      estimatedPayout: b.estimatedPayout,
       capacityPercentage: b.capacityPercentage,
       slotId: b.slotId,
       slotTime: `${b.slot.startTime} - ${b.slot.endTime}`,
@@ -404,6 +465,7 @@ export async function getPreviousBookings(userId: string, filters: BookingFilter
       vehicleNumber: b.vehicleNumber,
       status: b.status,
       notes: b.notes,
+      rejectionReason: b.rejectionReason,
       verifiedAt: b.verifiedAt,
       servedAt: b.servedAt,
       completedAt: b.completedAt,
@@ -414,7 +476,9 @@ export async function getPreviousBookings(userId: string, filters: BookingFilter
 }
 
 /**
- * Updates booking status (e.g. ACCEPTED, REJECTED, ARRIVED)
+ * Updates booking status (e.g. ACCEPTED, REJECTED, ARRIVED).
+ * Generates official token and QR code when ACCEPTED.
+ * Records rejection reason when REJECTED.
  */
 export async function updateBookingStatus(
   userId: string,
@@ -437,6 +501,36 @@ export async function updateBookingStatus(
     notes: input.notes !== undefined ? input.notes : booking.notes,
   };
 
+  if (input.status === BookingStatus.ACCEPTED) {
+    // Generate official Gate Pass token in format: <Day><Month>-<TimeSlot>-<SeqNum> e.g. 8SEP-10AM-001
+    const slotDateStr = booking.slot?.date || new Date().toISOString().split("T")[0] || "2026-09-08";
+    const [, monthNumStr, dayNumStr] = slotDateStr.split("-");
+    const monthNames = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+    const monthIdx = parseInt(monthNumStr || "09", 10) - 1;
+    const monthName = monthNames[monthIdx] || "SEP";
+    const dayStr = String(parseInt(dayNumStr || "08", 10));
+
+    const [hourStr] = (booking.slot?.startTime || "10:00").split(":");
+    const hourNum = parseInt(hourStr || "10", 10);
+    const ampm = hourNum >= 12 ? "PM" : "AM";
+    const displayHour = hourNum % 12 === 0 ? 12 : hourNum % 12;
+    const timePart = `${displayHour}${ampm}`;
+    const queueSeqStr = String(booking.queueNumber).padStart(3, "0");
+
+    const token = `${dayStr}${monthName}-${timePart}-${queueSeqStr}`;
+    const qrCodeData = `https://agrovia.gov.in/verify?tkn=${token}&slot=${booking.slotId}&farmer=${booking.farmerId}`;
+
+    updateData.token = token;
+    updateData.qrCodeData = qrCodeData;
+  }
+
+  if (input.status === BookingStatus.REJECTED) {
+    updateData.rejectionReason = input.rejectionReason || "Booking application rejected by Mandi administration.";
+    updateData.notes = booking.notes
+      ? `${booking.notes} | Rejected: ${updateData.rejectionReason}`
+      : `Rejected: ${updateData.rejectionReason}`;
+  }
+
   if (input.status === BookingStatus.VERIFIED && !booking.verifiedAt) {
     updateData.verifiedAt = new Date();
   }
@@ -452,6 +546,7 @@ export async function updateBookingStatus(
 
   return updated;
 }
+
 
 /**
  * Verifies farmer booking entry via QR code or token with First-Come First-Served queue check
@@ -581,16 +676,22 @@ export async function completeBooking(
 export async function createMandiSlot(userId: string, input: CreateSlotInput) {
   const profile = await getOrCreateMandiProfile(userId);
 
+  const totalCapQuintals = input.totalCapacityQuintals || (input.totalCapacityKg ? input.totalCapacityKg / 100 : 500);
+  const totalCapKg = input.totalCapacityKg || (input.totalCapacityQuintals ? input.totalCapacityQuintals * 100 : 50000);
+
   const slot = await prisma.mandiSlot.create({
     data: {
       mandiProfileId: profile.id,
       crop: input.crop,
       allowedCrops: (input.allowedCrops as any) || null,
+      instructions: input.instructions || null,
       date: input.date,
       startTime: input.startTime,
       endTime: input.endTime,
-      totalCapacityQuintals: input.totalCapacityQuintals,
+      totalCapacityQuintals: totalCapQuintals,
+      totalCapacityKg: totalCapKg,
       bookedCapacityQuintals: 0,
+      bookedCapacityKg: 0,
       capacityPercentage: 0,
       maxFarmers: input.maxFarmers,
       bookedFarmers: 0,
@@ -669,6 +770,7 @@ export async function updateMandiSlot(userId: string, slotId: string, input: Upd
   }
 
   const totalCap = input.totalCapacityQuintals ?? existing.totalCapacityQuintals;
+  const totalCapKg = input.totalCapacityKg ?? (totalCap ? totalCap * 100 : existing.totalCapacityKg);
   const maxF = input.maxFarmers ?? existing.maxFarmers;
   const capacityPct = totalCap > 0 ? (existing.bookedCapacityQuintals / totalCap) * 100 : 0;
   const availableB = Math.max(0, maxF - existing.bookedFarmers);
@@ -677,6 +779,9 @@ export async function updateMandiSlot(userId: string, slotId: string, input: Upd
     where: { id: slotId },
     data: {
       ...input,
+      totalCapacityQuintals: totalCap,
+      totalCapacityKg: totalCapKg,
+      instructions: input.instructions !== undefined ? input.instructions : existing.instructions,
       allowedCrops: input.allowedCrops !== undefined ? (input.allowedCrops as any) : undefined,
       capacityPercentage: Number(capacityPct.toFixed(1)),
       availableBookings: availableB,
@@ -730,6 +835,7 @@ export async function applyDefaultSlotsPreset(userId: string) {
       startTime: "08:00",
       endTime: "11:30",
       totalCapacityQuintals: 600,
+      totalCapacityKg: 60000,
       maxFarmers: 25,
       bufferMinutes: 15,
       bufferPercentage: 10,
@@ -740,6 +846,7 @@ export async function applyDefaultSlotsPreset(userId: string) {
       startTime: "12:00",
       endTime: "15:30",
       totalCapacityQuintals: 400,
+      totalCapacityKg: 40000,
       maxFarmers: 18,
       bufferMinutes: 20,
       bufferPercentage: 10,
@@ -750,6 +857,7 @@ export async function applyDefaultSlotsPreset(userId: string) {
       startTime: "16:00",
       endTime: "18:30",
       totalCapacityQuintals: 500,
+      totalCapacityKg: 50000,
       maxFarmers: 20,
       bufferMinutes: 15,
       bufferPercentage: 10,
@@ -765,8 +873,10 @@ export async function applyDefaultSlotsPreset(userId: string) {
           date: preset.date,
           startTime: preset.startTime,
           endTime: preset.endTime,
-          totalCapacityQuintals: preset.totalCapacityQuintals,
+          totalCapacityQuintals: preset.totalCapacityQuintals || 500,
+          totalCapacityKg: preset.totalCapacityKg || 50000,
           bookedCapacityQuintals: 0,
+          bookedCapacityKg: 0,
           capacityPercentage: 0,
           maxFarmers: preset.maxFarmers,
           bookedFarmers: 0,
@@ -814,6 +924,9 @@ export async function batchCreateMandiSlots(
 
   const createdSlots = [];
   for (const s of input.slots) {
+    const totalCapQuintals = s.totalCapacityQuintals || (s.totalCapacityKg ? s.totalCapacityKg / 100 : 500);
+    const totalCapKg = s.totalCapacityKg || (s.totalCapacityQuintals ? s.totalCapacityQuintals * 100 : 50000);
+
     const existing = await prisma.mandiSlot.findFirst({
       where: {
         mandiProfileId: profile.id,
@@ -829,11 +942,14 @@ export async function batchCreateMandiSlots(
           mandiProfileId: profile.id,
           crop: s.crop,
           allowedCrops: (s.allowedCrops as any) || null,
+          instructions: s.instructions || null,
           date: s.date,
           startTime: s.startTime,
           endTime: s.endTime,
-          totalCapacityQuintals: s.totalCapacityQuintals,
+          totalCapacityQuintals: totalCapQuintals,
+          totalCapacityKg: totalCapKg,
           bookedCapacityQuintals: 0,
+          bookedCapacityKg: 0,
           capacityPercentage: 0,
           maxFarmers: s.maxFarmers,
           bookedFarmers: 0,
@@ -851,6 +967,67 @@ export async function batchCreateMandiSlots(
 
   return createdSlots;
 }
+
+/**
+ * Closes Mandi operations for a specific date:
+ * - Deactivates all slots for that date
+ * - Cancels/rejects any active (PENDING/ACCEPTED) bookings for that date with reason
+ * - Adds the date to Mandi closedDays list
+ */
+export async function closeMandiDate(
+  userId: string,
+  input: { date: string; reason?: string }
+) {
+  const profile = await getOrCreateMandiProfile(userId);
+  const { date, reason } = input;
+  const rejectionReason = reason || "Mandi is closed on this date by administration.";
+
+  // 1. Deactivate slots on this date
+  await prisma.mandiSlot.updateMany({
+    where: { mandiProfileId: profile.id, date },
+    data: { isActive: false },
+  });
+
+  // 2. Find all active bookings on this date and cancel them
+  const activeBookings = await prisma.booking.findMany({
+    where: {
+      mandiProfileId: profile.id,
+      slot: { date },
+      status: { in: [BookingStatus.PENDING, BookingStatus.ACCEPTED] },
+    },
+  });
+
+  if (activeBookings.length > 0) {
+    await prisma.booking.updateMany({
+      where: {
+        id: { in: activeBookings.map((b) => b.id) },
+      },
+      data: {
+        status: BookingStatus.CANCELLED,
+        rejectionReason,
+        notes: `Cancelled due to Mandi closure: ${rejectionReason}`,
+      },
+    });
+  }
+
+  // 3. Add to closedDays array if not already present
+  const currentClosedDays = Array.isArray(profile.closedDays) ? [...profile.closedDays] : [];
+  if (!currentClosedDays.includes(date)) {
+    currentClosedDays.push(date);
+    await prisma.mandiProfile.update({
+      where: { id: profile.id },
+      data: { closedDays: currentClosedDays },
+    });
+  }
+
+  return {
+    success: true,
+    message: `Mandi closed for ${date}. ${activeBookings.length} bookings cancelled/updated.`,
+    cancelledBookingsCount: activeBookings.length,
+    date,
+  };
+}
+
 
 // ----------------------------------------------------
 // SETTINGS, KYC & REPUTATION FUNCTIONS

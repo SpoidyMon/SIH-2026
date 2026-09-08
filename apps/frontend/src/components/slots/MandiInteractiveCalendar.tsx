@@ -4,12 +4,15 @@ import {
   ChevronRight,
   Plus,
   Clock,
-  Layers,
   AlertCircle,
-  CheckCircle2,
   Calendar as CalendarIcon,
+  Ban,
+  X,
+  Check,
 } from "lucide-react";
 import { MandiSlot } from "../../interfaces";
+import { useAppDispatch, useAppSelector } from "../../store";
+import { closeMandiDateThunk } from "../../store/slices/mandiSlice";
 
 interface MandiInteractiveCalendarProps {
   slots: MandiSlot[];
@@ -28,6 +31,11 @@ export function MandiInteractiveCalendar({
   closedDays = [],
   closedHours,
 }: MandiInteractiveCalendarProps) {
+  const dispatch = useAppDispatch();
+  const [showCloseModal, setShowCloseModal] = useState(false);
+  const [closeReason, setCloseReason] = useState("Administrative / Mandi Yard Holiday");
+  const [isSubmittingClose, setIsSubmittingClose] = useState(false);
+
   // Current view year & month state
   const [currentMonthDate, setCurrentMonthDate] = useState(() => {
     if (selectedDate) {
@@ -54,6 +62,19 @@ export function MandiInteractiveCalendar({
     setCurrentMonthDate(new Date(today.getFullYear(), today.getMonth(), 1));
     const todayStr = today.toISOString().split("T")[0];
     onSelectDate(todayStr);
+  };
+
+  const handleConfirmCloseDate = async () => {
+    if (!selectedDate) return;
+    setIsSubmittingClose(true);
+    try {
+      await dispatch(closeMandiDateThunk({ date: selectedDate, reason: closeReason })).unwrap();
+      setShowCloseModal(false);
+    } catch (err) {
+      console.error("Failed to close mandi for date", err);
+    } finally {
+      setIsSubmittingClose(false);
+    }
   };
 
   const monthName = currentMonthDate.toLocaleString("en-US", { month: "long" });
@@ -147,20 +168,31 @@ export function MandiInteractiveCalendar({
             <CalendarIcon className="w-5 h-5" />
           </div>
           <div>
-            <h2 className="text-base font-black text-gray-900 dark:text-[#E5E5E5] flex items-center gap-2">
+            <h2 className="text-base font-bold text-gray-900 dark:text-[#E5E5E5] flex items-center gap-2">
               <span>{monthName} {year}</span>
             </h2>
             <p className="text-[11px] text-gray-500 dark:text-neutral-400 font-medium">
-              Click any date to inspect booked arrivals, capacity, or schedule custom windows.
+              Click any date to inspect booked arrivals in KG, capacity, or schedule custom windows.
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2 self-start sm:self-auto">
+        <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap">
+          {selectedDate && (
+            <button
+              type="button"
+              onClick={() => setShowCloseModal(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 hover:bg-red-100 dark:bg-red-950/40 dark:hover:bg-red-900/50 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-900/60 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-2xs"
+            >
+              <Ban className="w-3.5 h-3.5" />
+              <span>Mark {selectedDate} Closed</span>
+            </button>
+          )}
+
           <button
             type="button"
             onClick={handleToday}
-            className="px-3 py-1.5 bg-gray-50 hover:bg-gray-100 dark:bg-neutral-900 dark:hover:bg-neutral-800 text-gray-700 dark:text-neutral-300 border border-gray-200 dark:border-neutral-700 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-2xs"
+            className="px-3 py-1.5 bg-gray-50 hover:bg-gray-100 dark:bg-neutral-900 dark:hover:bg-neutral-800 text-gray-700 dark:text-neutral-300 border border-gray-200 dark:border-neutral-700 rounded-xl text-xs font-semibold transition-all cursor-pointer shadow-2xs"
           >
             Today
           </button>
@@ -186,7 +218,7 @@ export function MandiInteractiveCalendar({
       </div>
 
       {/* Days of Week Header */}
-      <div className="grid grid-cols-7 border-b border-gray-100 dark:border-neutral-800/80 bg-gray-50/70 dark:bg-neutral-900/50 text-center py-2.5 text-[11px] font-extrabold uppercase tracking-wider text-gray-500 dark:text-neutral-400">
+      <div className="grid grid-cols-7 border-b border-gray-100 dark:border-neutral-800/80 bg-gray-50/70 dark:bg-neutral-900/50 text-center py-2.5 text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-neutral-400">
         <span>Sun</span>
         <span>Mon</span>
         <span>Tue</span>
@@ -201,8 +233,8 @@ export function MandiInteractiveCalendar({
         {calendarDays.map((cell) => {
           const isSelected = selectedDate === cell.dateStr;
           const hasSlots = cell.slots.length > 0;
-          const totalCapacity = cell.slots.reduce((acc, s) => acc + (s.maxCapacityQuintals || s.totalCapacityQuintals || 0), 0);
-          const totalBooked = cell.slots.reduce((acc, s) => acc + (s.bookedCapacityQuintals || 0), 0);
+          const totalCapacityKg = cell.slots.reduce((acc, s) => acc + (s.totalCapacityKg || ((s.maxCapacityQuintals || s.totalCapacityQuintals || 0) * 100)), 0);
+          const totalBookedKg = cell.slots.reduce((acc, s) => acc + (s.bookedCapacityKg || ((s.bookedCapacityQuintals || 0) * 100)), 0);
           const totalFarmers = cell.slots.reduce((acc, s) => acc + (s.currentFarmersBooked ?? s.bookedFarmers ?? 0), 0);
 
           return (
@@ -222,7 +254,7 @@ export function MandiInteractiveCalendar({
               {/* Day Number and Status Badge */}
               <div className="flex items-center justify-between gap-1">
                 <span
-                  className={`text-xs font-black rounded-md w-6 h-6 flex items-center justify-center ${
+                  className={`text-xs font-bold rounded-md w-6 h-6 flex items-center justify-center ${
                     isSelected
                       ? "bg-emerald-600 text-white shadow-xs"
                       : cell.isCurrentMonth
@@ -238,7 +270,7 @@ export function MandiInteractiveCalendar({
                     Closed
                   </span>
                 ) : hasSlots ? (
-                  <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
                     {cell.slots.length} {cell.slots.length === 1 ? "Slot" : "Slots"}
                   </span>
                 ) : null}
@@ -252,21 +284,21 @@ export function MandiInteractiveCalendar({
                       {cell.slots.map((s) => s.crop).join(", ")}
                     </div>
                     <div className="text-[9px] text-gray-500 dark:text-neutral-400 flex items-center gap-1">
-                      <span>📦 {totalBooked}/{totalCapacity} Qtl</span>
+                      <span>📦 {totalBookedKg.toLocaleString("en-IN")}/{totalCapacityKg.toLocaleString("en-IN")} KG</span>
                       <span>•</span>
                       <span>👨‍🌾 {totalFarmers}</span>
                     </div>
                     {/* Utilization mini progress bar */}
-                    {totalCapacity > 0 && (
+                    {totalCapacityKg > 0 && (
                       <div className="w-full bg-gray-200 dark:bg-neutral-800 h-1 rounded-full overflow-hidden">
                         <div
                           className={`h-full rounded-full ${
-                            (totalBooked / totalCapacity) > 0.8
+                            (totalBookedKg / totalCapacityKg) > 0.8
                               ? "bg-red-500"
                               : "bg-[#10B981]"
                           }`}
                           style={{
-                            width: `${Math.min(100, Math.round((totalBooked / totalCapacity) * 100))}%`,
+                            width: `${Math.min(100, Math.round((totalBookedKg / totalCapacityKg) * 100))}%`,
                           }}
                         />
                       </div>
@@ -310,7 +342,7 @@ export function MandiInteractiveCalendar({
           </div>
           <div className="flex items-center gap-1.5">
             <span className="w-2.5 h-2.5 rounded-full bg-red-400" />
-            <span>Weekly Closed Day</span>
+            <span>Closed Day</span>
           </div>
           {closedHours && (
             <div className="flex items-center gap-1.5">
@@ -326,6 +358,64 @@ export function MandiInteractiveCalendar({
           </span>
         )}
       </div>
+
+      {/* Mark Day as Mandi Closed Confirmation Modal */}
+      {showCloseModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fade-in">
+          <div className="bg-white dark:bg-[#121212] border border-gray-200 dark:border-neutral-800 rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-gray-100 dark:border-neutral-800">
+              <div className="flex items-center gap-2.5 text-red-600 dark:text-red-400">
+                <Ban className="w-5 h-5" />
+                <h3 className="text-base font-bold text-gray-900 dark:text-[#E5E5E5]">
+                  Mark Mandi Closed on {selectedDate}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowCloseModal(false)}
+                className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-neutral-800 text-gray-500 dark:text-neutral-400 cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <p className="text-xs text-gray-600 dark:text-neutral-400 leading-relaxed">
+              Marking this date as closed will deactivate all arrival slot windows for <strong>{selectedDate}</strong>, automatically cancel pending bookings for this date, and notify farmers that the Mandi yard is not accepting consignments.
+            </p>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-gray-700 dark:text-neutral-300">
+                Closure Reason / Notice for Farmers:
+              </label>
+              <textarea
+                rows={2}
+                value={closeReason}
+                onChange={(e) => setCloseReason(e.target.value)}
+                placeholder="e.g. Yard sanitation / Public holiday / Weighbridge maintenance"
+                className="w-full bg-gray-50 dark:bg-black border border-gray-200 dark:border-neutral-800 rounded-xl p-3 text-xs text-gray-900 dark:text-[#E5E5E5] focus:outline-none focus:border-red-500"
+              />
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-gray-100 dark:border-neutral-800">
+              <button
+                type="button"
+                onClick={() => setShowCloseModal(false)}
+                className="px-4 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-neutral-800 dark:hover:bg-neutral-700 text-gray-700 dark:text-neutral-300 text-xs font-bold rounded-xl cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={isSubmittingClose}
+                onClick={handleConfirmCloseDate}
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-xl cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
+              >
+                {isSubmittingClose ? "Closing Date..." : "Confirm Close Day"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

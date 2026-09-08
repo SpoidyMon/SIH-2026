@@ -18,7 +18,7 @@ export interface StatCardItem {
   badgeLabel?: string;
 }
 
-export type BookingStatus = 'in_progress' | 'confirmed' | 'completed' | 'cancelled';
+export type BookingStatus = 'in_progress' | 'confirmed' | 'completed' | 'cancelled' | 'PENDING' | 'ACCEPTED' | 'ARRIVED' | 'WEIGHED' | 'COMPLETED' | 'REJECTED' | 'CANCELLED';
 
 export interface BookingItem {
   id: string;
@@ -28,18 +28,29 @@ export interface BookingItem {
   qrCodeData?: string;
   cropName: string;
   cropVariety: string;
+  cropsList?: Array<{
+    crop: string;
+    variety?: string;
+    quantityKg: number;
+    ratePerKg?: number;
+    estimatedPayout?: number;
+  }>;
   mandiName: string;
   mandiCode?: string;
   gateNo: string;
   dateString: string;
   timeSlot: string;
-  status: BookingStatus;
+  status: BookingStatus | string;
   statusLabel: string;
   progressPercent: number;
   progressLabel: string;
   inspectorName?: string;
   inspectorAvatar?: string;
+  quantityKg?: number;
   quantityQuintals: number;
+  rejectionReason?: string;
+  estimatedPayout?: number;
+  finalPayoutAmount?: number;
   commentsCount?: number;
   vehicleNumber?: string;
 }

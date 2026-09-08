@@ -204,10 +204,27 @@ export async function updateFarmerProfile(
 }
 
 /**
- * Lists all approved mandis from database with slots and metrics for farmer app.
- * Only mandis that have set their location and marked map coordinates are shown.
+ * Calculates haversine distance in KM between two lat/lng coordinates
  */
-export async function listApprovedMandis() {
+function calculateDistanceKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371; // Radius of Earth in KM
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return Number((R * c).toFixed(1));
+}
+
+/**
+ * Lists all approved mandis from database with slots and metrics for farmer app.
+ * Automatically sorts nearest first if user GPS coordinates (userLat, userLng) are provided.
+ */
+export async function listApprovedMandis(userLat?: number, userLng?: number) {
   const mandis = await prisma.mandiProfile.findMany({
     where: {
       OR: [
@@ -225,7 +242,7 @@ export async function listApprovedMandis() {
     orderBy: { mandiName: "asc" },
   });
 
-  return mandis.map((m) => {
+  const formattedMandis = mandis.map((m) => {
     // Collect all crops offered in slots
     const slotCrops = new Set<string>();
     m.slots.forEach((s) => {
@@ -251,6 +268,13 @@ export async function listApprovedMandis() {
 
     const defaultLat = 18.5204 + (Math.random() * 0.1 - 0.05);
     const defaultLng = 73.8567 + (Math.random() * 0.1 - 0.05);
+    const lat = m.latitude !== null && m.latitude !== undefined ? m.latitude : defaultLat;
+    const lng = m.longitude !== null && m.longitude !== undefined ? m.longitude : defaultLng;
+
+    let distanceKm: number | null = null;
+    if (userLat !== undefined && userLng !== undefined && !isNaN(userLat) && !isNaN(userLng)) {
+      distanceKm = calculateDistanceKm(userLat, userLng, lat, lng);
+    }
 
     return {
       id: m.id,
@@ -261,12 +285,13 @@ export async function listApprovedMandis() {
       address: m.address || "APMC Main Market Yard",
       pincode: m.pincode || "411001",
       state: m.state || "Maharashtra",
-      latitude: m.latitude !== null && m.latitude !== undefined ? m.latitude : defaultLat,
-      longitude: m.longitude !== null && m.longitude !== undefined ? m.longitude : defaultLng,
+      latitude: lat,
+      longitude: lng,
+      distanceKm,
       topCrop: finalAcceptedCrops.slice(0, 2).join(", "),
       acceptedCrops: finalAcceptedCrops,
-      modalPrice: m.modalPrice || "₹2,750 / qtl",
-      priceTrend: m.priceTrend || "+₹140 today",
+      modalPrice: m.modalPrice || "₹28 / kg",
+      priceTrend: m.priceTrend || "+₹2/kg today",
       trendDirection: m.trendDirection || "up",
       estimatedQueueTime: m.estimatedQueueTime || "15 mins wait",
       activeFarmersCount: m.activeFarmersCount || 24,
@@ -278,6 +303,13 @@ export async function listApprovedMandis() {
       slots: m.slots,
     };
   });
+
+  // Sort nearest first if user coordinates provided
+  if (userLat !== undefined && userLng !== undefined && !isNaN(userLat) && !isNaN(userLng)) {
+    formattedMandis.sort((a, b) => (a.distanceKm ?? 9999) - (b.distanceKm ?? 9999));
+  }
+
+  return formattedMandis;
 }
 
 /**
@@ -289,21 +321,32 @@ export async function listOfficialCommodities() {
   });
 }
 
+export interface CreateFarmerBookingInput {
+  mandiProfileId: string;
+  slotId: string;
+  crop?: string;
+  variety?: string;
+  quantityQuintals?: number;
+  quantityKg?: number;
+  cropsList?: Array<{
+    crop: string;
+    quantityKg: number;
+    ratePerKg?: number;
+    estimatedAmount?: number;
+  }>;
+  vehicleNumber?: string;
+  notes?: string;
+}
+
 /**
- * Creates a gate arrival slot booking for a farmer with profile completion check.
- * Generates token in standard sequential queue format: e.g. 4MAY-10AM-001 or 8SEP-10AM-001.
+ * Creates a gate arrival slot booking for a farmer with KYC completion check.
+ * - Prevents reapplication if farmer was previously REJECTED for this specific slot.
+ * - Stores multi-crop breakdown and quantities in KG.
+ * - Generates initial PENDING status (Official token and QR generated upon Mandi Operator acceptance).
  */
 export async function createFarmerBooking(
   farmerUserId: string,
-  input: {
-    mandiProfileId: string;
-    slotId: string;
-    crop: string;
-    variety?: string;
-    quantityQuintals: number;
-    vehicleNumber?: string;
-    notes?: string;
-  }
+  input: CreateFarmerBookingInput
 ): Promise<any> {
   // 1. Verify farmer profile is complete
   const farmerProfile = await prisma.farmerProfile.findUnique({
@@ -318,57 +361,99 @@ export async function createFarmerBooking(
     );
   }
 
-  // 2. Verify slot exists and has capacity
+  // 2. Prevent reapplication if previous booking for this slot was rejected
+  const previousRejected = await prisma.booking.findFirst({
+    where: {
+      farmerId: farmerUserId,
+      slotId: input.slotId,
+      status: BookingStatus.REJECTED,
+    },
+  });
+
+  if (previousRejected) {
+    throw new AppError(
+      `Your booking application for this slot was rejected by the Mandi administration (Reason: ${
+        previousRejected.rejectionReason || "Slot limit/criteria not met"
+      }). You cannot reapply for this slot.`,
+      400,
+      "SLOT_BOOKING_REJECTED"
+    );
+  }
+
+  // Also check if already has an active pending/accepted booking on the same slot
+  const existingActive = await prisma.booking.findFirst({
+    where: {
+      farmerId: farmerUserId,
+      slotId: input.slotId,
+      status: { in: [BookingStatus.PENDING, BookingStatus.ACCEPTED, BookingStatus.VERIFIED] },
+    },
+  });
+
+  if (existingActive) {
+    throw new AppError(
+      "You already have an active booking for this arrival slot.",
+      400,
+      "DUPLICATE_BOOKING"
+    );
+  }
+
+  // 3. Verify slot exists and has capacity
   const slot = await prisma.mandiSlot.findUnique({
     where: { id: input.slotId },
   });
 
   if (!slot || !slot.isActive) {
-    throw new AppError("The requested mandi arrival slot is no longer active.", 404, "SLOT_NOT_FOUND");
+    throw new AppError("The requested mandi arrival slot is no longer active or closed.", 404, "SLOT_NOT_FOUND");
   }
 
   if (slot.availableBookings <= 0) {
-    throw new AppError("This slot has reached maximum farmer capacity.", 400, "SLOT_CAPACITY_FULL");
+    throw new AppError("This arrival slot has reached its maximum farmer limit.", 400, "SLOT_CAPACITY_FULL");
   }
 
-  // 3. Generate token in standard format: <Day><Month>-<TimeSlot>-<SeqNum> (e.g. 4MAY-10AM-001)
-  const slotDateStr = slot.date || new Date().toISOString().split("T")[0] || "2026-09-08";
-  const [, monthNumStr, dayNumStr] = slotDateStr.split("-");
-  const monthNames = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
-  const monthIdx = parseInt(monthNumStr || "09", 10) - 1;
-  const monthName = monthNames[monthIdx] || "SEP";
-  const dayStr = String(parseInt(dayNumStr || "08", 10));
+  // 4. Calculate total quantity in KG and Quintals, and estimated payout
+  let totalKg = input.quantityKg || 0;
+  let primaryCrop = input.crop || "Agricultural Crops";
+  let estimatedPayout = 0;
 
-  const [hourStr] = (slot.startTime || "10:00").split(":");
-  const hourNum = parseInt(hourStr || "10", 10);
-  const ampm = hourNum >= 12 ? "PM" : "AM";
-  const displayHour = hourNum % 12 === 0 ? 12 : hourNum % 12;
-  const timePart = `${displayHour}${ampm}`;
+  if (input.cropsList && Array.isArray(input.cropsList) && input.cropsList.length > 0) {
+    totalKg = input.cropsList.reduce((sum, item) => sum + (Number(item.quantityKg) || 0), 0);
+    primaryCrop = input.cropsList.map((c) => c.crop).join(", ");
+    estimatedPayout = input.cropsList.reduce((sum, item) => {
+      const rate = Number(item.ratePerKg) || 25;
+      const amt = item.estimatedAmount || (Number(item.quantityKg) || 0) * rate;
+      return sum + amt;
+    }, 0);
+  } else if (!totalKg && input.quantityQuintals) {
+    totalKg = input.quantityQuintals * 100;
+  }
 
+  const finalQuintals = input.quantityQuintals || Number((totalKg / 100).toFixed(2));
+
+  // 5. Expected Queue Number in this slot
   const existingCount = await prisma.booking.count({
     where: { slotId: input.slotId },
   });
   const queueNumber = existingCount + 1;
-  const queueSeqStr = String(queueNumber).padStart(3, "0");
-  const token = `${dayStr}${monthName}-${timePart}-${queueSeqStr}`;
-  const qrCodeData = `https://agrovia.gov.in/verify?tkn=${token}&slot=${slot.id}&farmer=${farmerUserId}`;
 
-  // 4. Create booking and decrement available slot
+  // 6. Create booking with PENDING status (Mandi Operator will accept/reject)
   const [booking] = await prisma.$transaction([
     prisma.booking.create({
       data: {
-        token,
+        token: `REQ-${Date.now().toString().slice(-6)}`,
         queueNumber,
         farmerId: farmerUserId,
         mandiProfileId: input.mandiProfileId,
         slotId: input.slotId,
-        crop: input.crop,
-        variety: input.variety,
-        quantityQuintals: input.quantityQuintals,
-        vehicleNumber: input.vehicleNumber,
-        qrCodeData,
-        notes: input.notes,
-        status: BookingStatus.ACCEPTED,
+        crop: primaryCrop,
+        variety: input.variety || "Grade-A Crops",
+        cropsList: (input.cropsList as any) || null,
+        quantityKg: totalKg,
+        quantityQuintals: finalQuintals,
+        estimatedPayout: estimatedPayout > 0 ? estimatedPayout : null,
+        vehicleNumber: input.vehicleNumber || null,
+        qrCodeData: null,
+        notes: input.notes || null,
+        status: BookingStatus.PENDING,
       },
       include: {
         mandiProfile: true,
@@ -380,7 +465,8 @@ export async function createFarmerBooking(
       data: {
         bookedFarmers: { increment: 1 },
         availableBookings: { decrement: 1 },
-        bookedCapacityQuintals: { increment: input.quantityQuintals },
+        bookedCapacityQuintals: { increment: finalQuintals },
+        bookedCapacityKg: { increment: totalKg },
       },
     }),
   ]);
@@ -401,3 +487,4 @@ export async function getFarmerBookings(farmerUserId: string): Promise<any[]> {
     orderBy: { createdAt: "desc" },
   });
 }
+

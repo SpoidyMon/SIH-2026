@@ -87,6 +87,11 @@ export const mandiApi = {
     return response.data;
   },
 
+  closeMandiDate: async (payload: { date: string; reason?: string }): Promise<ApiResponse<{ message: string; cancelledBookingsCount: number; deactivatedSlotsCount: number }>> => {
+    const response = await apiClient.post<ApiResponse<{ message: string; cancelledBookingsCount: number; deactivatedSlotsCount: number }>>("/mandi/calendar/close-date", payload);
+    return response.data;
+  },
+
   // 4. Live Bookings Pipeline & Gate Pass Verification
   getCurrentBookings: async (params?: { status?: string; date?: string; crop?: string; search?: string }): Promise<ApiResponse<{ bookings: Booking[] }>> => {
     const response = await apiClient.get<ApiResponse<{ bookings: Booking[] }>>("/mandi/bookings/current", { params });
@@ -98,8 +103,9 @@ export const mandiApi = {
     return response.data;
   },
 
-  updateBookingStatus: async (id: string, status: "ACCEPTED" | "REJECTED" | "ARRIVED" | "CANCELLED"): Promise<ApiResponse<{ booking: Booking }>> => {
-    const response = await apiClient.patch<ApiResponse<{ booking: Booking }>>(`/mandi/bookings/${id}/status`, { status });
+  updateBookingStatus: async (id: string, payload: { status: "ACCEPTED" | "REJECTED" | "ARRIVED" | "CANCELLED"; rejectionReason?: string } | "ACCEPTED" | "REJECTED" | "ARRIVED" | "CANCELLED"): Promise<ApiResponse<{ booking: Booking }>> => {
+    const body = typeof payload === "string" ? { status: payload } : payload;
+    const response = await apiClient.patch<ApiResponse<{ booking: Booking }>>(`/mandi/bookings/${id}/status`, body);
     return response.data;
   },
 
