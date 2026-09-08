@@ -520,8 +520,8 @@ async function main() {
     });
 
     // 2.3 Upsert Active Mandi Auction Slots for today and upcoming days
-    const todayStr = new Date().toISOString().split('T')[0];
-    const tomorrowStr = new Date(Date.now() + 86400000).toISOString().split('T')[0];
+    const todayStr: string = new Date().toISOString().split('T')[0] || '2026-09-09';
+    const tomorrowStr: string = new Date(Date.now() + 86400000).toISOString().split('T')[0] || '2026-09-10';
 
     const slotData = [
       {
@@ -570,7 +570,7 @@ async function main() {
           data: {
             mandiProfileId: mandiProfile.id,
             crop: slot.crop,
-            date: slot.date,
+            date: slot.date || todayStr,
             startTime: slot.startTime,
             endTime: slot.endTime,
             totalCapacityQuintals: slot.totalCapacityQuintals,

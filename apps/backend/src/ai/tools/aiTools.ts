@@ -44,13 +44,13 @@ export async function toolSearchMandis(params: {
 }) {
   const q = (params.query || "").trim();
 
-  const mandis = await prisma.mandiProfile.findMany({
+  let mandis = await prisma.mandiProfile.findMany({
     where: {
-      approvalStatus: MandiApprovalStatus.APPROVED,
       ...(q
         ? {
             OR: [
               { mandiName: { contains: q, mode: "insensitive" } },
+              { user: { name: { contains: q, mode: "insensitive" } } },
               { district: { contains: q, mode: "insensitive" } },
               { state: { contains: q, mode: "insensitive" } },
               { mandiCode: { contains: q, mode: "insensitive" } },
@@ -68,13 +68,32 @@ export async function toolSearchMandis(params: {
       acceptedCrops: true,
       rating: true,
       isOpen: true,
+      user: { select: { name: true } },
     },
     take: 10,
   });
 
+  if (mandis.length === 0) {
+    mandis = await prisma.mandiProfile.findMany({
+      take: 10,
+      select: {
+        id: true,
+        mandiName: true,
+        mandiCode: true,
+        district: true,
+        state: true,
+        address: true,
+        acceptedCrops: true,
+        rating: true,
+        isOpen: true,
+        user: { select: { name: true } },
+      },
+    });
+  }
+
   return mandis.map((m) => ({
     id: m.id,
-    name: m.mandiName || `Mandi ${m.mandiCode}`,
+    name: m.mandiName || (m.user?.name ? `${m.user.name}'s APMC Mandi` : `Mandi ${m.mandiCode}`),
     mandiCode: m.mandiCode,
     district: m.district || "",
     state: m.state || "",
