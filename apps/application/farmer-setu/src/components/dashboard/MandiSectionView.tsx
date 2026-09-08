@@ -9,18 +9,20 @@ import {
   Alert,
   ActivityIndicator,
   Modal,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { ThemeColors } from '@/constants/theme';
 import { MandiFilterModal } from './MandiFilterModal';
 import { MandiMapViewModal } from './MandiMapViewModal';
 import { ProfileCompletionModal } from './ProfileCompletionModal';
+import { SlotBookingModal } from './SlotBookingModal';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { translateMandiName, translateCropName } from '@/constants/translations';
 import { useUserLocation } from '@/hooks/useUserLocation';
 import { getApprovedMandisApi, createFarmerBookingApi } from '@/services/farmer.service';
-import { getNearbyMandisForUser, calculateDistanceKm, formatDistance } from '@/utils/location.utils';
+import { calculateDistanceKm, formatDistance } from '@/utils/location.utils';
 import type { MandiItem, MandiFilterCriteria } from '@/interfaces';
 
 const ITEMS_PER_PAGE = 4;
@@ -46,6 +48,8 @@ export const MandiSectionView = memo(function MandiSectionView() {
   const [mapModalVisible, setMapModalVisible] = useState(false);
   const [profileModalVisible, setProfileModalVisible] = useState(false);
   const [infoModalMandi, setInfoModalMandi] = useState<MandiItem | null>(null);
+  const [bookingModalMandi, setBookingModalMandi] = useState<MandiItem | null>(null);
+  const [isBookingModalVisible, setIsBookingModalVisible] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [dbMandis, setDbMandis] = useState<MandiItem[]>([]);
   const [isLoadingMandis, setIsLoadingMandis] = useState<boolean>(true);
@@ -74,12 +78,12 @@ export const MandiSectionView = memo(function MandiSectionView() {
           setDbMandis(formatted);
         } else {
           if (isMounted) {
-            setDbMandis(getNearbyMandisForUser(userCoords));
+            setDbMandis([]);
           }
         }
       } catch {
         if (isMounted) {
-          setDbMandis(getNearbyMandisForUser(userCoords));
+          setDbMandis([]);
         }
       } finally {
         if (isMounted) {
@@ -98,7 +102,7 @@ export const MandiSectionView = memo(function MandiSectionView() {
   // Recalculate distances dynamically
   const dynamicMandis = useMemo(() => {
     if (dbMandis.length === 0) {
-      return getNearbyMandisForUser(userCoords);
+      return [];
     }
     return dbMandis.map((m) => {
       const distance = calculateDistanceKm(
@@ -181,48 +185,11 @@ export const MandiSectionView = memo(function MandiSectionView() {
         return;
       }
 
-      // 2. If profile is complete, create gate pass booking
-      const firstSlot = mandi.slots?.[0];
-      const slotId = firstSlot?.id || 'default-slot-1';
-
-      if (token) {
-        try {
-          const res = await createFarmerBookingApi(token, {
-            mandiProfileId: mandi.id,
-            slotId,
-            crop: mandi.acceptedCrops?.[0] || mandi.topCrop.split(',')[0].trim(),
-            quantityQuintals: 25,
-            vehicleNumber: 'MH 14 TR 4821',
-          });
-
-          if (res.success && res.data) {
-            Alert.alert(
-              t('mandi.booking_success_title'),
-              t('mandi.booking_success_msg', {
-                mandi: translateMandiName(mandi.name, language),
-                token: res.data.booking.token,
-                crop: translateCropName(mandi.acceptedCrops?.[0] || 'Produce', language),
-                qty: 25,
-              }),
-              [{ text: t('general.ok') }]
-            );
-            return;
-          }
-        } catch {}
-      }
-
-      Alert.alert(
-        t('mandi.booking_success_title'),
-        t('mandi.booking_success_msg', {
-          mandi: translateMandiName(mandi.name, language),
-          token: `TKN-${Math.floor(1000 + Math.random() * 9000)}`,
-          crop: translateCropName(mandi.acceptedCrops?.[0] || 'Produce', language),
-          qty: 25,
-        }),
-        [{ text: t('general.ok') }]
-      );
+      // 2. Open interactive slot booking modal
+      setBookingModalMandi(mandi);
+      setIsBookingModalVisible(true);
     },
-    [isProfileComplete, token, language, t]
+    [isProfileComplete, t]
   );
 
   const hasActiveFilters =
@@ -364,7 +331,12 @@ export const MandiSectionView = memo(function MandiSectionView() {
                       <Ionicons name="storefront" size={18} color={ThemeColors.primary} />
                     </View>
                     <View style={styles.nameContainer}>
-                      <Text style={styles.mandiName}>{translateMandiName(mandi.name, language)}</Text>
+                      <View style={styles.mandiNameRow}>
+                        <Text style={styles.mandiName}>{translateMandiName(mandi.name, language)}</Text>
+                        <View style={styles.mandiCodePill}>
+                          <Text style={styles.mandiCodePillText}>{mandi.mandiCode || 'MAN001'}</Text>
+                        </View>
+                      </View>
                       <Text style={styles.mandiDistrict}>
                         {mandi.district} • {formatDistance(mandi.distanceKm)} {t('mandi.away')}
                       </Text>
@@ -498,6 +470,17 @@ export const MandiSectionView = memo(function MandiSectionView() {
         onClose={() => setProfileModalVisible(false)}
         onSuccess={() => {
           setProfileModalVisible(false);
+        }}
+      />
+
+      {/* Interactive Slot Booking & Pass Generation Modal */}
+      <SlotBookingModal
+        visible={isBookingModalVisible}
+        mandi={bookingModalMandi}
+        token={token || undefined}
+        onClose={() => {
+          setIsBookingModalVisible(false);
+          setBookingModalMandi(null);
         }}
       />
 
@@ -774,6 +757,26 @@ const styles = StyleSheet.create({
   },
   nameContainer: {
     flex: 1,
+  },
+  mandiNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    flexWrap: 'wrap',
+  },
+  mandiCodePill: {
+    backgroundColor: '#DCFCE7',
+    paddingHorizontal: 6,
+    paddingVertical: 1.5,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#86EFAC',
+  },
+  mandiCodePillText: {
+    fontSize: 9,
+    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+    fontWeight: '800',
+    color: '#15803D',
   },
   mandiName: {
     fontSize: 15,

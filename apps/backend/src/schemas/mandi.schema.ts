@@ -37,6 +37,15 @@ export const adminApprovalSchema = z.object({
 // Slot Schemas
 export const createSlotSchema = z.object({
   crop: z.string().min(2, "Crop name must be at least 2 characters").max(100),
+  allowedCrops: z
+    .array(
+      z.object({
+        crop: z.string().min(1),
+        quantityQuintals: z.number().nonnegative().optional(),
+        isFixed: z.boolean().optional(),
+      })
+    )
+    .optional(),
   date: z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be in YYYY-MM-DD format"),
@@ -70,6 +79,15 @@ export const createSlotSchema = z.object({
 
 export const updateSlotSchema = z.object({
   crop: z.string().min(2).max(100).optional(),
+  allowedCrops: z
+    .array(
+      z.object({
+        crop: z.string().min(1),
+        quantityQuintals: z.number().nonnegative().optional(),
+        isFixed: z.boolean().optional(),
+      })
+    )
+    .optional(),
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
   startTime: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/).optional(),
   endTime: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/).optional(),
@@ -135,10 +153,27 @@ export const bookingQuerySchema = z.object({
 export const updateMandiProfileSchema = z.object({
   mandiName: z.string().min(2).max(150).optional(),
   address: z.string().max(300).optional(),
+  pincode: z.string().max(20).optional(),
   district: z.string().max(100).optional(),
   state: z.string().max(100).optional(),
   operatingHours: z.string().max(100).optional(),
+  closedDays: z.array(z.string()).optional(),
+  closedHours: z.string().max(100).optional(),
   apmcCode: z.string().max(50).optional(),
+  latitude: z.number().min(-90).max(90).optional(),
+  longitude: z.number().min(-180).max(180).optional(),
+});
+
+export const updateMandiLocationSchema = z.object({
+  address: z.string().min(5, "Address must be at least 5 characters"),
+  pincode: z.string().min(4, "Pincode is required"),
+  latitude: z.number().min(-90).max(90),
+  longitude: z.number().min(-180).max(180),
+  district: z.string().optional(),
+  state: z.string().optional(),
+  operatingHours: z.string().optional(),
+  closedDays: z.array(z.string()).optional(),
+  closedHours: z.string().optional(),
 });
 
 export const aadhaarKycSchema = z.object({

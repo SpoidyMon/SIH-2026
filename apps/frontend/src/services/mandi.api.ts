@@ -82,8 +82,13 @@ export const mandiApi = {
     return response.data;
   },
 
+  batchCreateSlots: async (payload: { slots: CreateSlotPayload[]; closedDays?: string[]; closedHours?: string; operatingHours?: string }): Promise<ApiResponse<{ slots: MandiSlot[]; message: string }>> => {
+    const response = await apiClient.post<ApiResponse<{ slots: MandiSlot[]; message: string }>>("/mandi/slots/batch", payload);
+    return response.data;
+  },
+
   // 4. Live Bookings Pipeline & Gate Pass Verification
-  getCurrentBookings: async (params?: { status?: string; date?: string; crop?: string }): Promise<ApiResponse<{ bookings: Booking[] }>> => {
+  getCurrentBookings: async (params?: { status?: string; date?: string; crop?: string; search?: string }): Promise<ApiResponse<{ bookings: Booking[] }>> => {
     const response = await apiClient.get<ApiResponse<{ bookings: Booking[] }>>("/mandi/bookings/current", { params });
     return response.data;
   },
@@ -98,8 +103,9 @@ export const mandiApi = {
     return response.data;
   },
 
-  verifyGateToken: async (qrTokenOrCode: string): Promise<ApiResponse<{ booking: Booking; message: string }>> => {
-    const response = await apiClient.post<ApiResponse<{ booking: Booking; message: string }>>("/mandi/bookings/verify", {
+  verifyGateToken: async (qrTokenOrCode: string): Promise<ApiResponse<{ booking: Booking; message: string; isOutOfOrder?: boolean; nextInQueueToken?: string; warningMessage?: string | null }>> => {
+    const response = await apiClient.post<ApiResponse<{ booking: Booking; message: string; isOutOfOrder?: boolean; nextInQueueToken?: string; warningMessage?: string | null }>>("/mandi/bookings/verify", {
+      token: qrTokenOrCode,
       qrToken: qrTokenOrCode,
     });
     return response.data;
@@ -109,4 +115,28 @@ export const mandiApi = {
     const response = await apiClient.patch<ApiResponse<{ booking: Booking; message: string }>>(`/mandi/bookings/${id}/complete`, payload);
     return response.data;
   },
+
+  // 5. Yard Coordinates & Location Marking
+  updateLocation: async (payload: { address: string; pincode: string; latitude: number; longitude: number; district?: string; state?: string; operatingHours?: string; closedDays?: string[]; closedHours?: string }): Promise<ApiResponse<{ profile: MandiProfile }>> => {
+    const response = await apiClient.post<ApiResponse<{ profile: MandiProfile }>>("/mandi/location", payload);
+    return response.data;
+  },
+
+  // 6. Farmer Inspection Details
+  getFarmerDetails: async (farmerId: string): Promise<ApiResponse<{ farmer: any }>> => {
+    const response = await apiClient.get<ApiResponse<{ farmer: any }>>(`/mandi/farmers/${farmerId}/details`);
+    return response.data;
+  },
+
+  getFarmers: async (): Promise<ApiResponse<{ farmers: any[] }>> => {
+    const response = await apiClient.get<ApiResponse<{ farmers: any[] }>>("/mandi/farmers");
+    return response.data;
+  },
+
+  // 7. Commodities
+  getCommodities: async (): Promise<ApiResponse<{ commodities: Array<{ id: string; name: string; category?: string }> }>> => {
+    const response = await apiClient.get<ApiResponse<{ commodities: Array<{ id: string; name: string; category?: string }> }>>("/mandi/commodities");
+    return response.data;
+  },
 };
+

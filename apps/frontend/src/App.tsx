@@ -11,6 +11,8 @@ import { MandiHistoryView } from "./components/history/MandiHistoryView";
 import { MandiSettingsView } from "./components/settings/MandiSettingsView";
 import { MandiRatingView } from "./components/rating/MandiRatingView";
 import { MandiVerificationStatusView } from "./components/verification/MandiVerificationStatusView";
+import { MandiFarmersView } from "./components/farmers/MandiFarmersView";
+import { MandiBookingsView } from "./components/bookings/MandiBookingsView";
 import { RefreshCw } from "lucide-react";
 
 export function App() {

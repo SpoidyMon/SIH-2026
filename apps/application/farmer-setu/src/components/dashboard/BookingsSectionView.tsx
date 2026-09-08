@@ -7,6 +7,9 @@ import {
   Pressable,
   TextInput,
   Alert,
+  Modal,
+  Image,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { ThemeColors } from '@/constants/theme';
@@ -18,89 +21,6 @@ import { getFarmerBookingsApi } from '@/services/farmer.service';
 import type { BookingItem, BookingStatus, BookingsFilterCriteria } from '@/interfaces';
 
 const ITEMS_PER_PAGE = 3;
-
-const STATIC_ALL_BOOKINGS: BookingItem[] = [
-  {
-    id: 'b-1',
-    bookingCode: 'BK-9402',
-    cropName: 'Onion',
-    cropVariety: 'Nashik Red A-Grade',
-    mandiName: 'Morwadi APMC Sub-Yard',
-    gateNo: 'Gate 3',
-    dateString: '08/09/2026',
-    timeSlot: '08:30 AM – 10:00 AM',
-    status: 'in_progress',
-    statusLabel: 'In Progress',
-    progressPercent: 65,
-    progressLabel: 'Grading & Quality Assay',
-    inspectorName: 'Assayer R. Patil',
-    quantityQuintals: 240,
-  },
-  {
-    id: 'b-2',
-    bookingCode: 'BK-8821',
-    cropName: 'Soybean',
-    cropVariety: 'JS-335 Organic',
-    mandiName: 'Gultekdi Pune APMC Main Yard',
-    gateNo: 'Gate 1',
-    dateString: '12/09/2026',
-    timeSlot: '10:30 AM – 12:00 PM',
-    status: 'confirmed',
-    statusLabel: 'Confirmed',
-    progressPercent: 20,
-    progressLabel: 'QR Pass Issued',
-    inspectorName: 'Officer Deshmukh',
-    quantityQuintals: 160,
-  },
-  {
-    id: 'b-3',
-    bookingCode: 'BK-7612',
-    cropName: 'Wheat',
-    cropVariety: 'Sharbati Premium',
-    mandiName: 'Pimpri Central Market Yard',
-    gateNo: 'Gate 2',
-    dateString: '15/09/2026',
-    timeSlot: '02:00 PM – 03:30 PM',
-    status: 'confirmed',
-    statusLabel: 'Confirmed',
-    progressPercent: 10,
-    progressLabel: 'Slot Confirmed',
-    inspectorName: 'Inspector Shinde',
-    quantityQuintals: 300,
-  },
-  {
-    id: 'b-4',
-    bookingCode: 'BK-6504',
-    cropName: 'Cotton',
-    cropVariety: 'Long Staple BT',
-    mandiName: 'Chakan Onion Hub',
-    gateNo: 'Gate 4',
-    dateString: '02/09/2026',
-    timeSlot: '09:00 AM – 11:00 AM',
-    status: 'completed',
-    statusLabel: 'Completed',
-    progressPercent: 100,
-    progressLabel: 'Auction & Payout Settled',
-    inspectorName: 'Officer Kale',
-    quantityQuintals: 420,
-  },
-  {
-    id: 'b-5',
-    bookingCode: 'BK-5520',
-    cropName: 'Maize',
-    cropVariety: 'Yellow Hybrid',
-    mandiName: 'Bhosari Krishi Utpanna Yard',
-    gateNo: 'Gate 1',
-    dateString: '18/09/2026',
-    timeSlot: '11:30 AM – 01:00 PM',
-    status: 'confirmed',
-    statusLabel: 'Confirmed',
-    progressPercent: 15,
-    progressLabel: 'Gate Token Generated',
-    inspectorName: 'Officer Pawar',
-    quantityQuintals: 190,
-  },
-];
 
 const INITIAL_BOOKING_CRITERIA: BookingsFilterCriteria = {
   searchQuery: '',
@@ -118,6 +38,7 @@ export const BookingsSectionView = memo(function BookingsSectionView() {
   const [filterModalVisible, setFilterModalVisible] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [liveBookings, setLiveBookings] = useState<BookingItem[]>([]);
+  const [selectedPassBooking, setSelectedPassBooking] = useState<BookingItem | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
   const getStatusBadge = (status: BookingStatus) => {
@@ -161,11 +82,15 @@ export const BookingsSectionView = memo(function BookingsSectionView() {
           const mapped: BookingItem[] = res.data.bookings.map((b: any) => ({
             id: b.id,
             bookingCode: b.token || `BK-${b.id.slice(0, 4)}`,
+            token: b.token,
+            queueNumber: b.queueNumber,
+            qrCodeData: b.qrCodeData,
             cropName: b.crop,
             cropVariety: b.variety || 'A-Grade',
             mandiName: b.mandiProfile?.mandiName || 'APMC Mandi',
+            mandiCode: b.mandiProfile?.mandiCode || 'MAN001',
             gateNo: 'Gate 1 (E-Weighbridge)',
-            dateString: b.slot?.date || new Date().toISOString().split('T')[0],
+            dateString: b.slot?.date || (b.createdAt ? b.createdAt.split('T')[0] : new Date().toISOString().split('T')[0]),
             timeSlot: b.slot ? `${b.slot.startTime} - ${b.slot.endTime}` : '08:00 AM - 11:00 AM',
             status:
               b.status === 'COMPLETED'
@@ -179,7 +104,8 @@ export const BookingsSectionView = memo(function BookingsSectionView() {
             progressPercent: b.status === 'COMPLETED' ? 100 : b.status === 'VERIFIED' ? 65 : 25,
             progressLabel: b.status === 'COMPLETED' ? 'Auction Settled' : b.status === 'VERIFIED' ? 'Assay in Progress' : 'Gate Pass Issued',
             inspectorName: 'APMC Officer',
-            quantityQuintals: b.quantityQuintals,
+            quantityQuintals: b.quantityQuintals || 10,
+            vehicleNumber: b.vehicleNumber,
           }));
           setLiveBookings(mapped);
         }
@@ -193,7 +119,7 @@ export const BookingsSectionView = memo(function BookingsSectionView() {
     return () => { isMounted = false; };
   }, [token]);
 
-  const allBookings = liveBookings.length > 0 ? liveBookings : STATIC_ALL_BOOKINGS;
+  const allBookings = liveBookings;
 
   const filteredBookings = useMemo(() => {
     return allBookings.filter((b) => {
@@ -246,11 +172,7 @@ export const BookingsSectionView = memo(function BookingsSectionView() {
   }, [filteredBookings, currentPage]);
 
   const handleShowQrPass = (booking: BookingItem) => {
-    Alert.alert(
-      'Mandi Gate Entry Pass',
-      `Booking #${booking.bookingCode}\nCrop: ${booking.cropName} (${booking.quantityQuintals} Qtl)\nSlot: ${booking.timeSlot}\nGate: ${booking.gateNo}\n\nPresent this pass at APMC Entry Toll.`,
-      [{ text: 'Close' }]
-    );
+    setSelectedPassBooking(booking);
   };
 
   const hasActiveFilters =
@@ -404,7 +326,16 @@ export const BookingsSectionView = memo(function BookingsSectionView() {
                       {statusStyle.label}
                     </Text>
                   </View>
-                  <Text style={styles.cardCode}>#{b.bookingCode}</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    {b.queueNumber ? (
+                      <View style={styles.cardQueueBadge}>
+                        <Text style={styles.cardQueueBadgeText}>
+                          Q#{String(b.queueNumber).padStart(3, '0')}
+                        </Text>
+                      </View>
+                    ) : null}
+                    <Text style={styles.cardCode}>{b.token || `#${b.bookingCode}`}</Text>
+                  </View>
                 </View>
 
                 <Text style={styles.cardCropTitle}>
@@ -493,6 +424,104 @@ export const BookingsSectionView = memo(function BookingsSectionView() {
           setCurrentPage(1);
         }}
       />
+
+      {/* Digital QR Gate Pass Modal */}
+      {selectedPassBooking ? (
+        <Modal
+          visible={Boolean(selectedPassBooking)}
+          transparent={true}
+          animationType="fade"
+          onRequestClose={() => setSelectedPassBooking(null)}>
+          <View style={styles.passModalOverlay}>
+            <View style={styles.passModalCard}>
+              <View style={styles.passModalHeader}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.passModalTitle}>
+                    {translateMandiName(selectedPassBooking.mandiName, language)}
+                  </Text>
+                  <Text style={styles.passModalSub}>
+                    APMC ID: {selectedPassBooking.mandiCode || 'MAN001'} • {selectedPassBooking.gateNo}
+                  </Text>
+                </View>
+                <Pressable
+                  onPress={() => setSelectedPassBooking(null)}
+                  style={styles.passCloseBtn}>
+                  <Ionicons name="close" size={20} color="#6B7280" />
+                </Pressable>
+              </View>
+
+              <ScrollView style={{ paddingHorizontal: 16 }} showsVerticalScrollIndicator={false}>
+                {/* Queue & Token Box */}
+                <View style={styles.passTokenBox}>
+                  <View style={styles.passQueuePill}>
+                    <Text style={styles.passQueuePillText}>
+                      QUEUE #{String(selectedPassBooking.queueNumber ?? 1).padStart(3, '0')}
+                    </Text>
+                  </View>
+                  <Text style={styles.passTokenLabel}>GATE PASS TOKEN</Text>
+                  <Text style={styles.passTokenValue}>
+                    {selectedPassBooking.token || selectedPassBooking.bookingCode}
+                  </Text>
+                </View>
+
+                {/* QR Code Image */}
+                <View style={styles.passQrBox}>
+                  <Image
+                    source={{
+                      uri: `https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(
+                        selectedPassBooking.token || selectedPassBooking.bookingCode
+                      )}`,
+                    }}
+                    style={styles.passQrImg}
+                    resizeMode="contain"
+                  />
+                  <Text style={styles.passQrHint}>
+                    Present this QR barcode to APMC operator gate scanner
+                  </Text>
+                </View>
+
+                {/* Meta details */}
+                <View style={styles.passDetailsCard}>
+                  <View style={styles.passDetailRow}>
+                    <Text style={styles.passDetailLabel}>Produce:</Text>
+                    <Text style={styles.passDetailValue}>
+                      {translateCropName(selectedPassBooking.cropName, language)} ({selectedPassBooking.cropVariety})
+                    </Text>
+                  </View>
+                  <View style={styles.passDetailRow}>
+                    <Text style={styles.passDetailLabel}>Quantity:</Text>
+                    <Text style={styles.passDetailValue}>
+                      {selectedPassBooking.quantityQuintals} Qtl ({(selectedPassBooking.quantityQuintals * 100).toLocaleString('en-IN')} KG)
+                    </Text>
+                  </View>
+                  <View style={styles.passDetailRow}>
+                    <Text style={styles.passDetailLabel}>Date & Time:</Text>
+                    <Text style={styles.passDetailValue}>
+                      {selectedPassBooking.dateString} • {selectedPassBooking.timeSlot}
+                    </Text>
+                  </View>
+                  {selectedPassBooking.vehicleNumber && (
+                    <View style={styles.passDetailRow}>
+                      <Text style={styles.passDetailLabel}>Vehicle:</Text>
+                      <Text style={[styles.passDetailValue, { fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace', color: '#059669' }]}>
+                        {selectedPassBooking.vehicleNumber}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+              </ScrollView>
+
+              <View style={styles.passModalFooter}>
+                <Pressable
+                  onPress={() => setSelectedPassBooking(null)}
+                  style={styles.passDismissBtn}>
+                  <Text style={styles.passDismissBtnText}>Done</Text>
+                </Pressable>
+              </View>
+            </View>
+          </View>
+        </Modal>
+      ) : null}
     </ScrollView>
   );
 });
@@ -768,5 +797,167 @@ const styles = StyleSheet.create({
   pressed: {
     opacity: 0.8,
     transform: [{ scale: 0.96 }],
+  },
+  cardQueueBadge: {
+    backgroundColor: '#FEF3C7',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#FCD34D',
+  },
+  cardQueueBadgeText: {
+    fontSize: 10,
+    fontWeight: '900',
+    color: '#B45309',
+    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+  },
+
+  // Digital QR Pass Modal Styles
+  passModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.55)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  passModalCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    width: '100%',
+    maxWidth: 420,
+    maxHeight: '85%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.15,
+    shadowRadius: 14,
+    elevation: 12,
+    overflow: 'hidden',
+  },
+  passModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    paddingHorizontal: 20,
+    paddingTop: 18,
+    paddingBottom: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  passModalTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#111827',
+  },
+  passModalSub: {
+    fontSize: 11,
+    color: '#6B7280',
+    marginTop: 2,
+  },
+  passCloseBtn: {
+    padding: 6,
+    borderRadius: 20,
+    backgroundColor: '#F3F4F6',
+  },
+  passTokenBox: {
+    backgroundColor: '#F0FDF4',
+    borderWidth: 1.5,
+    borderColor: '#16A34A',
+    borderRadius: 14,
+    paddingVertical: 14,
+    alignItems: 'center',
+    marginTop: 16,
+    gap: 2,
+  },
+  passQueuePill: {
+    backgroundColor: '#FEF3C7',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#FCD34D',
+    marginBottom: 4,
+  },
+  passQueuePillText: {
+    fontSize: 11,
+    fontWeight: '900',
+    color: '#B45309',
+    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+    letterSpacing: 0.5,
+  },
+  passTokenLabel: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#15803D',
+    letterSpacing: 1,
+  },
+  passTokenValue: {
+    fontSize: 22,
+    fontWeight: '900',
+    color: '#111827',
+    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+    letterSpacing: 1.5,
+  },
+  passQrBox: {
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#F9FAFB',
+    padding: 14,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    marginVertical: 12,
+  },
+  passQrImg: {
+    width: 170,
+    height: 170,
+  },
+  passQrHint: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#6B7280',
+    textAlign: 'center',
+  },
+  passDetailsCard: {
+    gap: 8,
+    backgroundColor: '#F9FAFB',
+    padding: 14,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    marginBottom: 16,
+  },
+  passDetailRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  passDetailLabel: {
+    fontSize: 11,
+    color: '#6B7280',
+    fontWeight: '600',
+  },
+  passDetailValue: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#111827',
+  },
+  passModalFooter: {
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    borderTopWidth: 1,
+    borderTopColor: '#F3F4F6',
+    backgroundColor: '#FFFFFF',
+  },
+  passDismissBtn: {
+    backgroundColor: '#16A34A',
+    paddingVertical: 12,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  passDismissBtnText: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#FFFFFF',
   },
 });

@@ -20,11 +20,18 @@ export interface MandiProfileDto {
   id: string;
   userId: string;
   mandiName?: string | null;
+  mandiCode?: string | null;
   apmcCode?: string | null;
   address?: string | null;
+  pincode?: string | null;
   district?: string | null;
   state?: string | null;
   operatingHours?: string | null;
+  closedDays?: string[];
+  closedHours?: string | null;
+  isLocationSet?: boolean;
+  latitude?: number | null;
+  longitude?: number | null;
   aadhaarNumber?: string | null;
   aadhaarVerified: boolean;
   aadhaarDocUrl?: string | null;
@@ -42,9 +49,14 @@ export interface MandiOnboardingInput {
   mandiName: string;
   apmcCode: string;
   address: string;
+  pincode?: string;
   district: string;
   state: string;
+  latitude?: number;
+  longitude?: number;
   operatingHours?: string;
+  closedDays?: string[];
+  closedHours?: string;
   aadhaarNumber: string;
   aadhaarDocUrl?: string;
   legalDocs?: {
@@ -62,10 +74,51 @@ export interface AdminApprovalInput {
 export interface UpdateMandiProfileInput {
   mandiName?: string;
   address?: string;
+  pincode?: string;
   district?: string;
   state?: string;
   operatingHours?: string;
+  closedDays?: string[];
+  closedHours?: string;
   apmcCode?: string;
+  latitude?: number;
+  longitude?: number;
+}
+
+export interface UpdateMandiLocationInput {
+  address: string;
+  pincode: string;
+  latitude: number;
+  longitude: number;
+  district?: string;
+  state?: string;
+  operatingHours?: string;
+  closedDays?: string[];
+  closedHours?: string;
+}
+
+export interface FarmerDetailsForMandi {
+  id: string;
+  name: string;
+  email: string;
+  phone?: string | null;
+  farmerCode?: string | null;
+  dob?: string | null;
+  address?: string | null;
+  idType?: string | null;
+  idNumber?: string | null;
+  village?: string | null;
+  taluka?: string | null;
+  district?: string | null;
+  state?: string | null;
+  pincode?: string | null;
+  landSizeAcres?: number | null;
+  mainCrops?: string[];
+  secondaryCrops?: string[];
+  irrigationType?: string | null;
+  avatarUrl?: string | null;
+  totalBookingsCount: number;
+  verifiedBookingsCount: number;
 }
 
 export interface AadhaarKycInput {
@@ -80,8 +133,15 @@ export interface LegalDocUploadInput {
 }
 
 // Mandi Slot DTOs & Models
+export interface SlotCropItem {
+  crop: string;
+  quantityQuintals?: number;
+  isFixed?: boolean;
+}
+
 export interface CreateSlotInput {
   crop: string;
+  allowedCrops?: SlotCropItem[];
   date: string; // YYYY-MM-DD
   startTime: string; // HH:mm
   endTime: string; // HH:mm
@@ -93,6 +153,7 @@ export interface CreateSlotInput {
 
 export interface UpdateSlotInput {
   crop?: string;
+  allowedCrops?: SlotCropItem[];
   date?: string;
   startTime?: string;
   endTime?: string;
@@ -113,6 +174,7 @@ export interface MandiSlotDto {
   id: string;
   mandiProfileId: string;
   crop: string;
+  allowedCrops?: SlotCropItem[] | null;
   date: string;
   startTime: string;
   endTime: string;

@@ -1,5 +1,5 @@
 import React, { memo } from 'react';
-import { View, Text, StyleSheet, Pressable } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { ThemeColors } from '@/constants/theme';
 import { useLanguage } from '@/context/LanguageContext';
@@ -103,7 +103,14 @@ export const RecentBookingsList = memo(function RecentBookingsList({
                       {statusStyle.label}
                     </Text>
                   </View>
-                  <Text style={styles.codeText}>#{booking.bookingCode}</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    {booking.queueNumber ? (
+                      <View style={styles.queueBadge}>
+                        <Text style={styles.queueBadgeText}>Q#{String(booking.queueNumber).padStart(3, '0')}</Text>
+                      </View>
+                    ) : null}
+                    <Text style={styles.codeText}>{booking.token || `#${booking.bookingCode}`}</Text>
+                  </View>
                 </View>
 
                 {/* Crop & Mandi info */}
@@ -259,6 +266,20 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
     color: ThemeColors.textMuted,
+  },
+  queueBadge: {
+    backgroundColor: '#FEF3C7',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#FCD34D',
+  },
+  queueBadgeText: {
+    fontSize: 10,
+    fontWeight: '900',
+    color: '#B45309',
+    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
   },
   cropTitle: {
     fontSize: 16,

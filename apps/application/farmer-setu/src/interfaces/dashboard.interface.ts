@@ -23,9 +23,13 @@ export type BookingStatus = 'in_progress' | 'confirmed' | 'completed' | 'cancell
 export interface BookingItem {
   id: string;
   bookingCode: string;
+  token?: string;
+  queueNumber?: number;
+  qrCodeData?: string;
   cropName: string;
   cropVariety: string;
   mandiName: string;
+  mandiCode?: string;
   gateNo: string;
   dateString: string;
   timeSlot: string;
@@ -37,6 +41,7 @@ export interface BookingItem {
   inspectorAvatar?: string;
   quantityQuintals: number;
   commentsCount?: number;
+  vehicleNumber?: string;
 }
 
 export interface SuggestionItem {
@@ -51,6 +56,8 @@ export interface SuggestionItem {
 export interface MandiItem {
   id: string;
   name: string;
+  mandiCode?: string;
+  apmcCode?: string;
   district: string;
   distanceKm: number;
   topCrop: string;
@@ -66,6 +73,7 @@ export interface MandiItem {
   operatingHours?: string;
   activeFarmersCount: number;
   address?: string;
+  pincode?: string;
   contactPhone?: string;
   slots?: MandiSlotData[];
 }
