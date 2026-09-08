@@ -18,7 +18,7 @@ const envSchema = z.object({
   IMAGEKIT_PRIVATE_KEY: z.string().default("private_UqO8ObeEL9BH77qUnJNEXyx9f4U="),
   IMAGEKIT_URL_ENDPOINT: z.string().default("https://ik.imagekit.io/frbjdpcvl"),
   GROQ_API_KEY: z.string().optional().default(""),
-  GROQ_MODEL: z.string().default("llama-3.3-70b-versatile"),
+  GROQ_MODEL: z.string().default("qwen/qwen3.8-27b"),
   GROQ_TRANSCRIPTION_MODEL: z.string().default("whisper-large-v3-turbo"),
 });
 
