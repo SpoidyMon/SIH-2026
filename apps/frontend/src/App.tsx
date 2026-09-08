@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { Routes, Route, Navigate } from "react-router";
+import { Routes, Route, Navigate } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from "./store";
 import { checkAuthSessionThunk } from "./store/slices/authSlice";
 import { AuthPage } from "./components/auth/AuthPage";
