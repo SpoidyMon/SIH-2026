@@ -28,7 +28,7 @@ export function RegisterStep3Slots({
   onCompleteOnboarding,
 }: RegisterStep3SlotsProps) {
   const dispatch = useAppDispatch();
-  const { isLoading } = useAppSelector((state) => state.auth);
+  const { isLoading: isActionLoading } = useAppSelector((state) => state.auth);
 
   const [activeDays, setActiveDays] = useState<Record<DayOfWeek, boolean>>({
     Monday: true,
