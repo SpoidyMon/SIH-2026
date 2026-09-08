@@ -4,7 +4,7 @@ import { ShieldCheck, Mail, KeyRound, CheckCircle2, Sprout } from "lucide-react"
 import { LoginForm } from "./LoginForm";
 import { MandiRegisterWizard } from "./MandiRegisterWizard";
 import { authApi } from "../../services/auth.api";
-import { useAppDispatch } from "../../store";
+import { useAppDispatch, useAppSelector } from "../../store";
 import { completeOnboarding, cancelOnboarding } from "../../store/slices/authSlice";
 
 interface AuthPageProps {
