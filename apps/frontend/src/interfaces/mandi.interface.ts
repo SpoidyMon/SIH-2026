@@ -369,6 +369,7 @@ export interface VerifyTokenModalProps {
   onClose: () => void;
   onVerify: (token: string) => void;
   initialToken?: string;
+  targetBooking?: Booking | null;
 }
 
 export interface WeighbridgeSettlementModalProps {

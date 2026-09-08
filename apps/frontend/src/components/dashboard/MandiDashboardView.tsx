@@ -33,6 +33,7 @@ export function MandiDashboardView() {
 
   // Modals state
   const [showVerifyModal, setShowVerifyModal] = useState(false);
+  const [targetBookingForVerify, setTargetBookingForVerify] = useState<Booking | null>(null);
   const [selectedBookingForDetails, setSelectedBookingForDetails] = useState<Booking | null>(null);
   const [selectedBookingForWeighbridge, setSelectedBookingForWeighbridge] = useState<Booking | null>(null);
   const [selectedBookingForSlip, setSelectedBookingForSlip] = useState<Booking | null>(null);
@@ -82,6 +83,11 @@ export function MandiDashboardView() {
     dispatch(applyDefaultPresetsThunk());
   }, [dispatch]);
 
+  const handleOpenVerifyModal = useCallback((booking?: Booking | null) => {
+    setTargetBookingForVerify(booking || null);
+    setShowVerifyModal(true);
+  }, []);
+
   return (
     <div className="space-y-4 w-full max-w-[1700px] mx-auto font-sans px-1 sm:px-2">
       {/* Top Section: Memoized MandiOperationalPipeline with live metrics */}
@@ -104,15 +110,19 @@ export function MandiDashboardView() {
         onOpenWeighbridge={handleOpenWeighbridge}
         onViewSlip={setSelectedBookingForSlip}
         onViewDetails={setSelectedBookingForDetails}
-        onOpenVerifyModal={() => setShowVerifyModal(true)}
+        onOpenVerifyModal={handleOpenVerifyModal}
         onDefaultSlots={handleDefaultSlots}
       />
 
       {/* Modals */}
       <VerifyTokenModal
         isOpen={showVerifyModal}
-        onClose={() => setShowVerifyModal(false)}
+        onClose={() => {
+          setShowVerifyModal(false);
+          setTargetBookingForVerify(null);
+        }}
         onVerify={handleVerifyEntry}
+        targetBooking={targetBookingForVerify}
       />
 
       <BookingDetailsModal

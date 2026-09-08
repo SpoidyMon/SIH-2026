@@ -14,7 +14,7 @@ import {
   Lock,
 } from "lucide-react";
 import { WeighbridgeSettlementModalProps } from "../../../interfaces";
-import { extractTokenFromQrData } from "../../../utils/qr.util";
+import { parseQrPayload, isValidAgroviaToken } from "../../../utils/qr.util";
 
 type VerificationTab = "camera" | "manual";
 
@@ -69,24 +69,44 @@ export const WeighbridgeSettlementModal: React.FC<WeighbridgeSettlementModalProp
     }
   }, []);
 
-  // Validate scanned or entered token against this booking
+  // Validate scanned or entered token strictly against this booking and farmer
   const validateToken = useCallback(
     async (rawCode: string) => {
       if (!booking) return;
 
-      const cleanCode = extractTokenFromQrData(rawCode).trim().toUpperCase();
+      const payload = parseQrPayload(rawCode);
+      const cleanCode = payload.token.trim().toUpperCase();
+
+      if (!cleanCode) {
+        setVerificationError("Unreadable QR code. Please scan farmer's official gate pass.");
+        return;
+      }
+
+      if (!payload.isAgroviaCode && !isValidAgroviaToken(cleanCode)) {
+        setVerificationError("Invalid QR Code: Not a recognized Agrovia gate pass.");
+        return;
+      }
+
       const expectedToken = (booking.token || "").trim().toUpperCase();
       const expectedId = (booking.id || "").trim().toUpperCase();
 
-      if (cleanCode === expectedToken || cleanCode === expectedId) {
-        setVerificationError(null);
-        setIsVerified(true);
-        await stopCamera();
-      } else {
+      if (cleanCode !== expectedToken && cleanCode !== expectedId) {
         setVerificationError(
-          `Token mismatch! Scanned token "${cleanCode}" does not match this booking (${booking.token}). Please scan the correct farmer's QR.`
+          `Farmer Mismatch! Scanned token "${cleanCode}" does not match farmer ${booking.farmerName}'s token (${booking.token}). Only this farmer's QR code can authorize settlement.`
         );
+        return;
       }
+
+      if (payload.farmerId && booking.farmerId && payload.farmerId !== booking.farmerId) {
+        setVerificationError(
+          `Farmer Mismatch! This QR code belongs to another farmer and cannot settle this booking.`
+        );
+        return;
+      }
+
+      setVerificationError(null);
+      setIsVerified(true);
+      await stopCamera();
     },
     [booking, stopCamera]
   );

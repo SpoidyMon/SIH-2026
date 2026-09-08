@@ -22,7 +22,7 @@ interface ConsignmentBookingsTableProps {
   onOpenWeighbridge: (booking: Booking, isPreVerified?: boolean) => void;
   onViewSlip: (booking: Booking) => void;
   onViewDetails: (booking: Booking) => void;
-  onOpenVerifyModal: () => void;
+  onOpenVerifyModal: (booking?: Booking | null) => void;
   onDefaultSlots?: () => void;
 }
 
@@ -391,13 +391,13 @@ export const ConsignmentBookingsTable = React.memo(function ConsignmentBookingsT
                           )}
                           {b.status === "ACCEPTED" && (
                             <button
-                              onClick={() => onOpenWeighbridge(b, false)}
+                              onClick={() => onOpenVerifyModal(b)}
                               disabled={isActionLoading}
                               className="px-3.5 py-1 text-xs font-semibold rounded-full bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 flex items-center gap-1.5 transition cursor-pointer"
-                              title="Scan farmer QR code or enter token to settle consignment"
+                              title="Scan farmer QR code or enter token to verify gate arrival"
                             >
-                              <Scale className="w-3.5 h-3.5" />
-                              <span>Scan QR to Settle</span>
+                              <QrCode className="w-3.5 h-3.5" />
+                              <span>Verify Gate Pass</span>
                             </button>
                           )}
                           {b.status === "VERIFIED" && (

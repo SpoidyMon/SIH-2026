@@ -690,7 +690,7 @@ export const BookingsSectionView = memo(function BookingsSectionView() {
                       <Image
                         source={{
                           uri: `https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(
-                            selectedPassBooking.token || selectedPassBooking.bookingCode
+                            selectedPassBooking.qrCodeData || selectedPassBooking.token || selectedPassBooking.bookingCode
                           )}`,
                         }}
                         style={styles.passQrImg}

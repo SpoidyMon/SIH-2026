@@ -553,7 +553,11 @@ export async function updateBookingStatus(
  */
 export async function verifyBookingToken(userId: string, token: string) {
   const profile = await getOrCreateMandiProfile(userId);
-  const cleanToken = token.trim();
+  let cleanToken = token.trim();
+  const match = cleanToken.match(/[?&](?:tkn|token)=([^&#\s]+)/i);
+  if (match && match[1]) {
+    cleanToken = decodeURIComponent(match[1]).trim();
+  }
 
   const booking = await prisma.booking.findFirst({
     where: {
@@ -572,8 +576,38 @@ export async function verifyBookingToken(userId: string, token: string) {
   if (!booking) {
     throw {
       status: 404,
-      message: `No booking found with token or ID "${cleanToken}" for this Mandi`,
+      message: `Invalid Gate Pass: No active booking found with token or ID "${cleanToken}" for this Mandi.`,
       code: "INVALID_QR_TOKEN",
+    };
+  }
+
+  // Strict status validation: ONLY ACCEPTED bookings can be verified for gate arrival!
+  if (booking.status !== BookingStatus.ACCEPTED) {
+    if (booking.status === BookingStatus.VERIFIED) {
+      throw {
+        status: 400,
+        message: `Farmer ${booking.farmer.name}'s gate pass (${booking.token}) was already verified at ${booking.verifiedAt?.toLocaleTimeString() || "the gate"}.`,
+        code: "ALREADY_VERIFIED",
+      };
+    }
+    if (booking.status === BookingStatus.COMPLETED) {
+      throw {
+        status: 400,
+        message: `Consignment for farmer ${booking.farmer.name} has already been settled and completed. This QR code cannot be reused.`,
+        code: "ALREADY_COMPLETED",
+      };
+    }
+    if (booking.status === BookingStatus.PENDING) {
+      throw {
+        status: 400,
+        message: `Slot application for ${booking.farmer.name} is still PENDING review. It must be accepted before gate verification.`,
+        code: "BOOKING_PENDING",
+      };
+    }
+    throw {
+      status: 400,
+      message: `Booking status is ${booking.status}. Only ACCEPTED bookings can be verified for gate arrival.`,
+      code: "INVALID_BOOKING_STATUS",
     };
   }
 

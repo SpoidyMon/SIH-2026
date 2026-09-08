@@ -10,9 +10,10 @@ import {
   AlertCircle,
   RefreshCw,
   CameraOff,
+  UserCheck,
 } from "lucide-react";
 import { VerifyTokenModalProps } from "../../../interfaces";
-import { extractTokenFromQrData } from "../../../utils/qr.util";
+import { parseQrPayload, isValidAgroviaToken } from "../../../utils/qr.util";
 
 type VerificationMode = "camera" | "upload" | "manual";
 
@@ -21,6 +22,7 @@ export const VerifyTokenModal: React.FC<VerifyTokenModalProps> = ({
   onClose,
   onVerify,
   initialToken = "",
+  targetBooking = null,
 }) => {
   const [activeTab, setActiveTab] = useState<VerificationMode>("camera");
   const [manualToken, setManualToken] = useState(initialToken);
@@ -49,26 +51,59 @@ export const VerifyTokenModal: React.FC<VerifyTokenModalProps> = ({
     }
   }, []);
 
-  // Handle successful QR read
+  // Handle successful QR read with strict validation
   const handleDecodedCode = useCallback(
     async (decodedText: string) => {
-      const cleanToken = extractTokenFromQrData(decodedText);
-      if (!cleanToken) return;
+      setScannerError(null);
+      const payload = parseQrPayload(decodedText);
+      const cleanToken = payload.token.trim();
+
+      if (!cleanToken) {
+        setScannerError("Unreadable QR code. Please scan a valid Agrovia pass.");
+        return;
+      }
+
+      // Check format validity
+      if (!payload.isAgroviaCode && !isValidAgroviaToken(cleanToken)) {
+        setScannerError("Invalid QR Code: Not a recognized Agrovia gate pass.");
+        return;
+      }
+
+      // Target farmer check if modal is bound to a specific booking
+      if (targetBooking) {
+        const expectedToken = (targetBooking.token || "").trim().toUpperCase();
+        const expectedId = (targetBooking.id || "").trim().toUpperCase();
+        const scannedToken = cleanToken.toUpperCase();
+
+        if (scannedToken !== expectedToken && scannedToken !== expectedId) {
+          setScannerError(
+            `Farmer Mismatch! Scanned pass belongs to token "${cleanToken}". Only the QR code for farmer ${targetBooking.farmerName} (${targetBooking.token}) can be verified for this entry.`
+          );
+          return;
+        }
+
+        if (payload.farmerId && targetBooking.farmerId && payload.farmerId !== targetBooking.farmerId) {
+          setScannerError(
+            `Farmer Mismatch! Scanned QR does not belong to farmer ${targetBooking.farmerName}.`
+          );
+          return;
+        }
+      }
 
       setDetectedToken(cleanToken);
       setIsProcessing(true);
       await stopCamera();
 
-      // Short delay for visual confirmation before firing onVerify
+      // Visual confirmation delay before firing onVerify
       setTimeout(() => {
         onVerify(cleanToken);
         setIsProcessing(false);
         setDetectedToken(null);
         setManualToken("");
         onClose();
-      }, 650);
+      }, 700);
     },
-    [onVerify, onClose, stopCamera]
+    [targetBooking, onVerify, onClose, stopCamera]
   );
 
   // Start camera scanner
@@ -76,7 +111,6 @@ export const VerifyTokenModal: React.FC<VerifyTokenModalProps> = ({
     setScannerError(null);
     setDetectedToken(null);
 
-    // Stop any existing instance
     await stopCamera();
 
     const element = document.getElementById("mandi-qr-reader");
@@ -97,7 +131,7 @@ export const VerifyTokenModal: React.FC<VerifyTokenModalProps> = ({
           handleDecodedCode(decodedText);
         },
         () => {
-          // Frame decode failure (normal when scanning empty space)
+          // Normal frame decode pass
         }
       );
 
@@ -126,7 +160,6 @@ export const VerifyTokenModal: React.FC<VerifyTokenModalProps> = ({
     }
 
     if (activeTab === "camera") {
-      // Small timeout to allow DOM element to render
       const timer = setTimeout(() => {
         startCamera();
       }, 100);
@@ -141,10 +174,12 @@ export const VerifyTokenModal: React.FC<VerifyTokenModalProps> = ({
 
   // Reset initial token when opened
   useEffect(() => {
-    if (isOpen && initialToken) {
-      setManualToken(initialToken);
+    if (isOpen) {
+      setManualToken(initialToken || (targetBooking ? targetBooking.token : ""));
+      setScannerError(null);
+      setDetectedToken(null);
     }
-  }, [isOpen, initialToken]);
+  }, [isOpen, initialToken, targetBooking]);
 
   // Handle Image File Upload scan
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -155,7 +190,6 @@ export const VerifyTokenModal: React.FC<VerifyTokenModalProps> = ({
     setIsProcessing(true);
 
     try {
-      // Temporary instance for file decoding
       const fileScanner = new Html5Qrcode("mandi-qr-reader-file-temp");
       const decodedText = await fileScanner.scanFile(file, true);
       fileScanner.clear();
@@ -179,8 +213,26 @@ export const VerifyTokenModal: React.FC<VerifyTokenModalProps> = ({
   // Handle Manual Form Submit
   const handleManualSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setScannerError(null);
     const clean = manualToken.trim();
     if (!clean) return;
+
+    if (!isValidAgroviaToken(clean)) {
+      setScannerError("Invalid token format. Tokens follow format like 8SEP-10AM-001 or TKN-7821.");
+      return;
+    }
+
+    if (targetBooking) {
+      const expectedToken = (targetBooking.token || "").trim().toUpperCase();
+      const expectedId = (targetBooking.id || "").trim().toUpperCase();
+      if (clean.toUpperCase() !== expectedToken && clean.toUpperCase() !== expectedId) {
+        setScannerError(
+          `Token Mismatch! Entered token "${clean}" does not match farmer ${targetBooking.farmerName}'s token (${targetBooking.token}).`
+        );
+        return;
+      }
+    }
+
     onVerify(clean);
     setManualToken("");
     onClose();
@@ -207,6 +259,29 @@ export const VerifyTokenModal: React.FC<VerifyTokenModalProps> = ({
             <X className="w-4 h-4" />
           </button>
         </div>
+
+        {/* Target Farmer Banner if bound to a specific booking */}
+        {targetBooking && (
+          <div className="px-5 py-2.5 bg-emerald-50/80 dark:bg-emerald-950/40 border-b border-emerald-200 dark:border-emerald-800/60 flex items-center justify-between text-xs">
+            <div className="flex items-center gap-2">
+              <UserCheck className="w-4 h-4 text-emerald-700 dark:text-emerald-400" />
+              <div>
+                <span className="text-[10px] uppercase font-bold text-emerald-800 dark:text-emerald-300 block tracking-wider">
+                  Target Farmer Pass
+                </span>
+                <span className="font-bold text-slate-900 dark:text-[#E5E5E5]">
+                  {targetBooking.farmerName} • {targetBooking.crop}
+                </span>
+              </div>
+            </div>
+            <div className="text-right">
+              <span className="text-[10px] text-slate-500 dark:text-neutral-400 block font-medium">Expected Token</span>
+              <span className="font-mono font-bold text-emerald-800 dark:text-emerald-300">
+                {targetBooking.token}
+              </span>
+            </div>
+          </div>
+        )}
 
         {/* Tab Selection */}
         <div className="flex border-b border-neutral-200 dark:border-neutral-800 bg-neutral-100/60 dark:bg-neutral-900/40 p-1.5 gap-1">
@@ -256,10 +331,8 @@ export const VerifyTokenModal: React.FC<VerifyTokenModalProps> = ({
           {activeTab === "camera" && (
             <div className="flex flex-col items-center">
               <div className="relative w-full max-w-[280px] h-[280px] bg-black rounded-2xl overflow-hidden border-2 border-emerald-500/50 shadow-inner flex items-center justify-center">
-                {/* HTML5 QR Container */}
                 <div id="mandi-qr-reader" className="w-full h-full" />
 
-                {/* Overlaid Viewfinder Target */}
                 {isCameraActive && !detectedToken && (
                   <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-center p-6">
                     <div className="w-48 h-48 border-2 border-dashed border-emerald-400/80 rounded-xl relative flex items-center justify-center">
@@ -272,23 +345,21 @@ export const VerifyTokenModal: React.FC<VerifyTokenModalProps> = ({
                   </div>
                 )}
 
-                {/* Success Scan Overlay */}
                 {detectedToken && (
                   <div className="absolute inset-0 bg-emerald-950/90 backdrop-blur-xs flex flex-col items-center justify-center p-4 text-center animate-fade-in z-20">
                     <CheckCircle2 className="w-12 h-12 text-emerald-400 mb-2 animate-bounce" />
                     <span className="text-xs font-bold text-emerald-300 uppercase tracking-wider">
-                      QR Code Detected!
+                      Farmer QR Verified!
                     </span>
                     <span className="text-lg font-mono font-bold text-white mt-1">
                       {detectedToken}
                     </span>
                     <span className="text-[11px] text-emerald-200/80 mt-1">
-                      Verifying gate arrival authorization...
+                      Authorizing gate check-in...
                     </span>
                   </div>
                 )}
 
-                {/* Camera Inactive / Error Overlay */}
                 {!isCameraActive && !detectedToken && (
                   <div className="absolute inset-0 bg-neutral-900 flex flex-col items-center justify-center p-6 text-center text-neutral-300">
                     <CameraOff className="w-10 h-10 text-neutral-500 mb-2" />
@@ -305,16 +376,17 @@ export const VerifyTokenModal: React.FC<VerifyTokenModalProps> = ({
                 )}
               </div>
 
-              {/* Error Message */}
               {scannerError && (
-                <div className="mt-3 p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 rounded-xl flex items-start gap-2 text-left">
-                  <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                  <p className="text-xs text-amber-800 dark:text-amber-300">{scannerError}</p>
+                <div className="mt-3 p-3 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/60 rounded-xl flex items-start gap-2 text-left w-full">
+                  <AlertCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
+                  <p className="text-xs text-red-800 dark:text-red-300 font-medium">{scannerError}</p>
                 </div>
               )}
 
               <p className="text-[11px] text-neutral-500 dark:text-neutral-400 text-center mt-3">
-                Align the farmer's Gate Pass QR code inside the frame to scan automatically.
+                {targetBooking
+                  ? `Align farmer ${targetBooking.farmerName}'s QR pass within the frame.`
+                  : "Align the farmer's Gate Pass QR code inside the frame."}
               </p>
             </div>
           )}
@@ -322,7 +394,6 @@ export const VerifyTokenModal: React.FC<VerifyTokenModalProps> = ({
           {/* 2. Image File Upload Mode */}
           {activeTab === "upload" && (
             <div className="flex flex-col items-center">
-              {/* Hidden temp element for file scanner */}
               <div id="mandi-qr-reader-file-temp" className="hidden" />
 
               <input
@@ -363,7 +434,7 @@ export const VerifyTokenModal: React.FC<VerifyTokenModalProps> = ({
               {scannerError && (
                 <div className="mt-3 p-3 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/60 rounded-xl flex items-start gap-2 text-left w-full">
                   <AlertCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
-                  <p className="text-xs text-red-700 dark:text-red-300">{scannerError}</p>
+                  <p className="text-xs text-red-700 dark:text-red-300 font-medium">{scannerError}</p>
                 </div>
               )}
             </div>
@@ -380,17 +451,29 @@ export const VerifyTokenModal: React.FC<VerifyTokenModalProps> = ({
                   <input
                     type="text"
                     value={manualToken}
-                    onChange={(e) => setManualToken(e.target.value)}
-                    placeholder="e.g. 8SEP-10AM-001 or TKN-7821"
+                    onChange={(e) => {
+                      setManualToken(e.target.value);
+                      if (scannerError) setScannerError(null);
+                    }}
+                    placeholder={targetBooking ? targetBooking.token : "e.g. 8SEP-10AM-001 or TKN-7821"}
                     className="w-full pl-3.5 pr-10 py-2.5 bg-neutral-50 dark:bg-black border border-neutral-300 dark:border-neutral-800 rounded-xl text-sm font-mono text-black dark:text-[#E5E5E5] placeholder:text-neutral-400 focus:outline-none focus:border-[#059669]"
                     autoFocus
                   />
                   <QrCode className="w-4 h-4 text-neutral-400 absolute right-3 top-3.5" />
                 </div>
                 <p className="text-[11px] text-neutral-500 dark:text-neutral-400 mt-2">
-                  Enter the 8-12 character token printed on the farmer's slip or SMS.
+                  {targetBooking
+                    ? `Enter the token matching farmer ${targetBooking.farmerName} (${targetBooking.token}).`
+                    : "Enter the official token printed on the farmer's Gate Pass."}
                 </p>
               </div>
+
+              {scannerError && (
+                <div className="p-3 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/60 rounded-xl flex items-start gap-2 text-left">
+                  <AlertCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
+                  <p className="text-xs text-red-700 dark:text-red-300 font-medium">{scannerError}</p>
+                </div>
+              )}
 
               <div className="flex items-center justify-end gap-2 pt-2">
                 <button
