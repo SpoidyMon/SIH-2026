@@ -507,58 +507,6 @@ export const SlotBookingModal = memo(function SlotBookingModal({
                         })}
                       </View>
                     );
-                  })()}
-                </View>
-                    /* Default Windows */
-                    <View style={styles.slotsGrid}>
-                      {[
-                        { id: 'def-1', time: '08:00 - 13:30', label: 'Morning Slot' },
-                        { id: 'def-2', time: '14:00 - 18:00', label: 'Afternoon Slot' },
-                      ].map((def) => {
-                        const isSelected = selectedSlot?.id === def.id;
-                        return (
-                          <Pressable
-                            key={def.id}
-                            onPress={() =>
-                              setSelectedSlot({
-                                id: def.id,
-                                mandiProfileId: mandi.id,
-                                crop: cropItems[0]?.crop || 'Wheat',
-                                date: new Date().toISOString().split('T')[0],
-                                startTime: def.time.split(' - ')[0],
-                                endTime: def.time.split(' - ')[1],
-                                totalCapacityQuintals: 500,
-                                bookedCapacityQuintals: 0,
-                                maxFarmers: 15,
-                                bookedFarmers: 0,
-                                availableBookings: 15,
-                                isActive: true,
-                              })
-                            }
-                            style={[
-                              styles.slotCard,
-                              isSelected && styles.slotCardSelected,
-                            ]}>
-                            <View style={styles.slotCardHeader}>
-                              <Ionicons
-                                name="time-outline"
-                                size={14}
-                                color={isSelected ? '#15803D' : '#6B7280'}
-                              />
-                              <Text
-                                style={[
-                                  styles.slotTimeText,
-                                  isSelected && styles.slotTimeTextSelected,
-                                ]}>
-                                {def.time}
-                              </Text>
-                            </View>
-                            <Text style={styles.slotDateText}>{def.label}</Text>
-                          </Pressable>
-                        );
-                      })}
-                    </View>
-                  )}
                 </View>
 
                 {/* 2. Expected Queue Position */}
