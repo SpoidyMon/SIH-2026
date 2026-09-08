@@ -203,7 +203,7 @@ export function FarmerBookingsView() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                      Crops Included (in KG)
+                      Crops Included &amp; Mandi Requirements (in KG)
                     </label>
                     <div className="space-y-1.5">
                       {b.cropsList && Array.isArray(b.cropsList) && b.cropsList.length > 0 ? (
@@ -216,7 +216,12 @@ export function FarmerBookingsView() {
                               <Sprout className="w-3.5 h-3.5 text-emerald-600" />
                               <span>{c.crop}</span>
                             </span>
-                            <span className="font-bold text-slate-900">{c.quantityKg} KG</span>
+                            <div className="text-right">
+                              <span className="font-bold text-slate-900">{c.quantityKg} KG</span>
+                              <span className="block text-[10px] text-emerald-700 font-bold">
+                                Mandi Req: {(c.quantityKg ? Math.max(c.quantityKg * 5, 5000) : 5000).toLocaleString("en-IN")} KG @ ₹{c.ratePerKg || 25}/kg
+                              </span>
+                            </div>
                           </div>
                         ))
                       ) : (
@@ -225,7 +230,12 @@ export function FarmerBookingsView() {
                             <Sprout className="w-3.5 h-3.5 text-emerald-600" />
                             <span>{b.crop}</span>
                           </span>
-                          <span className="font-bold text-slate-900">{b.quantityKg || b.quantityQuintals * 100} KG</span>
+                          <div className="text-right">
+                            <span className="font-bold text-slate-900">{b.quantityKg || b.quantityQuintals * 100} KG</span>
+                            <span className="block text-[10px] text-emerald-700 font-bold">
+                              Mandi Req: 5,000 KG
+                            </span>
+                          </div>
                         </div>
                       )}
                     </div>

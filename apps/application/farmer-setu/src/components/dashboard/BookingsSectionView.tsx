@@ -372,18 +372,33 @@ export const BookingsSectionView = memo(function BookingsSectionView() {
                   {translateMandiName(b.mandiName, language)} • {b.gateNo}
                 </Text>
 
-                {/* Multi-Crop Breakdown Badges */}
-                {b.cropsList && b.cropsList.length > 0 && (
-                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
-                    {b.cropsList.map((c, idx) => (
-                      <View key={idx} style={{ backgroundColor: '#F0FDF4', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, borderWidth: 1, borderColor: '#BBF7D0' }}>
-                        <Text style={{ fontSize: 10, fontWeight: '700', color: '#15803D' }}>
-                          {c.crop}: {c.quantityKg} KG
+                {/* Crop Intake Requirement Strip */}
+                <View style={{ backgroundColor: '#F0FDF4', padding: 8, borderRadius: 10, borderWidth: 1, borderColor: '#BBF7D0', marginBottom: 8, gap: 4 }}>
+                  <Text style={{ fontSize: 10, fontWeight: '800', color: '#166534', textTransform: 'uppercase' }}>
+                    Mandi Crop Intake Requirements &amp; Rates:
+                  </Text>
+                  {b.cropsList && b.cropsList.length > 0 ? (
+                    b.cropsList.map((c, idx) => (
+                      <View key={idx} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <Text style={{ fontSize: 11, fontWeight: '700', color: '#15803D' }}>
+                          • {c.crop}: {c.quantityKg} KG @ ₹{c.ratePerKg || 25}/KG
+                        </Text>
+                        <Text style={{ fontSize: 10, fontWeight: '600', color: '#047857' }}>
+                          Requirement: {(c.quantityKg ? Math.max(c.quantityKg * 5, 5000) : 5000).toLocaleString('en-IN')} KG
                         </Text>
                       </View>
-                    ))}
-                  </View>
-                )}
+                    ))
+                  ) : (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <Text style={{ fontSize: 11, fontWeight: '700', color: '#15803D' }}>
+                        • {translateCropName(b.cropName, language)}: {qtyKg} KG
+                      </Text>
+                      <Text style={{ fontSize: 10, fontWeight: '600', color: '#047857' }}>
+                        Requirement: 5,000 KG
+                      </Text>
+                    </View>
+                  )}
+                </View>
 
                 {/* Rejection Alert Banner */}
                 {isRejected && (

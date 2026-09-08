@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   MapPin,
@@ -64,10 +64,18 @@ function isSlotExpired(dateStr?: string, endTimeStr?: string, startTimeStr?: str
 export function FarmerMandiDetailView() {
   const { mandiId } = useParams<{ mandiId: string }>();
   const navigate = useNavigate();
+  const step2Ref = useRef<HTMLDivElement>(null);
 
   const [mandi, setMandi] = useState<FarmerMandiSummary | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
+
+  const handleSelectSlot = (slotId: string) => {
+    setSelectedSlotId(slotId);
+    setTimeout(() => {
+      step2Ref.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 100);
+  };
   const [selectedCrops, setSelectedCrops] = useState<CropBookingItem[]>([
     { crop: "Tomato", quantityKg: 100, ratePerKg: 24, estimatedAmount: 2400 },
   ]);
@@ -345,7 +353,7 @@ export function FarmerMandiDetailView() {
                   <div
                     key={slot.id}
                     onClick={() => {
-                      if (!isFull) setSelectedSlotId(slot.id);
+                      if (!isFull) handleSelectSlot(slot.id);
                     }}
                     className={`p-4 rounded-2xl border transition-all select-none ${
                       isFull
@@ -377,7 +385,7 @@ export function FarmerMandiDetailView() {
       </div>
 
       {/* Step 2: Multi-Crop Input (KG Only) */}
-      <div className="bg-white rounded-3xl p-6 md:p-8 border border-slate-200 shadow-sm space-y-5">
+      <div ref={step2Ref} className="bg-white rounded-3xl p-6 md:p-8 border border-slate-200 shadow-sm space-y-5">
         <div className="flex items-center justify-between">
           <h2 className="text-base font-extrabold text-slate-900 flex items-center gap-2">
             <Sprout className="w-5 h-5 text-emerald-600" />

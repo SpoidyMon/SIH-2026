@@ -1,4 +1,4 @@
-import React, { memo, useState, useEffect, useMemo } from 'react';
+import React, { memo, useState, useEffect, useMemo, useRef } from 'react';
 import {
   Modal,
   View,
@@ -85,9 +85,17 @@ export const SlotBookingModal = memo(function SlotBookingModal({
   onBookingSuccess,
 }: SlotBookingModalProps) {
   const { language } = useLanguage();
+  const scrollRef = useRef<ScrollView>(null);
 
   // Selected arrival slot
   const [selectedSlot, setSelectedSlot] = useState<MandiSlotData | null>(null);
+
+  const handleSelectSlot = (s: MandiSlotData) => {
+    setSelectedSlot(s);
+    setTimeout(() => {
+      scrollRef.current?.scrollTo({ y: 320, animated: true });
+    }, 100);
+  };
 
   // Multi-crop states
   const [cropItems, setCropItems] = useState<CropSelectionState[]>([]);
@@ -344,6 +352,7 @@ export const SlotBookingModal = memo(function SlotBookingModal({
 
           {/* Body Content */}
           <ScrollView
+            ref={scrollRef}
             style={styles.scrollContent}
             keyboardShouldPersistTaps="handled"
             automaticallyAdjustKeyboardInsets={true}
@@ -479,7 +488,7 @@ export const SlotBookingModal = memo(function SlotBookingModal({
                           return (
                             <Pressable
                               key={s.id}
-                              onPress={() => setSelectedSlot(s)}
+                              onPress={() => handleSelectSlot(s)}
                               style={[
                                 styles.slotCard,
                                 isSelected && styles.slotCardSelected,
