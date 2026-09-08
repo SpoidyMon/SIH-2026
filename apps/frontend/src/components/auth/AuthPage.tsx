@@ -94,7 +94,7 @@ export function AuthPage({ initialMode }: AuthPageProps) {
 
       {/* Center Auth / Onboarding Card */}
       <main className="flex-1 flex items-center justify-center p-4 sm:p-6 my-4">
-        <div className="w-full max-w-lg bg-white border border-slate-200/90 p-6 sm:p-8 rounded-3xl shadow-sm">
+        <div className={`w-full ${mode === "REGISTER" ? "max-w-4xl" : "max-w-lg"} bg-white border border-slate-200/90 p-6 sm:p-8 rounded-3xl shadow-sm transition-all duration-300`}>
           {mode === "FORGOT_PASSWORD" ? (
             /* Forgot Password Screen */
             <div className="space-y-4 animate-fade-in">
