@@ -31,10 +31,10 @@ STRICT OPERATIONAL RULES:
 1. NEVER invent or fabricate mandi names, slot times, capacities, prices, booking IDs, gate tokens, or QR codes.
 2. All crop quantities and slot weights MUST be calculated, processed, and displayed strictly in KG (Kilograms). (1 Quintal = 100 KG).
 3. Every booking request created remains PENDING until a Mandi Operator accepts it. Do NOT claim a gate token or QR pass has been issued while status is PENDING.
-4. You MUST show an explicit confirmation summary before submitting a booking request.
-5. Derive farmer user ID strictly from the authenticated backend server context. Never accept a user ID from prompts.
-6. Speak warmly and naturally in the farmer's selected language. If the user's selected language is English ('en') or the prompt is written in English, respond in clear English. If language is Hindi ('hi') or Marathi ('mr'), respond in that language.
-7. Keep responses concise, clear, and easy to understand over voice audio.
+4. Only show a booking confirmation summary when the user explicitly requests to book a slot or submit a booking.
+5. For greetings or questions asking to search or list mandis, respond directly to the question and list the matching mandis from the database. Do NOT generate a booking request card for greetings or general mandi list searches.
+6. Derive farmer user ID strictly from the authenticated backend server context.
+7. Speak warmly and naturally in the farmer's selected language (English 'en', Hindi 'hi', Marathi 'mr').
 `;
 
 /**
@@ -56,7 +56,6 @@ export function resolveTargetDate(text: string): string {
     return d.toISOString().slice(0, 10);
   }
 
-  // Default to today or tomorrow depending on current time
   if (now.getHours() >= 18) {
     const d = new Date(now);
     d.setDate(d.getDate() + 1);
@@ -74,19 +73,16 @@ export function parseQuantityKg(text: string): number | null {
     .replace(/[०-९]/g, (d) => "०१२३४५६७८९".indexOf(d).toString())
     .toLowerCase();
 
-  // Check quintal conversion
   const quintalMatch = str.match(/(\d+(?:\.\d+)?)\s*(?:quintal|क्विंटल|कुंतल)/i);
   if (quintalMatch && quintalMatch[1]) {
     return Math.round(parseFloat(quintalMatch[1]) * 100);
   }
 
-  // Check direct KG
   const kgMatch = str.match(/(\d+(?:\.\d+)?)\s*(?:kg|kilo|kilogram|किलो|किग्रा|kgms)/i);
   if (kgMatch && kgMatch[1]) {
     return Math.round(parseFloat(kgMatch[1]));
   }
 
-  // Plain number match if "book" or crop is present
   const numberMatch = str.match(/(\d+)/);
   if (numberMatch && numberMatch[1] && (str.includes("book") || str.includes("स्लॉट") || str.includes("गेहूं") || str.includes("गहू"))) {
     const val = parseInt(numberMatch[1], 10);
@@ -97,25 +93,82 @@ export function parseQuantityKg(text: string): number | null {
 }
 
 /**
- * Detects user intent from prompt.
+ * Extracts mandi name / location keywords from user prompt text.
+ */
+export function extractMandiQuery(text: string): string {
+  let cleaned = (text || "").toLowerCase();
+  cleaned = cleaned
+    .replace(/\b(book|booking|slot|slots|wheat|gehu|gehun|rice|mustard|cotton|soyabean|maize|chana|kg|kilo|kilogram|quintal|tomorrow|today|parso|udya|kal|in|at|for|the|me|a|an|please|can|you|show|available|list|my|mandi|mandis|apmc|yard|bazaar|market|give|oist|of|them|there|any|more|is|are)\b/gi, " ")
+    .replace(/\b\d+(:\d+)?\s*(am|pm)?\b/gi, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  return cleaned;
+}
+
+/**
+ * Detects user intent from prompt text.
  */
 export function detectIntent(text: string): AgentIntent {
-  const lower = (text || "").toLowerCase();
+  const lower = (text || "").toLowerCase().trim();
 
+  // 1. Greetings
+  if (/^(hi|hello|hey|namaste|greetings|नमस्ते|नमस्कार|हॅलो)\b/i.test(lower) && lower.length < 15) {
+    return "GREETING";
+  }
+
+  // 2. Cancellation
   if (lower.includes("cancel") || lower.includes("रद्द")) {
     return "CANCEL_BOOKING";
   }
-  if (lower.includes("my booking") || lower.includes("मेरी बुकिंग") || lower.includes("माझी बुकिंग")) {
+
+  // 3. User's existing bookings
+  if (
+    lower.includes("my booking") ||
+    lower.includes("meri booking") ||
+    lower.includes("majhi booking") ||
+    lower.includes("मेरी बुकिंग") ||
+    lower.includes("माझी बुकिंग") ||
+    lower.includes("list booking") ||
+    lower.includes("my slots")
+  ) {
     return "VIEW_BOOKINGS";
   }
-  if (lower.includes("book") || lower.includes("बुक") || lower.includes("slot")) {
-    return "BOOK_SLOT";
+
+  // 4. Crop rate query
+  if (
+    (lower.includes("rate") || lower.includes("price") || lower.includes("भाव") || lower.includes("दर") || lower.includes("मूल्य")) &&
+    !lower.includes("book")
+  ) {
+    return "GET_CROP_RATE";
   }
-  if (lower.includes("mandi") || lower.includes("मंडी")) {
+
+  // 5. Search or list mandis
+  if (
+    lower.includes("list") ||
+    lower.includes("oist") ||
+    lower.includes("all mandis") ||
+    lower.includes("more mandis") ||
+    lower.includes("other mandis") ||
+    lower.includes("search mandi") ||
+    lower.includes("find mandi") ||
+    lower.includes("मंडियां") ||
+    lower.includes("मंड्या") ||
+    (lower.includes("mandi") && !lower.includes("book") && !lower.includes("slot"))
+  ) {
     return "SEARCH_MANDI";
   }
 
-  return "BOOK_SLOT";
+  // 6. Explicit booking intent
+  if (lower.includes("book") || lower.includes("बुक") || lower.includes("slot") || lower.includes("स्लॉट")) {
+    return "BOOK_SLOT";
+  }
+
+  // Default heuristic
+  if (/\d+/.test(lower) || /gehu|wheat|rice|mustard|cotton|soyabean/i.test(lower)) {
+    return "BOOK_SLOT";
+  }
+
+  return "SEARCH_MANDI";
 }
 
 export const GROQ_TOOLS = [
@@ -132,105 +185,7 @@ export const GROQ_TOOLS = [
       },
     },
   },
-  {
-    type: "function",
-    function: {
-      name: "getMandiDetails",
-      description: "Get detailed info for an APMC mandi by mandiId",
-      parameters: {
-        type: "object",
-        properties: {
-          mandiId: { type: "string", description: "The Mandi Profile ID" },
-        },
-        required: ["mandiId"],
-      },
-    },
-  },
-  {
-    type: "function",
-    function: {
-      name: "getAvailableSlots",
-      description: "Get active time slots for a mandi on a specific date (YYYY-MM-DD)",
-      parameters: {
-        type: "object",
-        properties: {
-          mandiId: { type: "string", description: "The Mandi Profile ID" },
-          date: { type: "string", description: "ISO Date YYYY-MM-DD" },
-        },
-        required: ["mandiId", "date"],
-      },
-    },
-  },
-  {
-    type: "function",
-    function: {
-      name: "checkSlotCapacity",
-      description: "Check if slot has sufficient capacity for requested KG quantity",
-      parameters: {
-        type: "object",
-        properties: {
-          slotId: { type: "string", description: "Slot ID" },
-          quantityKg: { type: "number", description: "Quantity in KG" },
-        },
-        required: ["slotId", "quantityKg"],
-      },
-    },
-  },
-  {
-    type: "function",
-    function: {
-      name: "getCropRate",
-      description: "Get market benchmark rate per KG for a crop",
-      parameters: {
-        type: "object",
-        properties: {
-          crop: { type: "string", description: "Crop name" },
-        },
-        required: ["crop"],
-      },
-    },
-  },
-  {
-    type: "function",
-    function: {
-      name: "getMyBookings",
-      description: "Fetch active and past bookings for the authenticated farmer",
-      parameters: {
-        type: "object",
-        properties: {
-          userId: { type: "string", description: "Authenticated farmer user ID" },
-        },
-      },
-    },
-  },
-  {
-    type: "function",
-    function: {
-      name: "cancelBooking",
-      description: "Cancel a pending booking request",
-      parameters: {
-        type: "object",
-        properties: {
-          bookingId: { type: "string", description: "Booking ID" },
-        },
-        required: ["bookingId"],
-      },
-    },
-  },
 ];
-
-/**
- * Extracts mandi name / location keywords from user prompt text.
- */
-export function extractMandiQuery(text: string): string {
-  let cleaned = (text || "").toLowerCase();
-  cleaned = cleaned
-    .replace(/\b(book|booking|slot|slots|wheat|gehu|gehun|rice|mustard|cotton|soyabean|maize|chana|kg|kilo|kilogram|quintal|tomorrow|today|parso|udya|kal|in|at|for|the|me|a|an|please|can|you|show|available|list|my|mandi|mandis|apmc|yard|bazaar|market)\b/gi, " ")
-    .replace(/\b\d+(:\d+)?\s*(am|pm)?\b/gi, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-  return cleaned;
-}
 
 /**
  * Main state machine runner processing conversation step and tool execution.
@@ -238,6 +193,8 @@ export function extractMandiQuery(text: string): string {
 export async function runBookingAgent(state: BookingAgentState): Promise<BookingAgentState> {
   const userText = state.userMessage.trim();
   const lower = userText.toLowerCase();
+  const intent = detectIntent(userText);
+  const lang = state.language || "en";
 
   // 1. If explicit confirmation was sent by user
   if (
@@ -258,7 +215,6 @@ export async function runBookingAgent(state: BookingAgentState): Promise<Booking
           quantityKg: state.confirmationPayload.quantityKg,
         });
 
-        const lang = state.language || "en";
         let resp = `Your booking request has been successfully submitted! Booking Token: ${result.token}. Status: PENDING (awaiting mandi operator approval).`;
         if (lang === "hi") {
           resp = `आपकी बुकिंग रिक्वेस्ट सफलतापूर्वक दर्ज कर ली गई है! टोकन: ${result.token}। स्थिति: PENDING (मंडी ऑपरेटर द्वारा स्वीकार का इंतज़ार)।`;
@@ -286,15 +242,25 @@ export async function runBookingAgent(state: BookingAgentState): Promise<Booking
     }
   }
 
-  // 2. If user asks about their existing bookings
-  if (
-    lower.includes("my booking") ||
-    lower.includes("मेरी बुकिंग") ||
-    lower.includes("माझी बुकिंग") ||
-    lower.includes("list booking")
-  ) {
+  // 2. Greeting Intent
+  if (intent === "GREETING") {
+    let resp = "Hello! Welcome to Mandi Setu AI Assistant. I am connected live to your PostgreSQL database. I can help you search APMC mandis, check crop benchmark rates (per KG), view slot availability, or book arrival slots. How can I assist you today?";
+    if (lang === "hi") {
+      resp = "नमस्ते! मण्डी सेतु AI सहायक में आपका स्वागत है। मैं आपके लाइव डेटाबेस से जुड़ा हुआ हूँ। आप मुझसे मंडी खोज सकते हैं, फसल दर (प्रति KG) पूछ सकते हैं या स्लॉट बुक कर सकते हैं। आज मैं आपकी क्या मदद कर सकता हूँ?";
+    } else if (lang === "mr") {
+      resp = "नमस्ते! मण्डी सेतू AI सहाय्यकामध्ये आपले स्वागत आहे. मी आपल्या लाइव्ह डेटाबेसशी जोडलेला आहे. तुम्ही मंडी शोधू शकता, पीक दर (प्रति KG) विचारू शकता किंवा स्लॉट बुक करू शकता. आज मी तुम्हाला कशी मदत करू शकेन?";
+    }
+    return {
+      ...state,
+      intent: "GREETING",
+      confirmationRequired: false,
+      responseText: resp,
+    };
+  }
+
+  // 3. View Existing Bookings Intent
+  if (intent === "VIEW_BOOKINGS") {
     const dbBookings = await toolGetMyBookings(state.userId);
-    const lang = state.language || "en";
     let resp = dbBookings.length > 0
       ? `You have ${dbBookings.length} active booking(s) in PostgreSQL database:\n` + dbBookings.map(b => `• ${b.mandiName} - ${b.crop} (${b.quantityKg} KG) on ${b.date} [Status: ${b.status}]`).join("\n")
       : "You currently have no active slot bookings in the database.";
@@ -312,26 +278,95 @@ export async function runBookingAgent(state: BookingAgentState): Promise<Booking
     return {
       ...state,
       intent: "VIEW_BOOKINGS",
+      confirmationRequired: false,
       responseText: resp,
     };
   }
 
-  // 3. Perform Real Database Resolutions from PostgreSQL
+  // 4. Crop Rate Query Intent
+  if (intent === "GET_CROP_RATE") {
+    const cropNorm = normalizeCropName(userText);
+    const rateInfo = await toolGetCropRate({ crop: cropNorm.name });
+
+    let resp = `The current market benchmark rate for **${cropNorm.name}** is **₹${rateInfo.ratePerKg} per KG** (₹${rateInfo.ratePerKg * 100} per Quintal).`;
+    if (lang === "hi") {
+      resp = `**${cropNorm.name}** का वर्तमान बाजार दर **₹${rateInfo.ratePerKg} प्रति KG** (₹${rateInfo.ratePerKg * 100} प्रति क्विंटल) है।`;
+    } else if (lang === "mr") {
+      resp = `**${cropNorm.name}** चा सध्याचा बाजार भाव **₹${rateInfo.ratePerKg} प्रति KG** (₹${rateInfo.ratePerKg * 100} प्रति क्विंटल) आहे.`;
+    }
+
+    return {
+      ...state,
+      intent: "GET_CROP_RATE",
+      confirmationRequired: false,
+      responseText: resp,
+    };
+  }
+
+  // 5. Search / List Mandis Intent
+  if (intent === "SEARCH_MANDI") {
+    const extractedQuery = state.mandiQuery || extractMandiQuery(userText);
+    const mandis = await toolSearchMandis({ query: extractedQuery });
+
+    let resp = "";
+    if (mandis.length === 0) {
+      resp = lang === "hi"
+        ? "मुझे आपके अनुरोध के अनुसार डेटाबेस में कोई मंडी नहीं मिली।"
+        : lang === "mr"
+        ? "मला आपल्या विनंतीनुसार डेटाबेसमध्ये कोणतीही मंडी सापडली नाही."
+        : "No APMC mandis matching your location/name request were found in the database.";
+    } else {
+      try {
+        const prompt = `User asked: "${userText}"
+Matching Mandis found in PostgreSQL Database (${mandis.length} mandis):
+${mandis.map((m, i) => `${i + 1}. Name: ${m.name}, Location: ${m.district || m.state || m.address}, Rating: ${m.rating}`).join("\n")}
+
+Respond to the user politely in language "${lang}". List all the mandis found nicely with bullet points. Ask which mandi they would like to select or book a slot for. Do NOT output a booking request confirmation card.`;
+
+        const aiRes = await chatCompletion([
+          { role: "system", content: SYSTEM_PROMPT },
+          { role: "user", content: prompt },
+        ]);
+
+        if (aiRes.content && aiRes.content.trim()) {
+          resp = aiRes.content;
+        }
+      } catch (err: any) {
+        console.warn("Groq LLM search response error:", err?.message);
+      }
+
+      if (!resp) {
+        resp = `Here are the APMC mandis found in the database matching your request:\n\n` +
+          mandis.map((m, i) => `${i + 1}. **${m.name}**\n   • Location: ${m.district || m.state || m.address || "APMC Yard"}\n   • Rating: ⭐ ${m.rating}`).join("\n\n") +
+          `\n\nWhich mandi would you like to select for booking?`;
+      }
+    }
+
+    return {
+      ...state,
+      intent: "SEARCH_MANDI",
+      mandiMatches: mandis,
+      confirmationRequired: false,
+      responseText: resp,
+    };
+  }
+
+  // 6. Explicit Booking Intent (BOOK_SLOT)
   const targetDate = state.date || resolveTargetDate(userText);
   const parsedKg = parseQuantityKg(userText) || (state.crops?.[0]?.quantityKg ?? 100);
   const cropNorm = normalizeCropName(userText);
-
-  // Search mandis in PostgreSQL
   const extractedQuery = state.mandiQuery || extractMandiQuery(userText);
+
   let mandis: AgentMandiInfo[] = state.mandiMatches || [];
   if (!state.mandiId) {
     mandis = await toolSearchMandis({ query: extractedQuery });
   }
 
   if (mandis.length === 0 && !state.mandiId) {
-    const lang = state.language || "en";
     return {
       ...state,
+      intent: "BOOK_SLOT",
+      confirmationRequired: false,
       responseText: lang === "hi"
         ? "मुझे डेटाबेस में कोई मंडी नहीं मिली। कृपया मंडी का नाम बताएँ (जैसे 'Rupesh Mandi')।"
         : lang === "mr"
@@ -343,24 +378,16 @@ export async function runBookingAgent(state: BookingAgentState): Promise<Booking
   const selectedMandi = state.mandiInfo || mandis[0];
   const mandiId = state.mandiId || selectedMandi?.id;
 
-  if (!selectedMandi || !mandiId) {
-    return {
-      ...state,
-      mandiMatches: mandis,
-      responseText: `Found ${mandis.length} mandis in database. Please specify which mandi you want to select: ` + mandis.map(m => m.name).join(", "),
-    };
-  }
-
-  // Fetch real available slots from PostgreSQL DB
   const availableSlots = await toolGetAvailableSlots({ mandiId, date: targetDate });
 
   if (!availableSlots || availableSlots.length === 0 || !availableSlots[0]) {
-    const lang = state.language || "en";
     return {
       ...state,
+      intent: "BOOK_SLOT",
       mandiId,
       mandiInfo: selectedMandi,
       date: targetDate,
+      confirmationRequired: false,
       responseText: lang === "hi"
         ? `${selectedMandi.name} में ${targetDate} के लिए कोई एक्टिव स्लॉट उपलब्ध नहीं है।`
         : lang === "mr"
@@ -371,7 +398,6 @@ export async function runBookingAgent(state: BookingAgentState): Promise<Booking
 
   const selectedSlot = availableSlots[0];
 
-  // Validate slot capacity against PostgreSQL DB
   const capacityCheck = await toolCheckSlotCapacity({
     slotId: selectedSlot.slotId,
     quantityKg: parsedKg,
@@ -380,18 +406,18 @@ export async function runBookingAgent(state: BookingAgentState): Promise<Booking
   if (!capacityCheck.valid) {
     return {
       ...state,
+      intent: "BOOK_SLOT",
       mandiId,
       mandiInfo: selectedMandi,
       slotId: selectedSlot.slotId,
+      confirmationRequired: false,
       responseText: capacityCheck.reason || "This slot does not have sufficient remaining capacity.",
     };
   }
 
-  // Fetch benchmark price rate from PostgreSQL DB
   const rateInfo = await toolGetCropRate({ crop: cropNorm.name });
   const estimatedPayout = Math.round(parsedKg * rateInfo.ratePerKg);
 
-  // Invoke Groq LLM grounded with real PostgreSQL data
   try {
     const promptWithContext = `User Prompt: "${userText}"
 Ground Truth from PostgreSQL DB:
@@ -401,9 +427,9 @@ Ground Truth from PostgreSQL DB:
 - Requested Quantity: ${parsedKg} KG
 - Rate per KG: ₹${rateInfo.ratePerKg}
 - Total Payout: ₹${estimatedPayout}
-- Requested Language: ${state.language || "en"}
+- Requested Language: ${lang}
 
-Generate a warm, polite response strictly in language "${state.language || "en"}". Include details: Mandi name, Date, Slot time, Crop name, Quantity in KG, Estimated payout amount (₹), and ask if they would like to submit/confirm the booking request.`;
+Generate a warm, polite response strictly in language "${lang}". Include details: Mandi name, Date, Slot time, Crop name, Quantity in KG, Estimated payout amount (₹), and ask if they would like to submit/confirm the booking request.`;
 
     const aiRes = await chatCompletion([
       { role: "system", content: SYSTEM_PROMPT },
@@ -444,7 +470,6 @@ Generate a warm, polite response strictly in language "${state.language || "en"}
     console.warn("Groq LLM call error, falling back to database formatter:", err?.message);
   }
 
-  // Fallback DB Formatted Response if Groq fails or API key unavailable
   const confirmationPayload: BookingConfirmationPayload = {
     mandiId,
     mandiName: selectedMandi.name,
@@ -460,7 +485,6 @@ Generate a warm, polite response strictly in language "${state.language || "en"}
     idempotencyKey: `IDEM-${state.conversationId}-${Date.now().toString().slice(-6)}`,
   };
 
-  const lang = state.language || "en";
   let responseText = `Slot available at ${selectedMandi.name} on ${selectedSlot.date} (${selectedSlot.startTime} – ${selectedSlot.endTime}).\nCrop: ${cropNorm.name} (${parsedKg} KG)\nEstimated Payout: ₹${estimatedPayout.toLocaleString("en-IN")} (Rate: ₹${rateInfo.ratePerKg}/KG)\n\nWould you like me to submit this booking request? (Say Yes or tap Confirm)`;
 
   if (lang === "hi") {
@@ -483,4 +507,3 @@ Generate a warm, polite response strictly in language "${state.language || "en"}
     responseText,
   };
 }
-
