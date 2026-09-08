@@ -16,6 +16,16 @@ export interface AuthTokens {
   refreshToken: string;
 }
 
+export interface AuthState {
+  user: UserSession | null;
+  isAuthenticated: boolean;
+  isOnboarding: boolean;
+  isLoading: boolean;
+  isInitializing: boolean;
+  error: string | null;
+  otpRequiredForEmail: string | null;
+}
+
 export interface AuthResponseData {
   user: UserSession;
   accessToken: string;

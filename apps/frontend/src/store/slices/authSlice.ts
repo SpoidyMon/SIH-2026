@@ -1,20 +1,12 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
-import { UserSession, LoginPayload, RegisterMandiPayload, VerifyOtpPayload } from "../../interfaces";
+import { UserSession, LoginPayload, RegisterMandiPayload, VerifyOtpPayload, AuthState } from "../../interfaces";
 import { authApi } from "../../services/auth.api";
 import { getAccessToken, clearTokens } from "../../services/apiClient";
-
-export interface AuthState {
-  user: UserSession | null;
-  isAuthenticated: boolean;
-  isLoading: boolean;
-  isInitializing: boolean;
-  error: string | null;
-  otpRequiredForEmail: string | null;
-}
 
 const initialState: AuthState = {
   user: null,
   isAuthenticated: false,
+  isOnboarding: false,
   isLoading: false,
   isInitializing: true,
   error: null,
@@ -103,6 +95,18 @@ export const authSlice = createSlice({
     clearAuthError: (state) => {
       state.error = null;
     },
+    startOnboarding: (state) => {
+      state.isOnboarding = true;
+      state.isAuthenticated = false;
+    },
+    completeOnboarding: (state) => {
+      state.isOnboarding = false;
+      state.isAuthenticated = true;
+    },
+    cancelOnboarding: (state) => {
+      state.isOnboarding = false;
+      state.isAuthenticated = false;
+    },
   },
   extraReducers: (builder) => {
     // checkAuthSession
@@ -132,6 +136,7 @@ export const authSlice = createSlice({
         state.isLoading = false;
         state.user = action.payload.user;
         state.isAuthenticated = true;
+        state.isOnboarding = false;
         state.error = null;
         state.otpRequiredForEmail = null;
       })
@@ -154,7 +159,8 @@ export const authSlice = createSlice({
       .addCase(registerMandiThunk.fulfilled, (state, action) => {
         state.isLoading = false;
         state.user = action.payload.user;
-        state.isAuthenticated = false; // Requires OTP verification
+        state.isAuthenticated = false; // Requires OTP verification + onboarding
+        state.isOnboarding = true;
         state.otpRequiredForEmail = action.payload.email;
       })
       .addCase(registerMandiThunk.rejected, (state, action) => {
@@ -173,7 +179,11 @@ export const authSlice = createSlice({
         if (state.user) {
           state.user.isVerified = true;
         }
-        state.isAuthenticated = true;
+        // If the user is currently completing the registration wizard, do NOT mark authenticated yet
+        // so App.tsx does not redirect to /mandi/dashboard before Step 2 & 3 are complete.
+        if (!state.isOnboarding) {
+          state.isAuthenticated = true;
+        }
         state.otpRequiredForEmail = null;
       })
       .addCase(verifyOtpThunk.rejected, (state, action) => {
@@ -185,11 +195,12 @@ export const authSlice = createSlice({
     builder.addCase(logoutThunk.fulfilled, (state) => {
       state.user = null;
       state.isAuthenticated = false;
+      state.isOnboarding = false;
       state.error = null;
       state.otpRequiredForEmail = null;
     });
   },
 });
 
-export const { setOtpEmail, clearAuthError } = authSlice.actions;
+export const { setOtpEmail, clearAuthError, startOnboarding, completeOnboarding, cancelOnboarding } = authSlice.actions;
 export default authSlice.reducer;

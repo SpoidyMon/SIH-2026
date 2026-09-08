@@ -4,6 +4,8 @@ import { ShieldCheck, Mail, KeyRound, CheckCircle2, Sprout } from "lucide-react"
 import { LoginForm } from "./LoginForm";
 import { MandiRegisterWizard } from "./MandiRegisterWizard";
 import { authApi } from "../../services/auth.api";
+import { useAppDispatch } from "../../store";
+import { completeOnboarding, cancelOnboarding } from "../../store/slices/authSlice";
 
 interface AuthPageProps {
   initialMode?: "LOGIN" | "REGISTER" | "FORGOT_PASSWORD";
@@ -12,6 +14,7 @@ interface AuthPageProps {
 export function AuthPage({ initialMode }: AuthPageProps) {
   const location = useLocation();
   const navigate = useNavigate();
+  const dispatch = useAppDispatch();
 
   const [mode, setMode] = useState<"LOGIN" | "REGISTER" | "FORGOT_PASSWORD">(() => {
     if (initialMode) return initialMode;
@@ -47,6 +50,7 @@ export function AuthPage({ initialMode }: AuthPageProps) {
   };
 
   const switchToLogin = () => {
+    dispatch(cancelOnboarding());
     setMode("LOGIN");
     navigate("/login");
   };
@@ -143,6 +147,7 @@ export function AuthPage({ initialMode }: AuthPageProps) {
             <MandiRegisterWizard
               onSwitchToLogin={switchToLogin}
               onFinishRegistration={() => {
+                dispatch(completeOnboarding());
                 navigate("/mandi/dashboard");
               }}
             />
