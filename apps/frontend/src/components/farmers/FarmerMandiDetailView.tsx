@@ -18,6 +18,49 @@ import {
 import { getApprovedMandisApi, createFarmerBookingApi } from "../../services/farmer.api";
 import { FarmerMandiSummary, CropBookingItem } from "../../interfaces/farmer.interface";
 
+function isSlotExpired(dateStr?: string, endTimeStr?: string, startTimeStr?: string): boolean {
+  if (!dateStr) return false;
+
+  const now = new Date();
+  let targetDate = new Date();
+  const dLower = dateStr.trim().toLowerCase();
+  if (dLower === "today") {
+    // keep current date
+  } else if (dLower === "tomorrow") {
+    targetDate.setDate(targetDate.getDate() + 1);
+  } else {
+    const parsed = new Date(dateStr);
+    if (!isNaN(parsed.getTime())) {
+      targetDate = parsed;
+    }
+  }
+
+  const todayOnly = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const slotDateOnly = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate());
+
+  if (slotDateOnly < todayOnly) return true;
+  if (slotDateOnly > todayOnly) return false;
+
+  const timeToCheck = endTimeStr || startTimeStr;
+  if (!timeToCheck) return false;
+
+  let hours = 0;
+  let minutes = 0;
+  const match = timeToCheck.match(/(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
+  if (match) {
+    let h = parseInt(match[1], 10);
+    const m = parseInt(match[2], 10);
+    const meridiem = match[3] ? match[3].toUpperCase() : null;
+    if (meridiem === "PM" && h < 12) h += 12;
+    if (meridiem === "AM" && h === 12) h = 0;
+    hours = h;
+    minutes = m;
+  }
+
+  const slotEndTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hours, minutes);
+  return now.getTime() > slotEndTime.getTime();
+}
+
 export function FarmerMandiDetailView() {
   const { mandiId } = useParams<{ mandiId: string }>();
   const navigate = useNavigate();
@@ -41,7 +84,10 @@ export function FarmerMandiDetailView() {
         if (found) {
           setMandi(found);
           if (found.slots && found.slots.length > 0) {
-            setSelectedSlotId(found.slots[0].id);
+            const validSlot = found.slots.find(
+              (s) => !s.isExpired && !isSlotExpired(s.date, s.endTime, s.startTime)
+            );
+            setSelectedSlotId(validSlot ? validSlot.id : found.slots[0].id);
           }
         }
       } catch (err) {
@@ -277,36 +323,42 @@ export function FarmerMandiDetailView() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {mandi.slots?.map((slot) => {
-            const isSelected = slot.id === selectedSlotId;
+            const isExpired = slot.isExpired || isSlotExpired(slot.date, slot.endTime, slot.startTime);
             const isFull = slot.availableBookings <= 0;
+            const isDisabled = isFull || isExpired;
+            const isSelected = slot.id === selectedSlotId && !isDisabled;
 
             return (
               <div
                 key={slot.id}
                 onClick={() => {
-                  if (!isFull) setSelectedSlotId(slot.id);
+                  if (!isDisabled) setSelectedSlotId(slot.id);
                 }}
-                className={`p-4 rounded-2xl border transition-all cursor-pointer select-none ${
-                  isFull
-                    ? "bg-slate-100/60 border-slate-200 opacity-60 cursor-not-allowed"
+                className={`p-4 rounded-2xl border transition-all select-none ${
+                  isDisabled
+                    ? "bg-slate-100/70 border-slate-200 opacity-60 cursor-not-allowed"
                     : isSelected
-                    ? "bg-emerald-50 border-emerald-500 ring-2 ring-emerald-500/20"
-                    : "bg-white border-slate-200 hover:border-slate-300"
+                    ? "bg-emerald-50 border-emerald-500 ring-2 ring-emerald-500/20 cursor-pointer"
+                    : "bg-white border-slate-200 hover:border-slate-300 cursor-pointer"
                 }`}
               >
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-extrabold text-slate-900">{slot.date}</span>
+                  <span className={`text-xs font-extrabold ${isExpired ? "text-slate-500 line-through" : "text-slate-900"}`}>
+                    {slot.date}
+                  </span>
                   <span
                     className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${
-                      isFull
+                      isExpired
+                        ? "bg-slate-200 text-slate-600"
+                        : isFull
                         ? "bg-red-100 text-red-700"
                         : "bg-emerald-100 text-emerald-800"
                     }`}
                   >
-                    {isFull ? "Fully Booked" : `${slot.availableBookings} slots left`}
+                    {isExpired ? "Time Passed" : isFull ? "Fully Booked" : `${slot.availableBookings} slots left`}
                   </span>
                 </div>
-                <p className="text-xs text-slate-600 font-semibold mt-1">
+                <p className={`text-xs font-semibold mt-1 ${isExpired ? "text-slate-400" : "text-slate-600"}`}>
                   {slot.startTime} – {slot.endTime}
                 </p>
               </div>

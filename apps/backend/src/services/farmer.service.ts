@@ -221,6 +221,62 @@ function calculateDistanceKm(lat1: number, lon1: number, lat2: number, lon2: num
 }
 
 /**
+ * Checks if a mandi slot's date and end time has passed current system time.
+ */
+export function isSlotExpired(dateStr?: string, endTimeStr?: string, startTimeStr?: string): boolean {
+  if (!dateStr) return false;
+
+  const now = new Date();
+
+  // Normalize date string
+  let targetDate = new Date();
+  const dLower = dateStr.trim().toLowerCase();
+  if (dLower === "today") {
+    // keep current date
+  } else if (dLower === "tomorrow") {
+    targetDate.setDate(targetDate.getDate() + 1);
+  } else {
+    const parsed = new Date(dateStr);
+    if (!isNaN(parsed.getTime())) {
+      targetDate = parsed;
+    }
+  }
+
+  const todayOnly = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const slotDateOnly = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate());
+
+  if (slotDateOnly < todayOnly) {
+    return true; // Past date
+  }
+  if (slotDateOnly > todayOnly) {
+    return false; // Future date
+  }
+
+  // If slot is TODAY, check end time (or start time)
+  const timeToCheck = endTimeStr || startTimeStr;
+  if (!timeToCheck) return false;
+
+  let hours = 0;
+  let minutes = 0;
+
+  const match = timeToCheck.match(/(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
+  if (match) {
+    let h = parseInt(match[1], 10);
+    const m = parseInt(match[2], 10);
+    const meridiem = match[3] ? match[3].toUpperCase() : null;
+
+    if (meridiem === "PM" && h < 12) h += 12;
+    if (meridiem === "AM" && h === 12) h = 0;
+
+    hours = h;
+    minutes = m;
+  }
+
+  const slotEndTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hours, minutes);
+  return now.getTime() > slotEndTime.getTime();
+}
+
+/**
  * Lists all approved mandis from database with slots and metrics for farmer app.
  * Automatically sorts nearest first if user GPS coordinates (userLat, userLng) are provided.
  */
@@ -352,7 +408,10 @@ export async function listApprovedMandis(userLat?: number, userLng?: number) {
       closedDays: m.closedDays || [],
       closedHours: m.closedHours,
       isLocationSet: m.isLocationSet ?? true,
-      slots: m.slots,
+      slots: m.slots.map((s) => ({
+        ...s,
+        isExpired: isSlotExpired(s.date, s.endTime, s.startTime),
+      })),
     };
   });
 
@@ -468,6 +527,10 @@ export async function createFarmerBooking(
 
   if (!slot || !slot.isActive) {
     throw new AppError("The requested mandi arrival slot is no longer active or closed.", 404, "SLOT_NOT_FOUND");
+  }
+
+  if (isSlotExpired(slot.date, slot.endTime, slot.startTime)) {
+    throw new AppError("This arrival slot's window has already passed or expired.", 400, "SLOT_EXPIRED");
   }
 
   if (slot.availableBookings <= 0) {

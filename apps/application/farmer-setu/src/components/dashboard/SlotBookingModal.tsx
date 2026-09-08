@@ -34,6 +34,49 @@ interface CropSelectionState {
   selected: boolean;
 }
 
+export function isSlotExpired(dateStr?: string, endTimeStr?: string, startTimeStr?: string): boolean {
+  if (!dateStr) return false;
+
+  const now = new Date();
+  let targetDate = new Date();
+  const dLower = dateStr.trim().toLowerCase();
+  if (dLower === 'today') {
+    // keep current date
+  } else if (dLower === 'tomorrow') {
+    targetDate.setDate(targetDate.getDate() + 1);
+  } else {
+    const parsed = new Date(dateStr);
+    if (!isNaN(parsed.getTime())) {
+      targetDate = parsed;
+    }
+  }
+
+  const todayOnly = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const slotDateOnly = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate());
+
+  if (slotDateOnly < todayOnly) return true;
+  if (slotDateOnly > todayOnly) return false;
+
+  const timeToCheck = endTimeStr || startTimeStr;
+  if (!timeToCheck) return false;
+
+  let hours = 0;
+  let minutes = 0;
+  const match = timeToCheck.match(/(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
+  if (match) {
+    let h = parseInt(match[1], 10);
+    const m = parseInt(match[2], 10);
+    const meridiem = match[3] ? match[3].toUpperCase() : null;
+    if (meridiem === 'PM' && h < 12) h += 12;
+    if (meridiem === 'AM' && h === 12) h = 0;
+    hours = h;
+    minutes = m;
+  }
+
+  const slotEndTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hours, minutes);
+  return now.getTime() > slotEndTime.getTime();
+}
+
 export const SlotBookingModal = memo(function SlotBookingModal({
   visible,
   mandi,
@@ -73,9 +116,12 @@ export const SlotBookingModal = memo(function SlotBookingModal({
       setGeneratedBooking(null);
       setErrorMessage(null);
 
-      // Default slot selection
+      // Default slot selection: pick first non-expired active slot
       if (mandi.slots && mandi.slots.length > 0) {
-        setSelectedSlot(mandi.slots[0]);
+        const validSlot = mandi.slots.find(
+          (s) => !(s as any).isExpired && !isSlotExpired(s.date, s.endTime, s.startTime)
+        );
+        setSelectedSlot(validSlot || mandi.slots[0]);
       } else {
         setSelectedSlot(null);
       }
@@ -408,7 +454,8 @@ export const SlotBookingModal = memo(function SlotBookingModal({
                   {mandi.slots && mandi.slots.length > 0 ? (
                     <View style={styles.slotsGrid}>
                       {mandi.slots.map((s) => {
-                        const isSelected = selectedSlot?.id === s.id;
+                        const expired = (s as any).isExpired || isSlotExpired(s.date, s.endTime, s.startTime);
+                        const isSelected = selectedSlot?.id === s.id && !expired;
                         const slotCropsText =
                           s.allowedCrops && Array.isArray(s.allowedCrops) && s.allowedCrops.length > 0
                             ? s.allowedCrops.map((ac: any) => ac.crop || ac).join(', ')
@@ -417,28 +464,40 @@ export const SlotBookingModal = memo(function SlotBookingModal({
                         return (
                           <Pressable
                             key={s.id}
-                            onPress={() => setSelectedSlot(s)}
+                            disabled={expired}
+                            onPress={() => {
+                              if (!expired) setSelectedSlot(s);
+                            }}
                             style={[
                               styles.slotCard,
                               isSelected && styles.slotCardSelected,
+                              expired && styles.slotCardExpired,
                             ]}>
                             <View style={styles.slotCardHeader}>
                               <Ionicons
                                 name="time-outline"
                                 size={14}
-                                color={isSelected ? '#15803D' : '#6B7280'}
+                                color={expired ? '#9CA3AF' : isSelected ? '#15803D' : '#6B7280'}
                               />
                               <Text
                                 style={[
                                   styles.slotTimeText,
                                   isSelected && styles.slotTimeTextSelected,
+                                  expired && styles.slotTimeTextExpired,
                                 ]}>
                                 {s.startTime} - {s.endTime}
                               </Text>
                             </View>
-                            <Text style={styles.slotDateText}>{s.date}</Text>
-                            <Text style={styles.slotCapText} numberOfLines={1}>
-                              Crops: {slotCropsText}
+                            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 2 }}>
+                              <Text style={styles.slotDateText}>{s.date}</Text>
+                              {expired && (
+                                <View style={styles.expiredBadge}>
+                                  <Text style={styles.expiredBadgeText}>Time Passed</Text>
+                                </View>
+                              )}
+                            </View>
+                            <Text style={[styles.slotCapText, expired && styles.slotCapTextExpired]} numberOfLines={1}>
+                              {expired ? 'Slot Closed / Window Expired' : `Crops: ${slotCropsText}`}
                             </Text>
                           </Pressable>
                         );
@@ -1074,5 +1133,33 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#059669',
     fontWeight: '700',
+  },
+
+  // Expired Slot Card Styles
+  slotCardExpired: {
+    backgroundColor: '#F3F4F6',
+    borderColor: '#E5E7EB',
+    opacity: 0.65,
+  },
+  slotTimeTextExpired: {
+    color: '#9CA3AF',
+    textDecorationLine: 'line-through',
+  },
+  slotCapTextExpired: {
+    color: '#9CA3AF',
+  },
+  expiredBadge: {
+    backgroundColor: '#FEE2E2',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#FCA5A5',
+  },
+  expiredBadgeText: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: '#991B1B',
+    textTransform: 'uppercase',
   },
 });
