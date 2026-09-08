@@ -307,7 +307,7 @@ export const fetchRatingThunk = createAsyncThunk(
 export const updateMandiLocationThunk = createAsyncThunk(
   "mandi/updateLocation",
   async (
-    payload: { address: string; pincode: string; latitude: number; longitude: number; operatingHours?: string; closedDays?: string[]; closedHours?: string },
+    payload: { address: string; pincode: string; latitude: number; longitude: number; district?: string; state?: string; operatingHours?: string; closedDays?: string[]; closedHours?: string },
     { rejectWithValue }
   ) => {
     try {

@@ -17,6 +17,7 @@ import {
   Check,
   Calendar,
   ExternalLink,
+  Sparkles,
 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "../../store";
 import {
@@ -34,15 +35,15 @@ export function MandiSettingsView() {
   const { profile, isActionLoading } = useAppSelector((state) => state.mandi);
 
   // Yard Address Form State
-  const [yardAddress, setYardAddress] = useState("Plot No. 44, Industrial Area, Bypass Highway");
-  const [district, setDistrict] = useState("Indore");
-  const [state, setState] = useState("Madhya Pradesh");
-  const [pinCode, setPinCode] = useState("452010");
-  const [weighbridgeCount, setWeighbridgeCount] = useState<number>(4);
+  const [yardAddress, setYardAddress] = useState(profile?.yardAddress || profile?.address || "");
+  const [district, setDistrict] = useState(profile?.district || "");
+  const [state, setState] = useState(profile?.state || "");
+  const [pinCode, setPinCode] = useState(profile?.pinCode || profile?.pincode || "");
+  const [weighbridgeCount, setWeighbridgeCount] = useState<number>(profile?.weighbridgeCount || 4);
 
   // Location & Coordinates State
-  const [latitude, setLatitude] = useState<number>(22.7196);
-  const [longitude, setLongitude] = useState<number>(75.8577);
+  const [latitude, setLatitude] = useState<number>(profile?.latitude ?? 18.4965);
+  const [longitude, setLongitude] = useState<number>(profile?.longitude ?? 73.8656);
   const [closedDays, setClosedDays] = useState<string[]>(["Sunday"]);
   const [closedHours, setClosedHours] = useState<string>("20:00 - 06:00");
   const [isLocating, setIsLocating] = useState<boolean>(false);
@@ -75,6 +76,61 @@ export function MandiSettingsView() {
     }
   }, [profile]);
 
+  /**
+   * Reverse-geocodes GPS coordinates using OpenStreetMap Nominatim API
+   * and auto-fills street address, district, state, and postal PIN code.
+   */
+  const reverseGeocodeCoordinates = async (lat: number, lon: number) => {
+    try {
+      setIsLocating(true);
+      setLocationStatusMsg("Resolving street address, district, state & postal code from coordinates...");
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&addressdetails=1`,
+        {
+          headers: {
+            "Accept-Language": "en",
+          },
+        }
+      );
+      if (res.ok) {
+        const data = await res.json();
+        const addr = data.address || {};
+
+        // 1. Build physical street address
+        const streetParts = [
+          addr.building || addr.amenity || addr.office || addr.commercial,
+          addr.road,
+          addr.suburb || addr.neighbourhood || addr.industrial,
+        ].filter(Boolean);
+
+        const autoAddress = streetParts.length > 0
+          ? streetParts.join(", ")
+          : (data.display_name ? data.display_name.split(",").slice(0, 3).join(", ") : "");
+
+        // 2. Build district, state, and postal code
+        const autoDistrict = addr.state_district || addr.district || addr.city || addr.county || addr.town || "";
+        const autoState = addr.state || "";
+        const autoPincode = addr.postcode || "";
+
+        if (autoAddress) setYardAddress(autoAddress);
+        if (autoDistrict) setDistrict(autoDistrict);
+        if (autoState) setState(autoState);
+        if (autoPincode) setPinCode(autoPincode);
+
+        setLocationStatusMsg("✓ Coordinates set & address fields auto-filled successfully!");
+        setTimeout(() => setLocationStatusMsg(null), 5000);
+      } else {
+        setLocationStatusMsg("✓ Coordinates set successfully.");
+        setTimeout(() => setLocationStatusMsg(null), 3000);
+      }
+    } catch {
+      setLocationStatusMsg("✓ Coordinates set successfully.");
+      setTimeout(() => setLocationStatusMsg(null), 3000);
+    } finally {
+      setIsLocating(false);
+    }
+  };
+
   const handleFetchCurrentLocation = () => {
     if (!navigator.geolocation) {
       setLocationStatusMsg("Geolocation is not supported by your browser.");
@@ -83,12 +139,12 @@ export function MandiSettingsView() {
     setIsLocating(true);
     setLocationStatusMsg("Acquiring GPS fix from browser...");
     navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setLatitude(Number(pos.coords.latitude.toFixed(6)));
-        setLongitude(Number(pos.coords.longitude.toFixed(6)));
-        setIsLocating(false);
-        setLocationStatusMsg("✓ GPS coordinates acquired successfully!");
-        setTimeout(() => setLocationStatusMsg(null), 4000);
+      async (pos) => {
+        const lat = Number(pos.coords.latitude.toFixed(6));
+        const lon = Number(pos.coords.longitude.toFixed(6));
+        setLatitude(lat);
+        setLongitude(lon);
+        await reverseGeocodeCoordinates(lat, lon);
       },
       (err) => {
         setIsLocating(false);
@@ -106,6 +162,8 @@ export function MandiSettingsView() {
         pincode: pinCode,
         latitude,
         longitude,
+        district,
+        state,
         closedDays,
         closedHours,
       })
@@ -238,7 +296,7 @@ export function MandiSettingsView() {
               className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition shadow-xs cursor-pointer disabled:opacity-50"
             >
               <Navigation className={`w-3.5 h-3.5 ${isLocating ? "animate-spin" : ""}`} />
-              <span>{isLocating ? "Acquiring GPS..." : "Fetch Current Location"}</span>
+              <span>{isLocating ? "Acquiring & Auto-filling Address..." : "Fetch Current Location"}</span>
             </button>
           </div>
 
@@ -297,8 +355,20 @@ export function MandiSettingsView() {
                     Required for farmers to locate the yard on the app and book slots.
                   </p>
                 </div>
-                <div className="font-mono text-xs font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-1 rounded-lg border border-emerald-200 dark:border-emerald-800">
-                  {latitude.toFixed(4)}° N, {longitude.toFixed(4)}° E
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => reverseGeocodeCoordinates(latitude, longitude)}
+                    disabled={isLocating}
+                    className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 border border-emerald-300 dark:border-emerald-800 rounded-lg transition-colors cursor-pointer disabled:opacity-50"
+                    title="Auto-fill address, district, state and PIN code from current coordinates"
+                  >
+                    <Sparkles className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+                    <span>Auto-Fill Address</span>
+                  </button>
+                  <div className="font-mono text-xs font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-1 rounded-lg border border-emerald-200 dark:border-emerald-800">
+                    {latitude.toFixed(4)}° N, {longitude.toFixed(4)}° E
+                  </div>
                 </div>
               </div>
 

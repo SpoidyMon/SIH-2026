@@ -112,7 +112,7 @@ export const mandiApi = {
   },
 
   // 5. Yard Coordinates & Location Marking
-  updateLocation: async (payload: { address: string; pincode: string; latitude: number; longitude: number; operatingHours?: string; closedDays?: string[]; closedHours?: string }): Promise<ApiResponse<{ profile: MandiProfile }>> => {
+  updateLocation: async (payload: { address: string; pincode: string; latitude: number; longitude: number; district?: string; state?: string; operatingHours?: string; closedDays?: string[]; closedHours?: string }): Promise<ApiResponse<{ profile: MandiProfile }>> => {
     const response = await apiClient.post<ApiResponse<{ profile: MandiProfile }>>("/mandi/location", payload);
     return response.data;
   },
