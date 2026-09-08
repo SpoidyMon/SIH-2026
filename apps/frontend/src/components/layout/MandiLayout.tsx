@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { Outlet, useNavigate, useLocation } from "react-router";
 import {
   Home,
   Calendar,
@@ -23,7 +24,6 @@ import {
 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "../../store";
 import {
-  setActiveNavTab,
   fetchDashboardStatsThunk,
   fetchProfileThunk,
   fetchCurrentBookingsThunk,
@@ -35,16 +35,28 @@ import {
 import { logoutThunk } from "../../store/slices/authSlice";
 import { apiClient } from "../../services/apiClient";
 
-interface MandiLayoutProps {
-  children: React.ReactNode;
+/** Maps URL path segments to the internal nav key used for active-state styling */
+function getActiveTab(pathname: string): string {
+  if (pathname.startsWith("/mandi/manageSlot")) return "slots";
+  if (pathname.startsWith("/mandi/GateScanner")) return "scanner";
+  if (pathname.startsWith("/mandi/verification")) return "verification";
+  if (pathname.startsWith("/mandi/history")) return "history";
+  if (pathname.startsWith("/mandi/settings")) return "settings";
+  if (pathname.startsWith("/mandi/rating")) return "rating";
+  return "dashboard";
 }
 
-export function MandiLayout({ children }: MandiLayoutProps) {
+export function MandiLayout() {
   const dispatch = useAppDispatch();
+  const navigate = useNavigate();
+  const location = useLocation();
+
   const { user } = useAppSelector((state) => state.auth);
-  const { stats, profile, activeNavTab, successMessage, error, currentBookings, slots } = useAppSelector(
+  const { stats, profile, successMessage, error, currentBookings, slots } = useAppSelector(
     (state) => state.mandi
   );
+
+  const activeNavTab = getActiveTab(location.pathname);
 
   const [backendOnline, setBackendOnline] = useState<boolean | null>(true);
   const [isDarkTheme, setIsDarkTheme] = useState<boolean>(false);
@@ -112,7 +124,7 @@ export function MandiLayout({ children }: MandiLayoutProps) {
         <div className="flex items-center gap-3">
           {/* Quick Scanner Icon Button */}
           <button
-            onClick={() => dispatch(setActiveNavTab("scanner"))}
+            onClick={() => navigate("/mandi/GateScanner")}
             title="Open Gate Token Scanner"
             className="p-2 text-slate-500 hover:text-slate-800 dark:text-neutral-400 dark:hover:text-neutral-100 hover:bg-slate-100 dark:hover:bg-neutral-800 rounded-xl transition cursor-pointer"
           >
@@ -181,7 +193,7 @@ export function MandiLayout({ children }: MandiLayoutProps) {
                 </div>
                 <button
                   onClick={() => {
-                    dispatch(setActiveNavTab("settings"));
+                    navigate("/mandi/settings");
                     setShowProfileDropdown(false);
                   }}
                   className="w-full flex items-center px-3.5 py-2 text-slate-700 dark:text-[#E5E5E5] hover:bg-slate-50 dark:hover:bg-neutral-800 cursor-pointer text-left"
@@ -190,7 +202,7 @@ export function MandiLayout({ children }: MandiLayoutProps) {
                 </button>
                 <button
                   onClick={() => {
-                    dispatch(setActiveNavTab("verification"));
+                    navigate("/mandi/verification");
                     setShowProfileDropdown(false);
                   }}
                   className="w-full flex items-center px-3.5 py-2 text-slate-700 dark:text-[#E5E5E5] hover:bg-slate-50 dark:hover:bg-neutral-800 cursor-pointer text-left"
@@ -199,7 +211,7 @@ export function MandiLayout({ children }: MandiLayoutProps) {
                 </button>
                 <button
                   onClick={() => {
-                    dispatch(setActiveNavTab("settings"));
+                    navigate("/mandi/settings");
                     setShowProfileDropdown(false);
                   }}
                   className="w-full flex items-center px-3.5 py-2 text-slate-700 dark:text-[#E5E5E5] hover:bg-slate-50 dark:hover:bg-neutral-800 cursor-pointer text-left"
@@ -231,7 +243,7 @@ export function MandiLayout({ children }: MandiLayoutProps) {
             <nav className="space-y-1 text-sm font-medium" data-purpose="primary-sidebar-nav">
               {/* Dashboard */}
               <button
-                onClick={() => dispatch(setActiveNavTab("dashboard"))}
+                onClick={() => navigate("/mandi/dashboard")}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition cursor-pointer text-left ${
                   activeNavTab === "dashboard"
                     ? "bg-slate-100 dark:bg-neutral-800 text-slate-900 dark:text-[#E5E5E5] shadow-xs font-semibold"
@@ -273,7 +285,7 @@ export function MandiLayout({ children }: MandiLayoutProps) {
 
               {/* Manage slots */}
               <button
-                onClick={() => dispatch(setActiveNavTab("slots"))}
+                onClick={() => navigate("/mandi/manageSlot")}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition cursor-pointer text-left ${
                   activeNavTab === "slots"
                     ? "bg-slate-100 dark:bg-neutral-800 text-slate-900 dark:text-[#E5E5E5] shadow-xs font-semibold"
@@ -291,7 +303,7 @@ export function MandiLayout({ children }: MandiLayoutProps) {
 
               {/* Gate QR Scanner */}
               <button
-                onClick={() => dispatch(setActiveNavTab("scanner"))}
+                onClick={() => navigate("/mandi/GateScanner")}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition cursor-pointer text-left ${
                   activeNavTab === "scanner"
                     ? "bg-slate-100 dark:bg-neutral-800 text-slate-900 dark:text-[#E5E5E5] shadow-xs font-semibold"
@@ -306,7 +318,7 @@ export function MandiLayout({ children }: MandiLayoutProps) {
 
               {/* Verification Status */}
               <button
-                onClick={() => dispatch(setActiveNavTab("verification"))}
+                onClick={() => navigate("/mandi/verification")}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition cursor-pointer text-left ${
                   activeNavTab === "verification"
                     ? "bg-slate-100 dark:bg-neutral-800 text-slate-900 dark:text-[#E5E5E5] shadow-xs font-semibold"
@@ -319,20 +331,6 @@ export function MandiLayout({ children }: MandiLayoutProps) {
                 <span>Verification Status</span>
               </button>
 
-              {/* Farmer Database */}
-              <button
-                onClick={() => dispatch(setActiveNavTab("farmers"))}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition cursor-pointer text-left ${
-                  activeNavTab === "farmers"
-                    ? "bg-slate-100 dark:bg-neutral-800 text-slate-900 dark:text-[#E5E5E5] shadow-xs font-semibold"
-                    : "text-slate-500 hover:text-slate-800 dark:text-neutral-400 dark:hover:text-neutral-200 hover:bg-slate-50 dark:hover:bg-neutral-800/50"
-                }`}
-              >
-                <span className="w-5 h-5 flex items-center justify-center">
-                  <Users className="w-5 h-5" />
-                </span>
-                <span>Farmer Database</span>
-              </button>
             </nav>
           </div>
 
@@ -360,7 +358,7 @@ export function MandiLayout({ children }: MandiLayoutProps) {
 
             {/* Mandi Settings Link */}
             <button
-              onClick={() => dispatch(setActiveNavTab("settings"))}
+              onClick={() => navigate("/mandi/settings")}
               className={`w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-xl transition cursor-pointer text-left ${
                 activeNavTab === "settings"
                   ? "bg-slate-100 dark:bg-neutral-800 text-slate-900 dark:text-[#E5E5E5] font-semibold"
@@ -406,7 +404,7 @@ export function MandiLayout({ children }: MandiLayoutProps) {
             </div>
           )}
 
-          {children}
+          <Outlet />
         </main>
       </div>
 

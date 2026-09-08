@@ -84,6 +84,82 @@ export function MandiFarmersView() {
         </div>
       </div>
 
+      {/* Farmers Table */}
+      <div className="bg-white dark:bg-[#121212] rounded-2xl border border-neutral-200 dark:border-neutral-800 shadow-xs overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="mandi-table">
+            <thead>
+              <tr>
+                <th className="px-5 py-3.5 text-xs font-bold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
+                  FARMER
+                </th>
+                <th className="px-5 py-3.5 text-xs font-bold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
+                  LOCATION & LAND
+                </th>
+                <th className="px-5 py-3.5 text-xs font-bold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
+                  PRIMARY CROPS
+                </th>
+                <th className="px-5 py-3.5 text-xs font-bold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
+                  TOTAL DELIVERIES
+                </th>
+                <th className="px-5 py-3.5 text-xs font-bold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
+                  KYC STATUS
+                </th>
+                <th className="px-6 py-3.5 text-right text-xs font-bold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
+                  ACTIONS
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredFarmers.map((farmer) => (
+                <tr key={farmer.id} className="hover:bg-neutral-50/80 dark:hover:bg-neutral-900/60 transition-colors">
+                  <td className="px-5 py-4 align-middle">
+                    <div className="font-bold text-gray-900 dark:text-[#E5E5E5] text-sm">{farmer.name}</div>
+                    <div className="text-xs text-neutral-500 dark:text-neutral-400 flex items-center gap-1 mt-0.5">
+                      <Phone className="w-3 h-3 text-neutral-400" />
+                      <span>{farmer.phone}</span>
+                      <span>•</span>
+                      <span className="font-mono text-[10px] text-neutral-400">{farmer.id}</span>
+                    </div>
+                  </td>
+                  <td className="px-5 py-4 align-middle">
+                    <div className="text-sm font-semibold text-gray-800 dark:text-gray-200">
+                      {farmer.village}, {farmer.district}
+                    </div>
+                    <div className="text-xs text-neutral-400">{farmer.landAcres} Acres Registered</div>
+                  </td>
+                  <td className="px-5 py-4 align-middle">
+                    <div className="flex flex-wrap gap-1">
+                      {farmer.primaryCrops.map((crop) => (
+                        <span
+                          key={crop}
+                          className="px-2 py-0.5 rounded-md text-[11px] font-semibold bg-emerald-50 dark:bg-black text-[#059669] dark:text-[#5CE65C] border border-emerald-200 dark:border-emerald-800/60"
+                        >
+                          {crop}
+                        </span>
+                      ))}
+                    </div>
+                  </td>
+                  <td className="px-5 py-4 align-middle">
+                    <div className="text-sm font-semibold text-gray-900 dark:text-[#E5E5E5]">
+                      {farmer.totalQuintalsSupplied} Qtl
+                    </div>
+                    <div className="text-xs text-neutral-400">{farmer.totalConsignments} Consignments</div>
+                  </td>
+                  <td className="px-5 py-4 align-middle">
+                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-white dark:bg-black text-[#059669] dark:text-[#5CE65C] border border-emerald-300 dark:border-emerald-700/60">
+                      <ShieldCheck className="w-3.5 h-3.5" />
+                      <span>{farmer.kycStatus}</span>
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 align-middle text-right">
+                    <button
+                      onClick={() => setSelectedFarmer(farmer)}
+                      className="px-3.5 py-1.5 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-black hover:bg-neutral-50 dark:hover:bg-neutral-900 text-xs font-bold text-gray-800 dark:text-gray-200 shadow-2xs transition-all cursor-pointer"
+                    >
+                      View Ledger
+                    </button>
+                  </td>
       {/* Farmers Table or Loading / Empty */}
       {isLoading ? (
         <div className="bg-white dark:bg-[#121212] rounded-2xl border border-neutral-200 dark:border-neutral-800 p-12 flex flex-col items-center justify-center gap-3">

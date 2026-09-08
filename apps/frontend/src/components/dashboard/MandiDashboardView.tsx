@@ -1,3 +1,4 @@
+import React, { useState, useCallback } from "react";
 import React, { useState, useEffect } from "react";
 import {
   QrCode,
@@ -29,13 +30,14 @@ import {
   verifyGateTokenThunk,
   completeBookingThunk,
   applyDefaultPresetsThunk,
-  fetchCurrentBookingsThunk,
-  fetchPreviousBookingsThunk,
-  fetchDashboardStatsThunk,
-  fetchSlotsThunk,
-  setActiveNavTab,
 } from "../../store/slices/mandiSlice";
 import { Booking } from "../../interfaces";
+import { MandiOperationalPipeline } from "./MandiOperationalPipeline";
+import { ConsignmentBookingsTable } from "./ConsignmentBookingsTable";
+import { VerifyTokenModal } from "./modals/VerifyTokenModal";
+import { BookingDetailsModal } from "./modals/BookingDetailsModal";
+import { WeighbridgeSettlementModal } from "./modals/WeighbridgeSettlementModal";
+import { SettlementSlipModal } from "./modals/SettlementSlipModal";
 
 export function MandiDashboardView() {
   const dispatch = useAppDispatch();
@@ -43,114 +45,94 @@ export function MandiDashboardView() {
     (state) => state.mandi
   );
 
-  useEffect(() => {
-    dispatch(fetchDashboardStatsThunk());
-    dispatch(fetchCurrentBookingsThunk());
-    dispatch(fetchPreviousBookingsThunk());
-    dispatch(fetchSlotsThunk());
-  }, [dispatch]);
-
-  // Filter & Search state
-  const [activeTab, setActiveTab] = useState<"current" | "previous">("current");
-  const [statusFilter, setStatusFilter] = useState<string>("ALL");
-  const [searchQuery, setSearchQuery] = useState<string>("");
-
-  // Modals
+  // Modals state
   const [showVerifyModal, setShowVerifyModal] = useState(false);
-  const [verifyTokenInput, setVerifyTokenInput] = useState("");
   const [selectedBookingForDetails, setSelectedBookingForDetails] = useState<Booking | null>(null);
   const [selectedBookingForWeighbridge, setSelectedBookingForWeighbridge] = useState<Booking | null>(null);
   const [selectedBookingForSlip, setSelectedBookingForSlip] = useState<Booking | null>(null);
 
-  // Weighbridge settlement form state
-  const [grossWeightKg, setGrossWeightKg] = useState<number>(4700);
-  const [tareWeightKg, setTareWeightKg] = useState<number>(200);
-  const [moisturePercent, setMoisturePercent] = useState<number>(11.5);
-
-  // Filtered rows
-  const targetDataset = activeTab === "current" ? currentBookings : previousBookings;
-  const displayedBookings = targetDataset.filter((b) => {
-    // Status Filter
-    if (statusFilter !== "ALL" && b.status !== statusFilter) {
-      return false;
-    }
-    // Search Query Filter
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase().trim();
-      const matchToken = b.token?.toLowerCase().includes(q);
-      const matchId = b.id?.toLowerCase().includes(q);
-      const matchFarmer = b.farmerName?.toLowerCase().includes(q);
-      const matchPhone = b.farmerPhone?.toLowerCase().includes(q);
-      const matchCrop = b.crop?.toLowerCase().includes(q);
-      const matchVariety = b.variety?.toLowerCase().includes(q);
-      if (!matchToken && !matchId && !matchFarmer && !matchPhone && !matchCrop && !matchVariety) {
-        return false;
-      }
-    }
-    return true;
-  });
-
-  // Action Handlers
-  const handleAccept = (bookingId: string) => {
+  // Stable action handlers
+  const handleAccept = useCallback((bookingId: string) => {
     dispatch(updateBookingStatusThunk({ id: bookingId, status: "ACCEPTED" }));
-  };
+  }, [dispatch]);
 
-  const handleReject = (bookingId: string) => {
+  const handleReject = useCallback((bookingId: string) => {
     const reason = prompt("Enter rejection reason (e.g. Yard intake capacity reached for this grade):");
     if (reason !== null) {
       dispatch(updateBookingStatusThunk({ id: bookingId, status: "REJECTED" }));
     }
-  };
+  }, [dispatch]);
 
-  const handleVerifyEntry = (token: string) => {
+  const handleVerifyEntry = useCallback((token: string) => {
     dispatch(verifyGateTokenThunk(token));
-  };
+  }, [dispatch]);
 
-  const handleOpenWeighbridge = (booking: Booking) => {
+  const handleOpenWeighbridge = useCallback((booking: Booking) => {
     setSelectedBookingForWeighbridge(booking);
-    const estimatedKg = (booking.estimatedQuantityQuintals || booking.quantityQuintals || 50) * 100;
-    setGrossWeightKg(estimatedKg + 200);
-    setTareWeightKg(200);
-    setMoisturePercent(11.4);
-  };
+  }, []);
 
-  const handleCompleteSettlement = () => {
-    if (!selectedBookingForWeighbridge) return;
-    const netQuintals = Math.max(0, (grossWeightKg - tareWeightKg) / 100);
-    const ratePerQuintal = selectedBookingForWeighbridge.crop.includes("Wheat")
-      ? 2300
-      : selectedBookingForWeighbridge.crop.includes("Mustard")
-      ? 5400
-      : selectedBookingForWeighbridge.crop.includes("Rice")
-      ? 3800
-      : 5400;
-    const finalPayout = Math.round(netQuintals * ratePerQuintal);
-
+  const handleCompleteSettlement = useCallback((
+    bookingId: string,
+    actualWeightQuintals: number,
+    finalPayoutAmount: number
+  ) => {
     dispatch(
       completeBookingThunk({
-        id: selectedBookingForWeighbridge.id,
+        id: bookingId,
         payload: {
-          actualWeightQuintals: netQuintals,
-          finalPayoutAmount: finalPayout,
+          actualWeightQuintals,
+          finalPayoutAmount,
         },
       })
     );
-    setSelectedBookingForWeighbridge(null);
-  };
+  }, [dispatch]);
 
-  const handleDefaultSlots = () => {
+  const handleDefaultSlots = useCallback(() => {
     dispatch(applyDefaultPresetsThunk());
-  };
-
-  const handleQuickVerifyTokenSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!verifyTokenInput.trim()) return;
-    dispatch(verifyGateTokenThunk(verifyTokenInput.trim()));
-    setShowVerifyModal(false);
-    setVerifyTokenInput("");
-  };
+  }, [dispatch]);
 
   return (
+    <div className="space-y-4 max-w-7xl mx-auto font-sans">
+      {/* Top Section: Memoized MandiOperationalPipeline (never re-renders on tab switch or table search) */}
+      <MandiOperationalPipeline stats={stats} />
+
+      {/* Main Table: Segmented Tabs (Current Bookings vs Previous Logs) and dynamic manifest */}
+      <ConsignmentBookingsTable
+        currentBookings={currentBookings}
+        previousBookings={previousBookings}
+        isActionLoading={isActionLoading}
+        onAccept={handleAccept}
+        onReject={handleReject}
+        onVerifyEntry={handleVerifyEntry}
+        onOpenWeighbridge={handleOpenWeighbridge}
+        onViewSlip={setSelectedBookingForSlip}
+        onViewDetails={setSelectedBookingForDetails}
+        onOpenVerifyModal={() => setShowVerifyModal(true)}
+        onDefaultSlots={handleDefaultSlots}
+      />
+
+      {/* Modals */}
+      <VerifyTokenModal
+        isOpen={showVerifyModal}
+        onClose={() => setShowVerifyModal(false)}
+        onVerify={handleVerifyEntry}
+      />
+
+      <BookingDetailsModal
+        booking={selectedBookingForDetails}
+        onClose={() => setSelectedBookingForDetails(null)}
+      />
+
+      <WeighbridgeSettlementModal
+        booking={selectedBookingForWeighbridge}
+        onClose={() => setSelectedBookingForWeighbridge(null)}
+        onComplete={handleCompleteSettlement}
+      />
+
+      <SettlementSlipModal
+        booking={selectedBookingForSlip}
+        onClose={() => setSelectedBookingForSlip(null)}
+      />
     <div className="space-y-4 max-w-7xl mx-auto animate-fade-in font-sans">
       {/* ═══ BEGIN: Zone2_TopSection (Header & Realtime KPI Metric Indicators) ═══ */}
       <section className="bg-white dark:bg-[#121212] rounded-2xl p-5 shadow-subtle border border-slate-200/80 dark:border-neutral-800 shrink-0">

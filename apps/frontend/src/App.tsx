@@ -1,4 +1,5 @@
 import React, { useEffect } from "react";
+import { Routes, Route, Navigate } from "react-router";
 import { useAppDispatch, useAppSelector } from "./store";
 import { checkAuthSessionThunk } from "./store/slices/authSlice";
 import { AuthPage } from "./components/auth/AuthPage";
@@ -17,7 +18,6 @@ import { RefreshCw } from "lucide-react";
 export function App() {
   const dispatch = useAppDispatch();
   const { isAuthenticated, isInitializing, user } = useAppSelector((state) => state.auth);
-  const { activeNavTab } = useAppSelector((state) => state.mandi);
 
   useEffect(() => {
     dispatch(checkAuthSessionThunk());
@@ -28,7 +28,7 @@ export function App() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#FCFCFA] text-[#0B2D1B]">
         <div className="flex flex-col items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-[#0B2D1B] text-[#C8F52F] flex items-center justify-center font-black text-xl shadow-md">
+          <div className="w-10 h-10 rounded-2xl bg-[#0B2D1B] text-[#C8F52F] flex items-center justify-center font-bold text-xl shadow-md">
             A
           </div>
           <div className="flex items-center gap-2 text-xs font-semibold text-[#5A6C5F]">
@@ -42,21 +42,28 @@ export function App() {
 
   // If user is not authenticated or unverified -> Show Auth Portal
   if (!isAuthenticated || !user) {
-    return <AuthPage />;
+    return (
+      <Routes>
+        <Route path="/login" element={<AuthPage />} />
+        <Route path="*" element={<Navigate to="/login" replace />} />
+      </Routes>
+    );
   }
 
   // Authenticated Mandi Operator Desktop Cockpit Layout
   return (
-    <MandiLayout>
-      {activeNavTab === "dashboard" && <MandiDashboardView />}
-      {activeNavTab === "bookings" && <MandiBookingsView />}
-      {activeNavTab === "slots" && <MandiSlotsView />}
-      {activeNavTab === "scanner" && <MandiGateScannerView />}
-      {activeNavTab === "verification" && <MandiVerificationStatusView />}
-      {activeNavTab === "farmers" && <MandiFarmersView />}
-      {activeNavTab === "history" && <MandiHistoryView />}
-      {activeNavTab === "settings" && <MandiSettingsView />}
-      {activeNavTab === "rating" && <MandiRatingView />}
-    </MandiLayout>
+    <Routes>
+      <Route element={<MandiLayout />}>
+        <Route path="/mandi/dashboard" element={<MandiDashboardView />} />
+        <Route path="/mandi/manageSlot" element={<MandiSlotsView />} />
+        <Route path="/mandi/GateScanner" element={<MandiGateScannerView />} />
+        <Route path="/mandi/verification" element={<MandiVerificationStatusView />} />
+        <Route path="/mandi/history" element={<MandiHistoryView />} />
+        <Route path="/mandi/settings" element={<MandiSettingsView />} />
+        <Route path="/mandi/rating" element={<MandiRatingView />} />
+      </Route>
+      {/* Default redirect: any unknown path goes to mandi dashboard */}
+      <Route path="*" element={<Navigate to="/mandi/dashboard" replace />} />
+    </Routes>
   );
 }

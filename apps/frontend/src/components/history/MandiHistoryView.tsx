@@ -28,7 +28,7 @@ export function MandiHistoryView() {
       {/* 1. Header & Actions */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-200 dark:border-neutral-800 pb-3">
         <div>
-          <h1 className="text-xl font-black text-black dark:text-[#E5E5E5] tracking-tight">
+          <h1 className="text-xl font-bold text-black dark:text-[#E5E5E5] tracking-tight">
             Arrival History & Weighbridge Settlements
           </h1>
           <p className="text-xs text-gray-500 dark:text-neutral-400 mt-0.5 font-medium">
@@ -131,17 +131,17 @@ export function MandiHistoryView() {
                       {row.tareWeightKg ? `${row.tareWeightKg} Kg` : "-"}
                     </td>
                     <td>
-                      <span className="font-black text-black text-xs">
+                      <span className="font-semibold text-black dark:text-[#E5E5E5] text-xs">
                         {row.finalNetWeightQuintals ?? row.estimatedQuantityQuintals} Qtl
                       </span>
                     </td>
                     <td>
-                      <span className="font-black text-[#15803D] text-xs">
+                      <span className="font-semibold text-[#15803D] dark:text-emerald-400 text-xs">
                         ₹{(row.finalPayoutAmount ?? 125000).toLocaleString("en-IN")}
                       </span>
                     </td>
                     <td>
-                      <span className="badge-completed text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-full">
+                      <span className="badge-completed text-[10px] font-semibold uppercase px-2.5 py-1 rounded-full">
                         {row.status}
                       </span>
                     </td>

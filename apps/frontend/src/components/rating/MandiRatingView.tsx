@@ -37,7 +37,7 @@ export function MandiRatingView() {
     <div className="space-y-6 max-w-5xl mx-auto animate-fade-in">
       {/* 1. Header */}
       <div className="border-b border-gray-200 pb-3">
-        <h1 className="text-xl font-black text-black tracking-tight">
+        <h1 className="text-xl font-bold text-black tracking-tight">
           Yard Ratings & Quality Score
         </h1>
         <p className="text-xs text-gray-500 mt-0.5 font-medium">
@@ -52,7 +52,7 @@ export function MandiRatingView() {
             <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center mb-3 mx-auto border border-amber-200">
               <Star className="w-6 h-6 fill-amber-500 text-amber-500" />
             </div>
-            <div className="text-4xl font-black text-black">{rating.toFixed(1)}</div>
+            <div className="text-4xl font-bold text-black">{rating.toFixed(1)}</div>
             <div className="flex items-center justify-center gap-1 text-amber-500 my-1.5">
               {[...Array(5)].map((_, i) => (
                 <Star key={i} className="w-4 h-4 fill-amber-500 text-amber-500" />
@@ -71,7 +71,7 @@ export function MandiRatingView() {
               <ShieldCheck className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-3xl font-black text-black">{gatePrecision}%</div>
+          <div className="text-3xl font-bold text-black">{gatePrecision}%</div>
           <div className="text-xs text-[#15803D] font-bold mt-2">Top 5% of State APMC Yards</div>
         </div>
 
@@ -82,7 +82,7 @@ export function MandiRatingView() {
               <Clock className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-3xl font-black text-black">{waitMinutes} Mins</div>
+          <div className="text-3xl font-bold text-black">{waitMinutes} Mins</div>
           <div className="text-xs text-gray-500 font-medium mt-2">From Entry Gate to Weighbridge</div>
         </div>
       </div>

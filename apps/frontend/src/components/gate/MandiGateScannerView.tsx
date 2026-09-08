@@ -111,7 +111,7 @@ export function MandiGateScannerView() {
     <div className="space-y-6 max-w-7xl mx-auto animate-fade-in font-sans">
       {/* ═══ HEADER ═══ */}
       <div className="border-b border-gray-200 dark:border-neutral-800 pb-3">
-        <h1 className="text-xl font-black text-black dark:text-[#E5E5E5] tracking-tight">
+        <h1 className="text-xl font-bold text-black dark:text-[#E5E5E5] tracking-tight">
           Electronic Gate Token Scanner &amp; Unloading Docks
         </h1>
         <p className="text-xs text-gray-500 dark:text-neutral-400 mt-0.5 font-medium">
@@ -127,7 +127,7 @@ export function MandiGateScannerView() {
               <ScanLine className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
               <h2 className="text-sm font-bold text-black dark:text-[#E5E5E5]">Gate Pass Token Scanner</h2>
             </div>
-            <span className="text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full bg-emerald-50 dark:bg-black text-emerald-800 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/60">
+            <span className="text-[10px] font-semibold uppercase px-2.5 py-0.5 rounded-full bg-emerald-50 dark:bg-black text-emerald-800 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/60">
               Instant Validation
             </span>
           </div>
@@ -205,11 +205,11 @@ export function MandiGateScannerView() {
           {scannedResult && (
             <div className="p-4 rounded-xl bg-gray-50 dark:bg-[#171717] border border-gray-200 dark:border-neutral-800 space-y-3 animate-fade-in text-xs">
               <div className="flex items-center justify-between">
-                <span className="font-mono font-black text-sm text-[#15803D] dark:text-emerald-400 bg-white dark:bg-black px-2.5 py-1 rounded-lg border border-gray-200 dark:border-neutral-800">
+                <span className="font-mono font-bold text-sm text-[#15803D] dark:text-emerald-400 bg-white dark:bg-black px-2.5 py-1 rounded-lg border border-gray-200 dark:border-neutral-800">
                   {scannedResult.token}
                 </span>
                 <span
-                  className={`text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full ${
+                  className={`text-[10px] font-semibold uppercase px-2.5 py-0.5 rounded-full ${
                     scannedResult.status === "VERIFIED"
                       ? "bg-emerald-50 dark:bg-black border border-emerald-300 dark:border-emerald-800/60 text-emerald-700 dark:text-emerald-400"
                       : "bg-blue-50 dark:bg-black border border-blue-300 dark:border-neutral-700 text-blue-700 dark:text-neutral-300"
@@ -261,7 +261,7 @@ export function MandiGateScannerView() {
               <button
                 type="button"
                 onClick={() => handleGrantEntry(scannedResult)}
-                className="btn-primary-green w-full py-2.5 text-xs font-black cursor-pointer shadow-xs flex items-center justify-center gap-1.5"
+                className="btn-primary-green w-full py-2.5 text-xs font-semibold cursor-pointer shadow-xs flex items-center justify-center gap-1.5"
               >
                 <span>Grant Gate Entry &amp; Print Slip</span>
                 <ArrowUpRight className="w-4 h-4" />
@@ -289,7 +289,7 @@ export function MandiGateScannerView() {
                 <div className="flex items-center justify-between">
                   <span className="font-bold text-black dark:text-[#E5E5E5]">{dock.name}</span>
                   <span
-                    className={`text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full ${
+                    className={`text-[10px] font-semibold uppercase px-2.5 py-0.5 rounded-full ${
                       dock.status === "AVAILABLE"
                         ? "bg-emerald-50 dark:bg-black text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/60"
                         : "bg-amber-50 dark:bg-black text-amber-800 dark:text-amber-400 border border-amber-200 dark:border-amber-700/60"
