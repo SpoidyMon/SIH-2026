@@ -1,0 +1,1 @@
+bro now remove the toggle between the pages qnd use the data routing to route the pages route for dashboard must be mandi/dashboard, route for manage slot must be mandi/manageSlot ,route for get qr scanner must be mandi/GateScanner, route for verification must be mandi/verification 
