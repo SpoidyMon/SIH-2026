@@ -394,7 +394,7 @@ export const ConsignmentBookingsTable = React.memo(function ConsignmentBookingsT
                               onClick={() => onOpenVerifyModal(b)}
                               disabled={isActionLoading}
                               className="px-3.5 py-1 text-xs font-semibold rounded-full bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 flex items-center gap-1.5 transition cursor-pointer"
-                              title="Scan farmer QR code or enter token to verify gate arrival"
+                              title="Scan farmer QR code to verify gate arrival"
                             >
                               <QrCode className="w-3.5 h-3.5" />
                               <span>Verify Gate Pass</span>
@@ -405,7 +405,7 @@ export const ConsignmentBookingsTable = React.memo(function ConsignmentBookingsT
                               onClick={() => onOpenWeighbridge(b, false)}
                               disabled={isActionLoading}
                               className="px-3.5 py-1 text-xs font-semibold rounded-full bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-1.5 shadow-xs transition cursor-pointer"
-                              title="Scan farmer QR code or enter token to settle consignment"
+                              title="Scan farmer QR code to settle consignment"
                             >
                               <Scale className="w-3.5 h-3.5" />
                               <span>Scan QR to Settle</span>

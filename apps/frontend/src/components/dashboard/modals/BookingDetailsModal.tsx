@@ -164,7 +164,7 @@ export const BookingDetailsModal: React.FC<BookingDetailsModalProps> = ({
               </div>
               <div className="px-3 py-2 bg-emerald-100/70 dark:bg-emerald-900/40 border border-emerald-300 dark:border-emerald-700/60 rounded-lg text-right shrink-0">
                 <span className="text-[10px] font-bold text-emerald-800 dark:text-emerald-300 block">Gate Verification</span>
-                <span className="text-[11px] text-emerald-700 dark:text-emerald-400 block font-medium">Scan farmer's QR or enter token</span>
+                <span className="text-[11px] text-emerald-700 dark:text-emerald-400 block font-medium">Scan farmer's QR code</span>
               </div>
             </div>
           )}

@@ -5,7 +5,6 @@ import {
   X,
   Camera,
   Upload,
-  Keyboard,
   CheckCircle2,
   AlertCircle,
   RefreshCw,
@@ -15,7 +14,7 @@ import {
 import { VerifyTokenModalProps } from "../../../interfaces";
 import { parseQrPayload, isValidAgroviaToken } from "../../../utils/qr.util";
 
-type VerificationMode = "camera" | "upload" | "manual";
+type VerificationMode = "camera" | "upload";
 
 export const VerifyTokenModal: React.FC<VerifyTokenModalProps> = ({
   isOpen,
@@ -25,7 +24,6 @@ export const VerifyTokenModal: React.FC<VerifyTokenModalProps> = ({
   targetBooking = null,
 }) => {
   const [activeTab, setActiveTab] = useState<VerificationMode>("camera");
-  const [manualToken, setManualToken] = useState(initialToken);
   const [detectedToken, setDetectedToken] = useState<string | null>(null);
   const [scannerError, setScannerError] = useState<string | null>(null);
   const [isCameraActive, setIsCameraActive] = useState(false);
@@ -201,41 +199,13 @@ export const VerifyTokenModal: React.FC<VerifyTokenModalProps> = ({
         setIsProcessing(false);
       }
     } catch (err: any) {
-      setScannerError("Could not detect a valid QR code in this image. Please try another image or manual entry.");
+      setScannerError("Could not detect a valid QR code in this image. Please try another clear image of the QR code.");
       setIsProcessing(false);
     } finally {
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
     }
-  };
-
-  // Handle Manual Form Submit
-  const handleManualSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setScannerError(null);
-    const clean = manualToken.trim();
-    if (!clean) return;
-
-    if (!isValidAgroviaToken(clean)) {
-      setScannerError("Invalid token format. Tokens follow format like 8SEP-10AM-001 or TKN-7821.");
-      return;
-    }
-
-    if (targetBooking) {
-      const expectedToken = (targetBooking.token || "").trim().toUpperCase();
-      const expectedId = (targetBooking.id || "").trim().toUpperCase();
-      if (clean.toUpperCase() !== expectedToken && clean.toUpperCase() !== expectedId) {
-        setScannerError(
-          `Token Mismatch! Entered token "${clean}" does not match farmer ${targetBooking.farmerName}'s token (${targetBooking.token}).`
-        );
-        return;
-      }
-    }
-
-    onVerify(clean);
-    setManualToken("");
-    onClose();
   };
 
   if (!isOpen) return null;
@@ -309,19 +279,6 @@ export const VerifyTokenModal: React.FC<VerifyTokenModalProps> = ({
           >
             <Upload className="w-3.5 h-3.5" />
             <span>Upload QR</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab("manual")}
-            className={`flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-semibold rounded-lg transition cursor-pointer ${
-              activeTab === "manual"
-                ? "bg-white dark:bg-[#181818] text-[#059669] dark:text-[#5CE65C] shadow-xs"
-                : "text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white"
-            }`}
-          >
-            <Keyboard className="w-3.5 h-3.5" />
-            <span>Enter Token</span>
           </button>
         </div>
 
@@ -438,63 +395,6 @@ export const VerifyTokenModal: React.FC<VerifyTokenModalProps> = ({
                 </div>
               )}
             </div>
-          )}
-
-          {/* 3. Manual Token Mode */}
-          {activeTab === "manual" && (
-            <form onSubmit={handleManualSubmit} className="space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1.5 uppercase">
-                  Arrival Token Number
-                </label>
-                <div className="relative">
-                  <input
-                    type="text"
-                    value={manualToken}
-                    onChange={(e) => {
-                      setManualToken(e.target.value);
-                      if (scannerError) setScannerError(null);
-                    }}
-                    placeholder={targetBooking ? targetBooking.token : "e.g. 8SEP-10AM-001 or TKN-7821"}
-                    className="w-full pl-3.5 pr-10 py-2.5 bg-neutral-50 dark:bg-black border border-neutral-300 dark:border-neutral-800 rounded-xl text-sm font-mono text-black dark:text-[#E5E5E5] placeholder:text-neutral-400 focus:outline-none focus:border-[#059669]"
-                    autoFocus
-                  />
-                  <QrCode className="w-4 h-4 text-neutral-400 absolute right-3 top-3.5" />
-                </div>
-                <p className="text-[11px] text-neutral-500 dark:text-neutral-400 mt-2">
-                  {targetBooking
-                    ? `Enter the token matching farmer ${targetBooking.farmerName} (${targetBooking.token}).`
-                    : "Enter the official token printed on the farmer's Gate Pass."}
-                </p>
-              </div>
-
-              {scannerError && (
-                <div className="p-3 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/60 rounded-xl flex items-start gap-2 text-left">
-                  <AlertCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
-                  <p className="text-xs text-red-700 dark:text-red-300 font-medium">{scannerError}</p>
-                </div>
-              )}
-
-              <div className="flex items-center justify-end gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    stopCamera();
-                    onClose();
-                  }}
-                  className="px-4 py-2 text-xs font-semibold text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-900 rounded-xl transition cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={!manualToken.trim() || isProcessing}
-                  className="px-5 py-2 text-xs font-semibold bg-[#059669] hover:bg-[#047857] disabled:opacity-50 text-white rounded-xl shadow-xs transition cursor-pointer"
-                >
-                  Verify Gate Entry
-                </button>
-              </div>
-            </form>
           )}
         </div>
       </div>
