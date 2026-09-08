@@ -169,11 +169,11 @@ export const DaySlotManagementModal: React.FC<DaySlotManagementModalProps> = ({
     <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in">
       <div className="bg-white dark:bg-[#121212] border border-slate-200 dark:border-neutral-800 rounded-2xl w-full max-w-3xl shadow-2xl overflow-hidden animate-slide-up flex flex-col max-h-[90vh]">
         {/* Header */}
-        <div className="px-6 py-4 bg-slate-50 dark:bg-black border-b border-slate-200 dark:border-neutral-800 flex items-center justify-between">
+        <div className="px-6 py-4 bg-slate-50 dark:bg-[#151515] border-b border-slate-200 dark:border-neutral-800 flex items-center justify-between">
           <div>
             <h2 className="text-base font-bold text-slate-900 dark:text-[#E5E5E5] flex items-center gap-2">
               <span>Manage Arrival Slots for {day}</span>
-              <span className="text-xs px-2.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 font-semibold border border-emerald-200 dark:border-emerald-800">
+              <span className="text-xs px-2.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 font-bold border border-emerald-200 dark:border-emerald-800">
                 {slots.length} {slots.length === 1 ? "Slot" : "Slots"} Configured
               </span>
             </h2>
@@ -183,7 +183,7 @@ export const DaySlotManagementModal: React.FC<DaySlotManagementModalProps> = ({
           </div>
           <button
             onClick={onClose}
-            className="text-slate-400 hover:text-slate-700 dark:hover:text-neutral-200 cursor-pointer"
+            className="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-neutral-200 hover:bg-slate-100 dark:hover:bg-neutral-800 transition cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -206,7 +206,7 @@ export const DaySlotManagementModal: React.FC<DaySlotManagementModalProps> = ({
               </button>
             </div>
 
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               {slots.map((s, index) => {
                 const isActive = s.id === activeSlot.id;
                 const slotTotalKg = s.crops.reduce((acc, c) => acc + (c.quantityKg || 0), 0);
@@ -217,15 +217,15 @@ export const DaySlotManagementModal: React.FC<DaySlotManagementModalProps> = ({
                     onClick={() => setActiveSlotId(s.id)}
                     className={`p-3 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-2 ${
                       isActive
-                        ? "bg-emerald-50/80 dark:bg-emerald-950/40 border-emerald-400 dark:border-emerald-700 text-slate-900 dark:text-[#E5E5E5] shadow-xs"
-                        : "bg-slate-50/70 dark:bg-neutral-900/60 border-slate-200 dark:border-neutral-800 text-slate-600 dark:text-neutral-400 hover:border-slate-300"
+                        ? "bg-emerald-50/90 dark:bg-emerald-950/50 border-emerald-500 dark:border-emerald-600 text-slate-900 dark:text-[#E5E5E5] shadow-xs ring-1 ring-emerald-500/20"
+                        : "bg-slate-50 dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 text-slate-600 dark:text-neutral-400 hover:border-slate-300"
                     }`}
                   >
                     <div>
-                      <span className="font-bold text-xs block">
+                      <span className="font-bold text-xs block text-slate-900 dark:text-[#E5E5E5]">
                         Slot {index + 1}: {s.startTime} - {s.endTime}
                       </span>
-                      <span className="text-[10px] text-slate-500 dark:text-neutral-400 block mt-0.5 font-medium">
+                      <span className="text-[11px] text-slate-500 dark:text-neutral-400 block mt-0.5 font-medium">
                         👥 {s.maxFarmers} farmers • 📦 {slotTotalKg.toLocaleString()} KG
                       </span>
                     </div>
@@ -236,7 +236,7 @@ export const DaySlotManagementModal: React.FC<DaySlotManagementModalProps> = ({
                           handleRemoveSlot(s.id);
                         }}
                         title="Delete Slot"
-                        className="text-slate-400 hover:text-red-600 p-1 cursor-pointer"
+                        className="text-slate-400 hover:text-red-600 p-1 cursor-pointer transition"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -250,37 +250,37 @@ export const DaySlotManagementModal: React.FC<DaySlotManagementModalProps> = ({
           {/* Right: Active Slot Editor */}
           <div className="flex-1 space-y-4">
             {/* Slot Time & Farmer Capacity */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-4 bg-slate-50/80 dark:bg-neutral-900/50 rounded-xl border border-slate-200 dark:border-neutral-800">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-4 bg-slate-50 dark:bg-neutral-900/60 rounded-xl border border-slate-200 dark:border-neutral-800">
               <div>
-                <label className="block text-[11px] font-bold text-slate-700 dark:text-neutral-300 mb-1 flex items-center gap-1">
-                  <Clock className="w-3 h-3 text-emerald-600" />
-                  Start Time (24h)
+                <label className="block text-xs font-bold text-slate-700 dark:text-neutral-300 mb-1.5 flex items-center gap-1.5">
+                  <Clock className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Start Time</span>
                 </label>
                 <input
                   type="time"
                   value={activeSlot.startTime}
                   onChange={(e) => updateActiveSlotField("startTime", e.target.value)}
-                  className="w-full px-3 py-1.5 text-xs bg-white dark:bg-black border border-slate-200 dark:border-neutral-700 rounded-lg outline-none font-semibold text-slate-800 dark:text-[#E5E5E5]"
+                  className="w-full px-3 py-2 text-xs bg-white dark:bg-black border border-slate-200 dark:border-neutral-700 rounded-xl outline-none font-bold text-slate-800 dark:text-[#E5E5E5] shadow-xs focus:border-emerald-500"
                 />
               </div>
 
               <div>
-                <label className="block text-[11px] font-bold text-slate-700 dark:text-neutral-300 mb-1 flex items-center gap-1">
-                  <Clock className="w-3 h-3 text-emerald-600" />
-                  End Time (24h)
+                <label className="block text-xs font-bold text-slate-700 dark:text-neutral-300 mb-1.5 flex items-center gap-1.5">
+                  <Clock className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>End Time</span>
                 </label>
                 <input
                   type="time"
                   value={activeSlot.endTime}
                   onChange={(e) => updateActiveSlotField("endTime", e.target.value)}
-                  className="w-full px-3 py-1.5 text-xs bg-white dark:bg-black border border-slate-200 dark:border-neutral-700 rounded-lg outline-none font-semibold text-slate-800 dark:text-[#E5E5E5]"
+                  className="w-full px-3 py-2 text-xs bg-white dark:bg-black border border-slate-200 dark:border-neutral-700 rounded-xl outline-none font-bold text-slate-800 dark:text-[#E5E5E5] shadow-xs focus:border-emerald-500"
                 />
               </div>
 
               <div>
-                <label className="block text-[11px] font-bold text-slate-700 dark:text-neutral-300 mb-1 flex items-center gap-1">
-                  <Users className="w-3 h-3 text-emerald-600" />
-                  Max Farmers
+                <label className="block text-xs font-bold text-slate-700 dark:text-neutral-300 mb-1.5 flex items-center gap-1.5">
+                  <Users className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Max Farmers</span>
                 </label>
                 <input
                   type="number"
@@ -288,7 +288,7 @@ export const DaySlotManagementModal: React.FC<DaySlotManagementModalProps> = ({
                   max="500"
                   value={activeSlot.maxFarmers}
                   onChange={(e) => updateActiveSlotField("maxFarmers", Number(e.target.value))}
-                  className="w-full px-3 py-1.5 text-xs bg-white dark:bg-black border border-slate-200 dark:border-neutral-700 rounded-lg outline-none font-semibold text-slate-800 dark:text-[#E5E5E5]"
+                  className="w-full px-3 py-2 text-xs bg-white dark:bg-black border border-slate-200 dark:border-neutral-700 rounded-xl outline-none font-bold text-slate-800 dark:text-[#E5E5E5] shadow-xs focus:border-emerald-500"
                 />
               </div>
             </div>
@@ -299,9 +299,9 @@ export const DaySlotManagementModal: React.FC<DaySlotManagementModalProps> = ({
                 <label className="text-xs font-bold text-slate-800 dark:text-[#E5E5E5] flex items-center gap-1.5">
                   <span>Crops &amp; Intake Capacity in KG</span>
                 </label>
-                <span className="text-[11px] text-slate-400 dark:text-neutral-400">
+                <span className="text-xs text-slate-500 dark:text-neutral-400 font-medium">
                   Total Capacity:{" "}
-                  <strong className="text-emerald-600 dark:text-emerald-400">
+                  <strong className="text-emerald-600 dark:text-emerald-400 font-bold">
                     {activeSlot.crops.reduce((acc, c) => acc + (c.quantityKg || 0), 0).toLocaleString()} KG
                   </strong>
                 </span>
@@ -311,19 +311,19 @@ export const DaySlotManagementModal: React.FC<DaySlotManagementModalProps> = ({
               <div className="relative">
                 <div className="flex items-center gap-2">
                   <div className="relative flex-1">
-                    <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                    <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                     <input
                       type="text"
                       value={cropSearchQuery}
                       onChange={(e) => setCropSearchQuery(e.target.value)}
                       placeholder="Search crop or type custom crop name..."
-                      className="w-full pl-9 pr-3 py-1.5 text-xs bg-white dark:bg-black border border-slate-200 dark:border-neutral-800 rounded-xl outline-none text-slate-800 dark:text-[#E5E5E5]"
+                      className="w-full pl-9 pr-3 py-2 text-xs bg-white dark:bg-black border border-slate-200 dark:border-neutral-800 rounded-xl outline-none text-slate-800 dark:text-[#E5E5E5] shadow-xs focus:border-emerald-500"
                     />
                   </div>
                   {cropSearchQuery.trim() && !allSearchableCrops.some((c) => c.toLowerCase() === cropSearchQuery.trim().toLowerCase()) && (
                     <button
                       onClick={handleCreateCustomCrop}
-                      className="px-3 py-1.5 text-xs font-semibold bg-slate-800 dark:bg-neutral-700 text-white rounded-xl hover:bg-black cursor-pointer shrink-0"
+                      className="px-3.5 py-2 text-xs font-bold bg-slate-900 dark:bg-neutral-800 hover:bg-black text-white rounded-xl cursor-pointer shrink-0 shadow-xs"
                     >
                       + Add Custom "{cropSearchQuery.trim()}"
                     </button>
@@ -332,12 +332,12 @@ export const DaySlotManagementModal: React.FC<DaySlotManagementModalProps> = ({
 
                 {/* Suggestions Dropdown */}
                 {cropSearchQuery.trim() && filteredCrops.length > 0 && (
-                  <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-xl shadow-lg z-20 max-h-40 overflow-y-auto p-1.5 flex flex-wrap gap-1">
+                  <div className="absolute top-full left-0 right-0 mt-1.5 bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-xl shadow-xl z-20 max-h-44 overflow-y-auto p-2 flex flex-wrap gap-1.5">
                     {filteredCrops.map((c) => (
                       <button
                         key={c}
                         onClick={() => handleAddCropToSlot(c)}
-                        className="px-2.5 py-1 text-xs rounded-lg bg-slate-100 hover:bg-emerald-100 dark:bg-neutral-800 dark:hover:bg-emerald-950 text-slate-800 dark:text-neutral-200 cursor-pointer"
+                        className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-100 hover:bg-emerald-100 dark:bg-neutral-800 dark:hover:bg-emerald-950 text-slate-800 dark:text-neutral-200 cursor-pointer transition"
                       >
                         + {c}
                       </button>
@@ -347,21 +347,21 @@ export const DaySlotManagementModal: React.FC<DaySlotManagementModalProps> = ({
               </div>
 
               {/* Configured Crops Table */}
-              <div className="border border-slate-200 dark:border-neutral-800 rounded-xl overflow-hidden">
+              <div className="border border-slate-200 dark:border-neutral-800 rounded-xl overflow-hidden shadow-2xs">
                 <table className="w-full text-left text-xs">
-                  <thead className="bg-slate-50 dark:bg-neutral-900 text-[10px] font-bold text-slate-500 dark:text-neutral-400 uppercase">
+                  <thead className="bg-slate-50 dark:bg-neutral-900 text-[10px] font-bold text-slate-500 dark:text-neutral-400 uppercase tracking-wider">
                     <tr>
-                      <th className="py-2.5 px-3">Crop Name</th>
-                      <th className="py-2.5 px-3">Target Capacity (KG)</th>
-                      <th className="py-2.5 px-3">Rate (₹ / KG)</th>
-                      <th className="py-2.5 px-3 text-right">Remove</th>
+                      <th className="py-2.5 px-3.5">Crop Name</th>
+                      <th className="py-2.5 px-3.5">Target Capacity (KG)</th>
+                      <th className="py-2.5 px-3.5">Rate (₹ / KG)</th>
+                      <th className="py-2.5 px-3.5 text-right">Remove</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 dark:divide-neutral-800">
                     {activeSlot.crops.map((c) => (
                       <tr key={c.crop} className="hover:bg-slate-50/50 dark:hover:bg-neutral-900/30">
-                        <td className="py-2.5 px-3 font-semibold text-slate-800 dark:text-[#E5E5E5]">{c.crop}</td>
-                        <td className="py-2 px-3">
+                        <td className="py-2.5 px-3.5 font-bold text-slate-800 dark:text-[#E5E5E5]">{c.crop}</td>
+                        <td className="py-2 px-3.5">
                           <div className="flex items-center gap-1.5">
                             <input
                               type="number"
@@ -369,32 +369,32 @@ export const DaySlotManagementModal: React.FC<DaySlotManagementModalProps> = ({
                               step="50"
                               value={c.quantityKg}
                               onChange={(e) => handleUpdateCropQuantity(c.crop, Number(e.target.value))}
-                              className="w-24 px-2 py-1 text-xs bg-white dark:bg-black border border-slate-200 dark:border-neutral-700 rounded-lg outline-none font-bold text-slate-900 dark:text-[#E5E5E5]"
+                              className="w-28 px-2.5 py-1.5 text-xs bg-white dark:bg-black border border-slate-200 dark:border-neutral-700 rounded-lg outline-none font-bold text-slate-900 dark:text-[#E5E5E5] shadow-xs focus:border-emerald-500"
                             />
-                            <span className="text-[11px] text-slate-400">KG</span>
+                            <span className="text-xs font-semibold text-slate-400">KG</span>
                           </div>
                         </td>
-                        <td className="py-2 px-3">
-                          <div className="flex items-center gap-1">
-                            <span className="text-slate-400 text-xs">₹</span>
+                        <td className="py-2 px-3.5">
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-slate-400 text-xs font-bold">₹</span>
                             <input
                               type="number"
                               min="1"
                               step="0.5"
                               value={c.ratePerKg}
                               onChange={(e) => handleUpdateCropRate(c.crop, Number(e.target.value))}
-                              className="w-20 px-2 py-1 text-xs bg-white dark:bg-black border border-slate-200 dark:border-neutral-700 rounded-lg outline-none font-bold text-emerald-600 dark:text-emerald-400 font-mono"
+                              className="w-24 px-2.5 py-1.5 text-xs bg-white dark:bg-black border border-slate-200 dark:border-neutral-700 rounded-lg outline-none font-bold text-emerald-600 dark:text-emerald-400 font-mono shadow-xs focus:border-emerald-500"
                             />
-                            <span className="text-[11px] text-slate-400">/kg</span>
+                            <span className="text-xs font-semibold text-slate-400">/kg</span>
                           </div>
                         </td>
-                        <td className="py-2 px-3 text-right">
+                        <td className="py-2 px-3.5 text-right">
                           <button
                             onClick={() => handleRemoveCropFromSlot(c.crop)}
                             disabled={activeSlot.crops.length <= 1}
-                            className="text-slate-400 hover:text-red-500 disabled:opacity-30 cursor-pointer"
+                            className="p-1 text-slate-400 hover:text-red-500 disabled:opacity-30 cursor-pointer transition"
                           >
-                            <Trash2 className="w-3.5 h-3.5 inline" />
+                            <Trash2 className="w-4 h-4 inline" />
                           </button>
                         </td>
                       </tr>
@@ -415,16 +415,16 @@ export const DaySlotManagementModal: React.FC<DaySlotManagementModalProps> = ({
                 value={activeSlot.instructions || ""}
                 onChange={(e) => updateActiveSlotField("instructions", e.target.value)}
                 placeholder="e.g. Bring moisture certificate. Weighbridge lane 2 reserved."
-                className="w-full p-2.5 text-xs bg-slate-50 dark:bg-black border border-slate-200 dark:border-neutral-800 rounded-xl outline-none text-slate-800 dark:text-[#E5E5E5]"
+                className="w-full p-3 text-xs bg-slate-50 dark:bg-black border border-slate-200 dark:border-neutral-800 rounded-xl outline-none text-slate-800 dark:text-[#E5E5E5] focus:border-emerald-500"
               />
-              <label className="flex items-center gap-2 cursor-pointer pt-0.5">
+              <label className="flex items-center gap-2 cursor-pointer pt-0.5 select-none">
                 <input
                   type="checkbox"
                   checked={saveDefaultInstructions}
                   onChange={(e) => setSaveDefaultInstructions(e.target.checked)}
                   className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
                 />
-                <span className="text-[11px] text-slate-600 dark:text-neutral-400">
+                <span className="text-xs text-slate-600 dark:text-neutral-400 font-medium">
                   Save these instructions as default for all slots and upcoming days
                 </span>
               </label>
@@ -433,28 +433,28 @@ export const DaySlotManagementModal: React.FC<DaySlotManagementModalProps> = ({
         </div>
 
         {/* Action Footer */}
-        <div className="px-6 py-4 bg-slate-50 dark:bg-black border-t border-slate-200 dark:border-neutral-800 flex flex-wrap items-center justify-between gap-3">
+        <div className="px-6 py-4 bg-slate-50 dark:bg-[#151515] border-t border-slate-200 dark:border-neutral-800 flex flex-wrap items-center justify-between gap-3">
           <button
             onClick={() => {
               onApplyToAllDays(day);
               handleSave();
             }}
-            className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-slate-700 dark:text-neutral-300 bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-700 rounded-xl hover:bg-slate-100 dark:hover:bg-neutral-800 cursor-pointer shadow-2xs"
+            className="flex items-center gap-2 px-4 py-2.5 text-xs font-bold text-slate-700 dark:text-neutral-200 bg-white dark:bg-neutral-900 border border-slate-300 dark:border-neutral-700 rounded-xl hover:bg-slate-100 dark:hover:bg-neutral-800 cursor-pointer shadow-2xs transition"
           >
             <Copy className="w-3.5 h-3.5" />
             <span>Apply {day}'s Slots to All Active Days</span>
           </button>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2.5">
             <button
               onClick={onClose}
-              className="px-4 py-2 text-xs font-semibold text-slate-600 dark:text-neutral-400 hover:bg-slate-200 dark:hover:bg-neutral-800 rounded-xl cursor-pointer"
+              className="px-4 py-2.5 text-xs font-semibold text-slate-600 dark:text-neutral-400 hover:bg-slate-200 dark:hover:bg-neutral-800 rounded-xl cursor-pointer transition"
             >
               Cancel
             </button>
             <button
               onClick={handleSave}
-              className="px-5 py-2 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl cursor-pointer shadow-xs"
+              className="px-5 py-2.5 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl cursor-pointer shadow-sm transition"
             >
               Save {day} Slots
             </button>

@@ -216,7 +216,7 @@ export function MandiSlotsView() {
             {/* Create Custom Slot */}
             <button
               onClick={() => handleOpenCreateModal()}
-              className="btn-primary-green flex items-center gap-2 px-3.5 py-1.5 text-xs cursor-pointer shadow-xs"
+              className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl cursor-pointer shadow-xs transition"
             >
               <Plus className="w-3.5 h-3.5" />
               <span>Create Slot</span>
@@ -252,7 +252,7 @@ export function MandiSlotsView() {
             <div className="pt-2 flex items-center justify-center gap-3">
               <button
                 onClick={() => handleOpenCreateModal()}
-                className="btn-primary-green px-4 py-2 text-xs font-bold cursor-pointer"
+                className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl cursor-pointer shadow-xs transition"
               >
                 Create Slot for {dateFilter || "Today"}
               </button>

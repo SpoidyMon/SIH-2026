@@ -397,7 +397,7 @@ export function MandiWeeklyAvailability() {
                     <button
                       type="button"
                       onClick={() => setManagingDay(day)}
-                      className="flex items-center gap-1.5 px-4 py-1.5 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/60 dark:hover:bg-emerald-900/80 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-2xs"
+                      className="flex items-center gap-2 px-4 py-2 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/60 dark:hover:bg-emerald-900/80 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-2xs"
                     >
                       <Settings2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                       <span>Manage ({slotsCount} {slotsCount === 1 ? "Slot" : "Slots"})</span>
@@ -412,7 +412,7 @@ export function MandiWeeklyAvailability() {
 
       {/* ═══ ACTIONS FOOTER ═══ */}
       <div className="px-6 py-4 bg-gray-50/80 dark:bg-[#171717] border-t border-gray-200 dark:border-neutral-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-neutral-400">
+        <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-neutral-400 font-medium">
           <CalendarCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
           <span>
             {DAYS_OF_WEEK.filter((d) => schedule[d].enabled).length} days active for farmer bookings
@@ -425,7 +425,7 @@ export function MandiWeeklyAvailability() {
             type="button"
             onClick={handleSaveWeeklySchedule}
             disabled={isActionLoading}
-            className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-black hover:bg-gray-100 dark:hover:bg-neutral-900 text-gray-700 dark:text-[#E5E5E5] border border-gray-300 dark:border-neutral-800 rounded-xl text-xs font-bold transition-all cursor-pointer disabled:opacity-50 shadow-2xs"
+            className="flex items-center gap-2 px-4 py-2.5 bg-white dark:bg-black hover:bg-gray-100 dark:hover:bg-neutral-900 text-gray-800 dark:text-[#E5E5E5] border border-gray-300 dark:border-neutral-700 rounded-xl text-xs font-bold transition-all cursor-pointer disabled:opacity-50 shadow-2xs"
           >
             <Save className="w-3.5 h-3.5" />
             <span>Save Weekly Schedule</span>
@@ -436,7 +436,7 @@ export function MandiWeeklyAvailability() {
             type="button"
             onClick={handleGenerateNext7DaysSlots}
             disabled={isActionLoading}
-            className="btn-primary-green flex items-center gap-2 px-5 py-2 text-xs font-bold cursor-pointer disabled:opacity-50 shadow-xs"
+            className="flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold cursor-pointer disabled:opacity-50 shadow-sm transition"
           >
             <Sparkles className="w-4 h-4" />
             <span>Generate Next 7 Days Slots</span>
