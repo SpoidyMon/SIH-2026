@@ -190,16 +190,25 @@ export function FarmerMandiDetailView() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 font-medium text-slate-800">
-                {mandi.acceptedCrops.map((crop) => (
-                  <tr key={crop} className="hover:bg-slate-50/50">
+                {(mandi.cropRates && mandi.cropRates.length > 0
+                  ? mandi.cropRates
+                  : mandi.acceptedCrops.map((c) => ({
+                      crop: c,
+                      ratePerKg: availableCropRates[c] || 25,
+                      availableKg: 1000,
+                    }))
+                ).map((item) => (
+                  <tr key={item.crop} className="hover:bg-slate-50/50">
                     <td className="py-3 px-4 font-bold flex items-center gap-2">
                       <Sprout className="w-4 h-4 text-emerald-600" />
-                      <span>{crop}</span>
+                      <span>{item.crop}</span>
                     </td>
                     <td className="py-3 px-4 text-right font-bold text-emerald-700">
-                      ₹{availableCropRates[crop] || 25} / kg
+                      ₹{item.ratePerKg} / kg
                     </td>
-                    <td className="py-3 px-4 text-right text-slate-500">1,000 KG / slot</td>
+                    <td className="py-3 px-4 text-right text-slate-500">
+                      {item.availableKg.toLocaleString("en-IN")} KG / slot
+                    </td>
                   </tr>
                 ))}
               </tbody>

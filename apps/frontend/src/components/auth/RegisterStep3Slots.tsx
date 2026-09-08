@@ -42,7 +42,7 @@ export function RegisterStep3Slots({
 
   const [startTime, setStartTime] = useState("9:00 AM");
   const [endTime, setEndTime] = useState("5:00 PM");
-  const [capacity, setCapacity] = useState(500);
+  const [capacity, setCapacity] = useState(50000);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const toggleDay = (day: DayOfWeek) => {
@@ -76,7 +76,8 @@ export function RegisterStep3Slots({
         date: slotDate,
         startTime: to24Hour(startTime),
         endTime: to24Hour(endTime),
-        totalCapacityQuintals: Number(capacity),
+        totalCapacityQuintals: Number((capacity / 100).toFixed(1)),
+        totalCapacityKg: Number(capacity),
         maxFarmers: 10,
         bufferMinutes: 15,
         bufferPercentage: 10,
@@ -160,11 +161,11 @@ export function RegisterStep3Slots({
           </select>
         </div>
         <div>
-          <label className="block text-[11px] font-semibold text-slate-500 mb-1">Capacity (Qtl)</label>
+          <label className="block text-[11px] font-semibold text-slate-500 mb-1">Intake Capacity (in KG)</label>
           <input
             type="number"
-            step="50"
-            min="50"
+            step="1000"
+            min="1000"
             value={capacity}
             onChange={(e) => setCapacity(Number(e.target.value))}
             className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 font-semibold text-slate-800 focus:outline-none focus:border-emerald-500 text-xs"

@@ -28,6 +28,7 @@ export interface FarmerMandiSummary {
   distanceKm?: number | null;
   topCrop: string;
   acceptedCrops: string[];
+  cropRates?: Array<{ crop: string; ratePerKg: number; availableKg: number }>;
   modalPrice: string;
   priceTrend: string;
   trendDirection: string;

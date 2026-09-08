@@ -253,29 +253,29 @@ export function FarmerMandiDiscoveryView() {
                         Crops Accepted &amp; Today's Rate (per KG)
                       </label>
                       <div className="flex flex-wrap gap-1.5">
-                        {mandi.acceptedCrops.map((cropName) => {
-                          const mockRateKg =
-                            cropName === "Tomato"
-                              ? "₹24/kg"
-                              : cropName === "Wheat"
-                              ? "₹28/kg"
-                              : cropName === "Mustard"
-                              ? "₹52/kg"
-                              : cropName === "Onion"
-                              ? "₹19/kg"
-                              : "₹30/kg";
-
-                          return (
-                            <span
-                              key={cropName}
-                              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-slate-100 text-slate-700 text-xs font-semibold border border-slate-200"
-                            >
-                              <Sprout className="w-3 h-3 text-emerald-600" />
-                              <span>{cropName}</span>
-                              <span className="text-[11px] font-bold text-emerald-700">({mockRateKg})</span>
-                            </span>
-                          );
-                        })}
+                        {mandi.cropRates && mandi.cropRates.length > 0
+                          ? mandi.cropRates.map((cr) => (
+                              <span
+                                key={cr.crop}
+                                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-slate-100 text-slate-700 text-xs font-semibold border border-slate-200"
+                              >
+                                <Sprout className="w-3 h-3 text-emerald-600" />
+                                <span>{cr.crop}</span>
+                                <span className="text-[11px] font-bold text-emerald-700">
+                                  (₹{cr.ratePerKg}/kg)
+                                </span>
+                              </span>
+                            ))
+                          : mandi.acceptedCrops.map((cropName) => (
+                              <span
+                                key={cropName}
+                                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-slate-100 text-slate-700 text-xs font-semibold border border-slate-200"
+                              >
+                                <Sprout className="w-3 h-3 text-emerald-600" />
+                                <span>{cropName}</span>
+                                <span className="text-[11px] font-bold text-emerald-700">(₹28/kg)</span>
+                              </span>
+                            ))}
                       </div>
                     </div>
 

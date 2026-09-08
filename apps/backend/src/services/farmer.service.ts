@@ -266,6 +266,48 @@ export async function listApprovedMandis(userLat?: number, userLng?: number) {
         ? m.topCrop.split(",").map((s) => s.trim())
         : ["Wheat", "Mustard", "Onion", "Tomato"];
 
+    // Build structured crop rates per KG from slots or defaults
+    const defaultCropRates: Record<string, { crop: string; ratePerKg: number; availableKg: number }> = {
+      Tomato: { crop: "Tomato", ratePerKg: 24, availableKg: 1000 },
+      Wheat: { crop: "Wheat", ratePerKg: 28, availableKg: 5000 },
+      Mustard: { crop: "Mustard", ratePerKg: 52, availableKg: 2500 },
+      Onion: { crop: "Onion", ratePerKg: 19, availableKg: 3000 },
+      Potato: { crop: "Potato", ratePerKg: 22, availableKg: 4000 },
+    };
+
+    m.slots.forEach((s) => {
+      if (s.allowedCrops && Array.isArray(s.allowedCrops)) {
+        (s.allowedCrops as any[]).forEach((item) => {
+          if (item?.crop) {
+            defaultCropRates[item.crop] = {
+              crop: item.crop,
+              ratePerKg: Number(item.ratePerKg) || defaultCropRates[item.crop]?.ratePerKg || 25,
+              availableKg: Number(item.quantityKg) || defaultCropRates[item.crop]?.availableKg || 1000,
+            };
+          }
+        });
+      }
+    });
+
+    const cropRatesList = finalAcceptedCrops.map(
+      (c) => defaultCropRates[c] || { crop: c, ratePerKg: 25, availableKg: 1000 }
+    );
+
+    // Ensure modalPrice is formatted per KG (convert legacy quintal prices if present)
+    let formattedModalPrice = "₹28 / kg";
+    if (m.modalPrice) {
+      if (m.modalPrice.toLowerCase().includes("qtl") || m.modalPrice.toLowerCase().includes("quintal")) {
+        const numMatch = m.modalPrice.replace(/,/g, "").match(/\d+/);
+        if (numMatch) {
+          const qtlVal = parseInt(numMatch[0], 10);
+          const kgVal = Math.round(qtlVal / 100);
+          formattedModalPrice = `₹${kgVal} / kg`;
+        }
+      } else {
+        formattedModalPrice = m.modalPrice;
+      }
+    }
+
     const defaultLat = 18.5204 + (Math.random() * 0.1 - 0.05);
     const defaultLng = 73.8567 + (Math.random() * 0.1 - 0.05);
     const lat = m.latitude !== null && m.latitude !== undefined ? m.latitude : defaultLat;
@@ -290,7 +332,8 @@ export async function listApprovedMandis(userLat?: number, userLng?: number) {
       distanceKm,
       topCrop: finalAcceptedCrops.slice(0, 2).join(", "),
       acceptedCrops: finalAcceptedCrops,
-      modalPrice: m.modalPrice || "₹28 / kg",
+      cropRates: cropRatesList,
+      modalPrice: formattedModalPrice,
       priceTrend: m.priceTrend || "+₹2/kg today",
       trendDirection: m.trendDirection || "up",
       estimatedQueueTime: m.estimatedQueueTime || "15 mins wait",
