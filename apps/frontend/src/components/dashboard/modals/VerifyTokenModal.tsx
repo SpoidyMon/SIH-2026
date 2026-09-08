@@ -97,7 +97,6 @@ export const VerifyTokenModal: React.FC<VerifyTokenModalProps> = ({
         onVerify(cleanToken);
         setIsProcessing(false);
         setDetectedToken(null);
-        setManualToken("");
         onClose();
       }, 700);
     },
@@ -139,10 +138,10 @@ export const VerifyTokenModal: React.FC<VerifyTokenModalProps> = ({
       setIsCameraActive(false);
       const errMsg =
         err?.name === "NotAllowedError" || String(err).includes("Permission")
-          ? "Camera permission was denied. Please allow camera access in your browser or use Manual/Upload options."
+          ? "Camera permission was denied. Please allow camera access in your browser or use Upload QR option."
           : err?.name === "NotFoundError" || String(err).includes("NotFound")
-          ? "No camera device detected on this system. Please use Image Upload or Manual Entry."
-          : "Unable to access camera. Please check browser permissions or switch to File Upload / Manual entry.";
+          ? "No camera device detected on this system. Please use Upload QR option."
+          : "Unable to access camera. Please check browser permissions or switch to Upload QR option.";
       setScannerError(errMsg);
     }
   }, [handleDecodedCode, stopCamera]);
@@ -170,14 +169,13 @@ export const VerifyTokenModal: React.FC<VerifyTokenModalProps> = ({
     }
   }, [isOpen, activeTab, startCamera, stopCamera]);
 
-  // Reset initial token when opened
+  // Reset when opened
   useEffect(() => {
     if (isOpen) {
-      setManualToken(initialToken || (targetBooking ? targetBooking.token : ""));
       setScannerError(null);
       setDetectedToken(null);
     }
-  }, [isOpen, initialToken, targetBooking]);
+  }, [isOpen]);
 
   // Handle Image File Upload scan
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
