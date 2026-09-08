@@ -18,6 +18,7 @@ export interface RegisterInput {
   phone?: string;
   password: string;
   role: Role;
+  mandiName?: string;
 }
 
 export interface RoleRegisterInput {

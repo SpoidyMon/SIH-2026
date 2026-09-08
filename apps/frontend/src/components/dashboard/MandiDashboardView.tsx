@@ -20,7 +20,7 @@ import { SettlementSlipModal } from "./modals/SettlementSlipModal";
 
 export function MandiDashboardView() {
   const dispatch = useAppDispatch();
-  const { stats, currentBookings, previousBookings, isActionLoading } = useAppSelector(
+  const { stats, currentBookings, previousBookings, slots, profile, isActionLoading } = useAppSelector(
     (state) => state.mandi
   );
 
@@ -79,8 +79,14 @@ export function MandiDashboardView() {
 
   return (
     <div className="space-y-4 max-w-7xl mx-auto font-sans">
-      {/* Top Section: Memoized MandiOperationalPipeline (never re-renders on tab switch or table search) */}
-      <MandiOperationalPipeline stats={stats} />
+      {/* Top Section: Memoized MandiOperationalPipeline with live metrics */}
+      <MandiOperationalPipeline
+        stats={stats}
+        currentBookings={currentBookings}
+        previousBookings={previousBookings}
+        slots={slots}
+        profile={profile}
+      />
 
       {/* Main Table: Segmented Tabs (Current Bookings vs Previous Logs) and dynamic manifest */}
       <ConsignmentBookingsTable

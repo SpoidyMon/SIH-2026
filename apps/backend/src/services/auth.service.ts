@@ -11,7 +11,7 @@ import {
   sendPasswordResetEmail,
 } from "./email.service.js";
 import { AppError } from "../middlewares/errorHandler.middleware.js";
-import { Role, OtpType } from "@prisma/client";
+import { Role, OtpType, MandiApprovalStatus } from "@prisma/client";
 import type {
   RegisterInput,
   LoginInput,
@@ -88,6 +88,27 @@ export async function registerUser(data: RegisterInput) {
         passwordHash,
         role: data.role,
         isVerified: false,
+      },
+    });
+  }
+
+  // If registering as Mandi Operator, pre-create the MandiProfile with the provided mandiName
+  if (data.role === Role.MANDI_OPERATOR) {
+    const customMandiName = data.mandiName?.trim() || `${user.name}'s APMC Yard`;
+    const mandiCodeCount = (await prisma.mandiProfile.count()) || 0;
+    const mandiCode = `MAN${String(mandiCodeCount + 1).padStart(3, "0")}`;
+
+    await prisma.mandiProfile.upsert({
+      where: { userId: user.id },
+      create: {
+        userId: user.id,
+        mandiName: customMandiName,
+        mandiCode,
+        operatingHours: "08:00 AM - 06:00 PM (Mon-Sat)",
+        approvalStatus: MandiApprovalStatus.APPROVED,
+      },
+      update: {
+        mandiName: customMandiName,
       },
     });
   }

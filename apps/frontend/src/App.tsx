@@ -44,7 +44,8 @@ export function App() {
   if (!isAuthenticated || !user) {
     return (
       <Routes>
-        <Route path="/login" element={<AuthPage />} />
+        <Route path="/login" element={<AuthPage initialMode="LOGIN" />} />
+        <Route path="/register" element={<AuthPage initialMode="REGISTER" />} />
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     );

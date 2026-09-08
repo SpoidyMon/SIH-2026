@@ -42,6 +42,7 @@ export interface RegisterMandiPayload {
   phone?: string;
   password: string;
   role: "MANDI_OPERATOR";
+  mandiName?: string;
 }
 
 export interface VerifyOtpPayload {

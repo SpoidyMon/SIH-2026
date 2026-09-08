@@ -115,7 +115,7 @@ export function MandiLayout() {
           </div>
           <div className="flex flex-col">
             <div className="flex items-center gap-2">
-              <span className="text-lg font-bold text-slate-900 dark:text-[#E5E5E5] tracking-tight leading-none">AgriMandi Portal</span>
+              <span className="text-lg font-bold text-slate-900 dark:text-[#E5E5E5] tracking-tight leading-none">Mandi Setu Portal</span>
               <span className="px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 font-bold text-[10px] tracking-wide uppercase">MANDI OPERATOR</span>
             </div>
             <span className="text-[11px] text-slate-400 dark:text-neutral-400 font-medium mt-0.5">SIH 2026 • Real-time Slot &amp; Arrival Management</span>
@@ -176,60 +176,49 @@ export function MandiLayout() {
               onClick={() => setShowProfileDropdown(!showProfileDropdown)}
               className="flex items-center gap-2 pl-1 pr-2 py-1 rounded-xl hover:bg-slate-100 dark:hover:bg-neutral-800 transition text-left cursor-pointer"
             >
-              <div className="w-8 h-8 rounded-full bg-amber-600/20 border border-amber-500/30 flex items-center justify-center font-bold text-amber-700 dark:text-amber-300 text-xs">
-                WP
+              <div className="w-8 h-8 rounded-full bg-emerald-600/20 border border-emerald-500/30 flex items-center justify-center font-bold text-emerald-700 dark:text-emerald-300 text-xs uppercase">
+                {operatorName.split(" ").map((n) => n[0]).join("").slice(0, 2) || "MO"}
               </div>
               <div className="hidden sm:block text-xs leading-tight">
                 <p className="font-semibold text-slate-800 dark:text-[#E5E5E5]">{operatorName}</p>
-                <p className="text-[10px] text-slate-400 dark:text-neutral-400">{operatorRole}</p>
+                <p className="text-[10px] text-slate-400 dark:text-neutral-400">{mandiName}</p>
               </div>
               <ChevronDown className="w-3.5 h-3.5 text-slate-400 dark:text-neutral-400 ml-0.5" />
             </button>
 
-            {/* Dropdown Menu */}
+            {/* Dropdown Menu: Clean and only with Settings & Logout */}
             {showProfileDropdown && (
-              <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-[#121212] rounded-xl shadow-elevated border border-slate-200 dark:border-neutral-800 py-1.5 z-50 text-xs">
-                <div className="px-3.5 py-2 border-b border-slate-100 dark:border-neutral-800">
-                  <p className="font-semibold text-slate-800 dark:text-[#E5E5E5]">Warren Patel (APMC-719)</p>
-                  <p className="text-slate-400 dark:text-neutral-400 text-[11px] truncate">operator.indore@agrovia.gov.in</p>
+              <div className="absolute right-0 mt-2 w-60 bg-white dark:bg-[#121212] rounded-xl shadow-elevated border border-slate-200 dark:border-neutral-800 py-1.5 z-50 text-xs animate-fade-in">
+                <div className="px-3.5 py-2.5 border-b border-slate-100 dark:border-neutral-800">
+                  <p className="font-bold text-slate-900 dark:text-[#E5E5E5]">{mandiName}</p>
+                  <p className="text-slate-500 dark:text-neutral-400 text-[11px] truncate mt-0.5">{user?.email || "operator@mandisetu.gov.in"}</p>
+                  <span className="inline-block mt-1 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded">
+                    {profile?.mandiCode || "APMC Verified"}
+                  </span>
                 </div>
-                <button
-                  onClick={() => {
-                    navigate("/mandi/settings");
-                    setShowProfileDropdown(false);
-                  }}
-                  className="w-full flex items-center px-3.5 py-2 text-slate-700 dark:text-[#E5E5E5] hover:bg-slate-50 dark:hover:bg-neutral-800 cursor-pointer text-left"
-                >
-                  Mandi Weighbridge Keys
-                </button>
-                <button
-                  onClick={() => {
-                    navigate("/mandi/verification");
-                    setShowProfileDropdown(false);
-                  }}
-                  className="w-full flex items-center px-3.5 py-2 text-slate-700 dark:text-[#E5E5E5] hover:bg-slate-50 dark:hover:bg-neutral-800 cursor-pointer text-left"
-                >
-                  Gate Inspection Logs
-                </button>
-                <button
-                  onClick={() => {
-                    navigate("/mandi/settings");
-                    setShowProfileDropdown(false);
-                  }}
-                  className="w-full flex items-center px-3.5 py-2 text-slate-700 dark:text-[#E5E5E5] hover:bg-slate-50 dark:hover:bg-neutral-800 cursor-pointer text-left"
-                >
-                  APMC Sub-Yard Rules &amp; Settings
-                </button>
-                <div className="border-t border-slate-100 dark:border-neutral-800 my-1"></div>
-                <button
-                  onClick={() => {
-                    dispatch(logoutThunk());
-                    setShowProfileDropdown(false);
-                  }}
-                  className="w-full flex items-center px-3.5 py-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 cursor-pointer text-left font-semibold"
-                >
-                  Sign Out from Terminal
-                </button>
+                <div className="py-1">
+                  <button
+                    onClick={() => {
+                      navigate("/mandi/settings");
+                      setShowProfileDropdown(false);
+                    }}
+                    className="w-full flex items-center gap-2.5 px-3.5 py-2 text-slate-700 dark:text-[#E5E5E5] hover:bg-slate-50 dark:hover:bg-neutral-800 cursor-pointer text-left font-medium transition"
+                  >
+                    <Settings className="w-4 h-4 text-slate-500 dark:text-neutral-400" />
+                    <span>Settings</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      dispatch(logoutThunk());
+                      setShowProfileDropdown(false);
+                      navigate("/login");
+                    }}
+                    className="w-full flex items-center gap-2.5 px-3.5 py-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 cursor-pointer text-left font-semibold transition"
+                  >
+                    <LogOut className="w-4 h-4 text-red-600" />
+                    <span>Logout</span>
+                  </button>
+                </div>
               </div>
             )}
           </div>

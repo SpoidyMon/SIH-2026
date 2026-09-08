@@ -19,6 +19,7 @@ export const registerSchema = z.object({
   phone: phoneValidator,
   password: passwordValidator,
   role: z.enum(["FARMER", "MANDI_OPERATOR", "ADMIN"]).default("FARMER"),
+  mandiName: z.string().trim().min(2).max(150).optional(),
 });
 
 export const roleRegisterSchema = z.object({
