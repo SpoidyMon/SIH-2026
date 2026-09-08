@@ -107,7 +107,7 @@ export function MandiLayout() {
   return (
     <div className={`h-screen w-full flex flex-col ${isDarkTheme ? "bg-[#0a0a0a] text-neutral-100" : "bg-[#edeef2] text-slate-800"} font-sans antialiased overflow-hidden`}>
       {/* ═══ TOP NAVBAR ═══ */}
-      <header className="w-full bg-white dark:bg-[#121212] border-b border-slate-200/80 dark:border-neutral-800 px-6 py-3 flex items-center justify-between gap-4 z-20 shrink-0 shadow-2xs">
+      <header className="w-full bg-white dark:bg-[#121212] border-b border-slate-200/80 dark:border-neutral-800 px-6 py-3 flex items-center justify-between gap-4 z-10 shrink-0 shadow-2xs">
         {/* Left: Brand / Title */}
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-full flex items-center justify-center text-white shrink-0 shadow-sm bg-emerald-600">

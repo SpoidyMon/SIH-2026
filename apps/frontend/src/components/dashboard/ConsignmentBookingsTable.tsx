@@ -453,7 +453,7 @@ export const ConsignmentBookingsTable = React.memo(function ConsignmentBookingsT
 
       {/* ═══ Rejection Reason Mandatory Modal ═══ */}
       {rejectingBooking && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-[9999] animate-fade-in">
           <div className="bg-white dark:bg-[#121212] border border-slate-200 dark:border-neutral-800 rounded-2xl w-full max-w-md p-5 shadow-xl space-y-4">
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-neutral-800 pb-3">
               <h3 className="text-sm font-bold text-slate-900 dark:text-[#E5E5E5]">

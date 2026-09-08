@@ -15,13 +15,13 @@ export const SettlementSlipModal: React.FC<SettlementSlipModalProps> = ({
 
   const grossKg = booking.actualGrossWeightKg || 5200;
   const tareKg = booking.tareWeightKg || 200;
-  const netQuintals = booking.actualWeightQuintals || booking.finalNetWeightQuintals || 50;
+  const netKg = booking.quantityKg || (booking.actualWeightQuintals ? booking.actualWeightQuintals * 100 : grossKg - tareKg);
   const moisture = booking.moisturePercentage || 11.4;
-  const ratePerQtl = booking.crop.includes("Wheat") ? 2300 : 5400;
-  const totalPayout = booking.finalPayoutAmount || Math.round(netQuintals * ratePerQtl);
+  const ratePerKg = booking.crop.includes("Wheat") ? 23 : 54;
+  const totalPayout = booking.finalPayoutAmount || Math.round(netKg * ratePerKg);
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-[9999] animate-fade-in">
       <div className="bg-white dark:bg-[#121212] border border-neutral-300 dark:border-neutral-800 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden animate-slide-up">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 bg-neutral-900 dark:bg-black text-white dark:text-[#E5E5E5] border-b border-neutral-800">
@@ -88,11 +88,11 @@ export const SettlementSlipModal: React.FC<SettlementSlipModalProps> = ({
             <div className="p-3.5 space-y-2">
               <div className="flex justify-between text-neutral-600 dark:text-neutral-400">
                 <span>Loaded Gross Weight:</span>
-                <span className="font-mono font-semibold text-neutral-900 dark:text-[#E5E5E5]">{grossKg} Kg</span>
+                <span className="font-mono font-semibold text-neutral-900 dark:text-[#E5E5E5]">{grossKg.toLocaleString('en-IN')} Kg</span>
               </div>
               <div className="flex justify-between text-neutral-600 dark:text-neutral-400">
                 <span>Tare Truck Weight:</span>
-                <span className="font-mono font-semibold text-neutral-900 dark:text-[#E5E5E5]">{tareKg} Kg</span>
+                <span className="font-mono font-semibold text-neutral-900 dark:text-[#E5E5E5]">{tareKg.toLocaleString('en-IN')} Kg</span>
               </div>
               <div className="flex justify-between text-neutral-600 dark:text-neutral-400">
                 <span>Moisture Reading:</span>
@@ -100,7 +100,7 @@ export const SettlementSlipModal: React.FC<SettlementSlipModalProps> = ({
               </div>
               <div className="flex justify-between text-[#059669] dark:text-[#5CE65C] font-semibold pt-2 border-t border-neutral-200 dark:border-neutral-800">
                 <span>Net Deliverable Quantity:</span>
-                <span className="font-mono">{netQuintals} Quintals</span>
+                <span className="font-mono">{netKg.toLocaleString('en-IN')} KG</span>
               </div>
             </div>
           </div>
@@ -109,7 +109,7 @@ export const SettlementSlipModal: React.FC<SettlementSlipModalProps> = ({
           <div className="p-4 bg-emerald-50/50 dark:bg-neutral-900 rounded-xl border border-emerald-200/80 dark:border-emerald-800/60 space-y-2">
             <div className="flex justify-between text-neutral-600 dark:text-neutral-300 text-xs">
               <span>MSP / Mandi Benchmark Rate:</span>
-              <span className="font-semibold">₹ {ratePerQtl.toLocaleString("en-IN")} / Qtl</span>
+              <span className="font-semibold">₹ {ratePerKg.toLocaleString("en-IN")} / KG</span>
             </div>
             <div className="flex justify-between text-neutral-600 dark:text-neutral-300 text-xs">
               <span>APMC Market User Cess:</span>

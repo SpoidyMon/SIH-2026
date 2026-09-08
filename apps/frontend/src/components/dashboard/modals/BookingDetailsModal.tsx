@@ -39,7 +39,7 @@ export const BookingDetailsModal: React.FC<BookingDetailsModalProps> = ({
     : null;
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-[9999] animate-fade-in">
       <div className="bg-white dark:bg-[#121212] border border-neutral-300 dark:border-neutral-800 rounded-2xl w-full max-w-xl shadow-xl overflow-hidden animate-slide-up flex flex-col max-h-[90vh]">
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 bg-neutral-50 dark:bg-black border-b border-neutral-200 dark:border-neutral-800">

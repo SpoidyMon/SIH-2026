@@ -19,7 +19,7 @@ export const WeighbridgeSettlementModal: React.FC<WeighbridgeSettlementModalProp
 
   useEffect(() => {
     if (booking) {
-      const estimatedKg = (booking.estimatedQuantityQuintals || booking.quantityQuintals || 50) * 100;
+      const estimatedKg = booking.quantityKg || (booking.estimatedQuantityQuintals || booking.quantityQuintals || 50) * 100;
       setGrossWeightKg(estimatedKg + 200);
       setTareWeightKg(200);
       setMoisturePercent(11.4);
@@ -28,23 +28,26 @@ export const WeighbridgeSettlementModal: React.FC<WeighbridgeSettlementModalProp
 
   if (!booking) return null;
 
-  const netQuintals = Math.max(0, (grossWeightKg - tareWeightKg) / 100);
-  const ratePerQuintal = booking.crop.includes("Wheat")
-    ? 2300
+  const netWeightKg = Math.max(0, grossWeightKg - tareWeightKg);
+  const ratePerKg = booking.crop.includes("Wheat")
+    ? 23
     : booking.crop.includes("Mustard")
-    ? 5400
+    ? 54
     : booking.crop.includes("Rice")
-    ? 3800
-    : 5400;
-  const finalPayout = Math.round(netQuintals * ratePerQuintal);
+    ? 38
+    : 54;
+  const finalPayout = Math.round(netWeightKg * ratePerKg);
+  const netQuintals = Number((netWeightKg / 100).toFixed(2));
 
   const handleSettlementSubmit = () => {
     onComplete(booking.id, netQuintals, finalPayout);
     onClose();
   };
 
+  const estimatedDisplayKg = booking.quantityKg || (booking.estimatedQuantityQuintals ? booking.estimatedQuantityQuintals * 100 : 5000);
+
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-[9999] animate-fade-in">
       <div className="bg-white dark:bg-[#121212] border border-neutral-300 dark:border-neutral-800 rounded-2xl w-full max-w-md shadow-xl overflow-hidden animate-slide-up">
         <div className="flex items-center justify-between px-5 py-3.5 bg-neutral-50 dark:bg-black border-b border-neutral-200 dark:border-neutral-800">
           <div className="flex items-center gap-2 font-semibold text-xs text-neutral-900 dark:text-[#E5E5E5]">
@@ -65,7 +68,7 @@ export const WeighbridgeSettlementModal: React.FC<WeighbridgeSettlementModalProp
               {booking.farmerName} • {booking.vehicleNumber}
             </div>
             <div className="text-neutral-500 dark:text-neutral-400">
-              {booking.crop} (Estimated: {booking.estimatedQuantityQuintals} Qtl)
+              {booking.crop} (Estimated: {estimatedDisplayKg.toLocaleString('en-IN')} KG)
             </div>
           </div>
 
@@ -109,8 +112,8 @@ export const WeighbridgeSettlementModal: React.FC<WeighbridgeSettlementModalProp
           {/* Calculation Preview */}
           <div className="p-3 bg-[#F0FDF4] dark:bg-black border border-[#BBF7D0] dark:border-emerald-800/60 rounded-xl text-xs space-y-1">
             <div className="flex justify-between font-semibold text-[#059669] dark:text-[#5CE65C]">
-              <span>Net Agricultural Quintals:</span>
-              <span>{netQuintals.toFixed(2)} Qtl</span>
+              <span>Net Agricultural Weight:</span>
+              <span>{netWeightKg.toLocaleString('en-IN')} KG</span>
             </div>
             <div className="flex justify-between font-semibold text-black dark:text-[#E5E5E5] text-sm pt-1 border-t border-[#BBF7D0] dark:border-neutral-800">
               <span>Direct Trade Payout:</span>
