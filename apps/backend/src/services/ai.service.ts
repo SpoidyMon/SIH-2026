@@ -116,7 +116,7 @@ export async function processAiVoiceMessage(
   // Transcribe voice audio buffer via Groq Whisper API
   const transcript = await transcribeAudio(
     audioBuffer,
-    "farmer_voice.wav",
+    "farmer_voice.webm",
     input.languageHint
   );
 

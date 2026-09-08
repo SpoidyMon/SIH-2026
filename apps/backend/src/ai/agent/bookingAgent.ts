@@ -118,6 +118,107 @@ export function detectIntent(text: string): AgentIntent {
   return "BOOK_SLOT";
 }
 
+export const GROQ_TOOLS = [
+  {
+    type: "function",
+    function: {
+      name: "searchMandis",
+      description: "Search APMC mandis by name, owner name, district, or crop in PostgreSQL",
+      parameters: {
+        type: "object",
+        properties: {
+          query: { type: "string", description: "Search query for mandi name or location" },
+        },
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "getMandiDetails",
+      description: "Get detailed info for an APMC mandi by mandiId",
+      parameters: {
+        type: "object",
+        properties: {
+          mandiId: { type: "string", description: "The Mandi Profile ID" },
+        },
+        required: ["mandiId"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "getAvailableSlots",
+      description: "Get active time slots for a mandi on a specific date (YYYY-MM-DD)",
+      parameters: {
+        type: "object",
+        properties: {
+          mandiId: { type: "string", description: "The Mandi Profile ID" },
+          date: { type: "string", description: "ISO Date YYYY-MM-DD" },
+        },
+        required: ["mandiId", "date"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "checkSlotCapacity",
+      description: "Check if slot has sufficient capacity for requested KG quantity",
+      parameters: {
+        type: "object",
+        properties: {
+          slotId: { type: "string", description: "Slot ID" },
+          quantityKg: { type: "number", description: "Quantity in KG" },
+        },
+        required: ["slotId", "quantityKg"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "getCropRate",
+      description: "Get market benchmark rate per KG for a crop",
+      parameters: {
+        type: "object",
+        properties: {
+          crop: { type: "string", description: "Crop name" },
+        },
+        required: ["crop"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "getMyBookings",
+      description: "Fetch active and past bookings for the authenticated farmer",
+      parameters: {
+        type: "object",
+        properties: {
+          userId: { type: "string", description: "Authenticated farmer user ID" },
+        },
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "cancelBooking",
+      description: "Cancel a pending booking request",
+      parameters: {
+        type: "object",
+        properties: {
+          bookingId: { type: "string", description: "Booking ID" },
+        },
+        required: ["bookingId"],
+      },
+    },
+  },
+];
+
 /**
  * Main state machine runner processing conversation step and tool execution.
  */
@@ -164,13 +265,69 @@ export async function runBookingAgent(state: BookingAgentState): Promise<Booking
     }
   }
 
-  // 2. Extract entities from user prompt
-  const intent = state.intent || detectIntent(userText);
+  // 2. Invoke Real Groq API LLM with Tool Calling Schema
+  try {
+    const messages = [
+      { role: "system", content: SYSTEM_PROMPT },
+      { role: "user", content: userText },
+    ];
+
+    const aiRes = await chatCompletion(messages, GROQ_TOOLS);
+
+    // If Groq requested tool calls, execute them against Prisma/PostgreSQL
+    if (aiRes.toolCalls && aiRes.toolCalls.length > 0) {
+      for (const tc of aiRes.toolCalls) {
+        if (tc.name === "searchMandis") {
+          const res = await toolSearchMandis({ query: tc.arguments?.query || userText });
+          if (res.length > 0 && res[0]) {
+            state.mandiId = res[0].id;
+            state.mandiInfo = res[0];
+          }
+        } else if (tc.name === "getAvailableSlots") {
+          const res = await toolGetAvailableSlots({ mandiId: tc.arguments?.mandiId || state.mandiId || "", date: tc.arguments?.date || resolveTargetDate(userText) });
+          if (res.length > 0 && res[0]) {
+            state.slotId = res[0].slotId;
+            state.slotInfo = res[0];
+          }
+        } else if (tc.name === "checkSlotCapacity") {
+          await toolCheckSlotCapacity({ slotId: tc.arguments?.slotId || state.slotId || "", quantityKg: tc.arguments?.quantityKg || 100 });
+        } else if (tc.name === "getCropRate") {
+          await toolGetCropRate({ crop: tc.arguments?.crop || "Wheat" });
+        } else if (tc.name === "getMyBookings") {
+          const res = await toolGetMyBookings(state.userId);
+          return {
+            ...state,
+            intent: "VIEW_BOOKINGS",
+            responseText: res.length > 0
+              ? `आपके पास ${res.length} एक्टिव बुकिंग्स हैं:\n` + res.map(b => `• ${b.crop} (${b.quantityKg} KG) - ${b.status}`).join("\n")
+              : "आपके पास वर्तमान में कोई एक्टिव बुकिंग नहीं है।",
+          };
+        } else if (tc.name === "cancelBooking") {
+          const res = await toolCancelBooking({ userId: state.userId, bookingId: tc.arguments?.bookingId });
+          return {
+            ...state,
+            intent: "CANCEL_BOOKING",
+            responseText: `बुकिंग (ID: ${res.bookingId}) की स्थिति: ${res.status}।`,
+          };
+        }
+      }
+    }
+
+    if (aiRes.content && !userText.toLowerCase().includes("book") && !userText.toLowerCase().includes("बुक")) {
+      return {
+        ...state,
+        responseText: aiRes.content,
+      };
+    }
+  } catch (err: any) {
+    console.warn("Groq LLM call error in runBookingAgent, continuing with database resolution:", err?.message);
+  }
+
+  // 3. Perform Mandi resolution & Slot Check
   const targetDate = state.date || resolveTargetDate(userText);
   const parsedKg = parseQuantityKg(userText) || (state.crops?.[0]?.quantityKg ?? 100);
   const cropNorm = normalizeCropName(userText);
 
-  // 3. Perform Mandi resolution
   let mandis: AgentMandiInfo[] = state.mandiMatches || [];
   if (!state.mandiId) {
     mandis = await toolSearchMandis({ query: state.mandiQuery || userText || "Rupesh" });
@@ -179,7 +336,6 @@ export async function runBookingAgent(state: BookingAgentState): Promise<Booking
   if (mandis.length === 0 && !state.mandiId) {
     return {
       ...state,
-      intent,
       responseText: "मुझे कोई मंडी नहीं मिली। कृपया मंडी का नाम बताएँ (जैसे 'Rupesh Mandi')।",
     };
   }
@@ -200,7 +356,7 @@ export async function runBookingAgent(state: BookingAgentState): Promise<Booking
   // 4. Fetch available slots
   const availableSlots = await toolGetAvailableSlots({ mandiId, date: targetDate });
 
-  if (!availableSlots || availableSlots.length === 0) {
+  if (!availableSlots || availableSlots.length === 0 || !availableSlots[0]) {
     return {
       ...state,
       mandiId,
@@ -210,19 +366,9 @@ export async function runBookingAgent(state: BookingAgentState): Promise<Booking
     };
   }
 
-  // Find requested slot time or default to first open slot
   const selectedSlot = availableSlots[0];
-  if (!selectedSlot) {
-    return {
-      ...state,
-      mandiId,
-      mandiInfo: selectedMandi,
-      date: targetDate,
-      responseText: `${selectedMandi.name} में ${targetDate} के लिए कोई एक्टिव स्लॉट उपलब्ध नहीं है।`,
-    };
-  }
 
-  // 5. Server-side Capacity & Rate Validation
+  // 5. Capacity & Rate Validation
   const capacityCheck = await toolCheckSlotCapacity({
     slotId: selectedSlot.slotId,
     quantityKg: parsedKg,

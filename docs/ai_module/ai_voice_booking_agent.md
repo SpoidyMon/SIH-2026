@@ -1,4 +1,4 @@
-# Real Groq AI Voice & Chat Booking Agent — Mandi Setu
+it # Real Groq AI Voice & Chat Booking Agent — Mandi Setu
 
 ## Overview
 The Mandi Setu AI Voice Booking Agent is a production-connected, multilingual voice and text assistant that enables farmers to query APMC mandi details, check real-time arrival slots, verify slot capacity, calculate pricing in **KG**, and submit official slot booking requests.

@@ -66,18 +66,25 @@ export async function chatCompletion(
  */
 export async function transcribeAudio(
   audioBuffer: Buffer,
-  filename: string = "audio.wav",
+  filename: string = "audio.webm",
   languageHint?: string
 ): Promise<string> {
   const apiKey = env.GROQ_API_KEY || process.env.GROQ_API_KEY;
   if (!apiKey || apiKey === "mock_key_for_dev") {
-    // Development fallback transcript
     return "रुपेश की मंडी में कल सुबह 9 बजे 100 किलो गेहूं का स्लॉट बुक कर दो";
   }
 
   try {
     const groq = getGroqClient();
-    const file = await toFile(audioBuffer, filename, { type: "audio/wav" });
+    const mimeType = filename.endsWith(".webm")
+      ? "audio/webm"
+      : filename.endsWith(".mp4") || filename.endsWith(".m4a")
+      ? "audio/mp4"
+      : filename.endsWith(".mp3")
+      ? "audio/mp3"
+      : "audio/wav";
+
+    const file = await toFile(audioBuffer, filename, { type: mimeType });
     const transcription = await groq.audio.transcriptions.create({
       file,
       model: env.GROQ_TRANSCRIPTION_MODEL || "whisper-large-v3-turbo",
