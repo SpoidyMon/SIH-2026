@@ -36,6 +36,7 @@ This repository contains the project source code, configuration, documentation, 
 * **Shared Database**: All database models, Prisma client, and migrations must reside in `@repo/database` (`packages/database`) so they are sharable across all services (backend, background workers, AI pipelines).
 * **Component Render Optimization**: A component should re-render only when something it actually depends on has changed. Keep state as close as possible to the components that use it, split components into independent render boundaries, and apply targeted memoization (`React.memo`, `useMemo`, `useCallback`, fine-grained selectors) to eliminate cascading re-renders across parent layouts or unrelated sibling components.
 * **Getting Started Documentation**: Maintain and keep `docs/how_to_start/*.md` updated as the project evolves.
+* **Weight Unit Standard**: Calculate, process, store, and display all agricultural crop weights, lot sizes, capacities, and rates strictly in **KG (Kilograms)** only. Do NOT calculate or display weights in Quintals (Qtl).
 * Run appropriate tests, checks, and builds after making changes.
 
 ## Testing
