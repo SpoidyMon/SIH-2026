@@ -16,7 +16,7 @@ import { ThemeColors } from '@/constants/theme';
 import { MandiFilterModal } from './MandiFilterModal';
 import { MandiMapViewModal } from './MandiMapViewModal';
 import { ProfileCompletionModal } from './ProfileCompletionModal';
-import { SlotBookingModal } from './SlotBookingModal';
+import { SlotBookingModal, isSlotExpired } from './SlotBookingModal';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { translateMandiName, translateCropName } from '@/constants/translations';
@@ -174,17 +174,21 @@ export const MandiSectionView = memo(function MandiSectionView() {
     async (mandi: MandiItem) => {
       // 1. KYC Profile Completion Check (Strict Requirement)
       if (!isProfileComplete) {
-        Alert.alert(
-          t('mandi.booking_kyc_required_title'),
-          t('mandi.booking_kyc_required_msg'),
-          [
-            { text: t('general.cancel'), style: 'cancel' },
-            {
-              text: t('mandi.complete_kyc_now'),
-              onPress: () => setProfileModalVisible(true),
-            },
-          ]
-        );
+        if (Platform.OS === 'web') {
+          setProfileModalVisible(true);
+        } else {
+          Alert.alert(
+            t('mandi.booking_kyc_required_title'),
+            t('mandi.booking_kyc_required_msg'),
+            [
+              { text: t('general.cancel'), style: 'cancel' },
+              {
+                text: t('mandi.complete_kyc_now'),
+                onPress: () => setProfileModalVisible(true),
+              },
+            ]
+          );
+        }
         return;
       }
 
