@@ -22,7 +22,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { translateMandiName, translateCropName } from '@/constants/translations';
 import { useUserLocation } from '@/hooks/useUserLocation';
 import { getApprovedMandisApi, createFarmerBookingApi } from '@/services/farmer.service';
-import { getNearbyMandisForUser, calculateDistanceKm, formatDistance } from '@/utils/location.utils';
+import { calculateDistanceKm, formatDistance } from '@/utils/location.utils';
 import type { MandiItem, MandiFilterCriteria } from '@/interfaces';
 
 const ITEMS_PER_PAGE = 4;
@@ -78,12 +78,12 @@ export const MandiSectionView = memo(function MandiSectionView() {
           setDbMandis(formatted);
         } else {
           if (isMounted) {
-            setDbMandis(getNearbyMandisForUser(userCoords));
+            setDbMandis([]);
           }
         }
       } catch {
         if (isMounted) {
-          setDbMandis(getNearbyMandisForUser(userCoords));
+          setDbMandis([]);
         }
       } finally {
         if (isMounted) {
@@ -102,7 +102,7 @@ export const MandiSectionView = memo(function MandiSectionView() {
   // Recalculate distances dynamically
   const dynamicMandis = useMemo(() => {
     if (dbMandis.length === 0) {
-      return getNearbyMandisForUser(userCoords);
+      return [];
     }
     return dbMandis.map((m) => {
       const distance = calculateDistanceKm(

@@ -21,7 +21,7 @@ export const DashboardMainView = memo(function DashboardMainView({
   const { token } = useAuth();
   const { language, t } = useLanguage();
   const [dbBookings, setDbBookings] = useState<any[]>([]);
-  const [totalMandisCount, setTotalMandisCount] = useState<number>(22);
+  const [totalMandisCount, setTotalMandisCount] = useState<number>(0);
 
   // Fetch real bookings and mandi count from backend
   useEffect(() => {

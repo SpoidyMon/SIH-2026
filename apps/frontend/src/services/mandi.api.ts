@@ -123,6 +123,11 @@ export const mandiApi = {
     return response.data;
   },
 
+  getFarmers: async (): Promise<ApiResponse<{ farmers: any[] }>> => {
+    const response = await apiClient.get<ApiResponse<{ farmers: any[] }>>("/mandi/farmers");
+    return response.data;
+  },
+
   // 7. Commodities
   getCommodities: async (): Promise<ApiResponse<{ commodities: Array<{ id: string; name: string; category?: string }> }>> => {
     const response = await apiClient.get<ApiResponse<{ commodities: Array<{ id: string; name: string; category?: string }> }>>("/mandi/commodities");

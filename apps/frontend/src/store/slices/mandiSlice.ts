@@ -32,389 +32,27 @@ export interface MandiState {
 }
 
 const defaultInitialStats: MandiDashboardStats = {
-  mandiId: "mandi-indore-01",
-  mandiName: "Indore APMC Grain & Oilseed Market Yard",
-  approvalStatus: "APPROVED",
-  activeSlotsCount: 2,
-  todayArrivalsCount: 1,
-  todayTotalQuintals: 135,
-  verifiedCount: 1,
-  pendingCount: 1,
-  completedCount: 2,
-  capacityPercentage: 36.1,
-  completedTodayPayouts: 324500,
+  mandiId: "",
+  mandiName: "",
+  approvalStatus: "PENDING_ONBOARDING",
+  activeSlotsCount: 0,
+  todayArrivalsCount: 0,
+  todayTotalQuintals: 0,
+  verifiedCount: 0,
+  pendingCount: 0,
+  completedCount: 0,
+  capacityPercentage: 0,
+  completedTodayPayouts: 0,
 };
-
-const defaultInitialProfile: MandiProfile = {
-  id: "mandi-indore-01",
-  userId: "usr-operator-01",
-  mandiName: "Indore APMC Grain & Oilseed Market Yard",
-  operatingLicense: "APMC-IND-2026-X992",
-  state: "Madhya Pradesh",
-  district: "Indore",
-  yardAddress: "Plot No. 44, Industrial Area, Bypass Highway",
-  pinCode: "452010",
-  weighbridgeCount: 4,
-  approvalStatus: "APPROVED",
-  aadhaarVerified: true,
-  aadhaarNumber: "•••• •••• 8912",
-  rejectionReason: null,
-  rating: 4.8,
-  totalReviews: 86,
-  createdAt: "2026-01-15T08:00:00Z",
-  updatedAt: "2026-08-31T10:00:00Z",
-  legalDocs: [
-    {
-      id: "doc-1",
-      mandiId: "mandi-indore-01",
-      title: "APMC Mandi Yard License 2026-27",
-      docType: "MANDI_LICENSE",
-      documentType: "MANDI_LICENSE",
-      fileUrl: "https://example.com/docs/apmc_license.pdf",
-      documentUrl: "https://example.com/docs/apmc_license.pdf",
-      status: "VERIFIED",
-      verified: true,
-      uploadedAt: "2026-01-15",
-      createdAt: "2026-01-15",
-    },
-    {
-      id: "doc-2",
-      mandiId: "mandi-indore-01",
-      title: "State Mandi Board APMC Registration",
-      docType: "APMC_REGISTRATION",
-      documentType: "APMC_REGISTRATION",
-      fileUrl: "https://example.com/docs/state_registration.pdf",
-      documentUrl: "https://example.com/docs/state_registration.pdf",
-      status: "VERIFIED",
-      verified: true,
-      uploadedAt: "2026-02-10",
-      createdAt: "2026-02-10",
-    },
-    {
-      id: "doc-3",
-      mandiId: "mandi-indore-01",
-      title: "GST Compliance & Tax Exemption",
-      docType: "GST_CERTIFICATE",
-      documentType: "GST_CERTIFICATE",
-      fileUrl: "https://example.com/docs/gst_certificate.pdf",
-      documentUrl: "https://example.com/docs/gst_certificate.pdf",
-      status: "VERIFIED",
-      verified: true,
-      uploadedAt: "2026-03-01",
-      createdAt: "2026-03-01",
-    },
-  ],
-};
-
-const defaultInitialSlots: MandiSlot[] = [
-  {
-    id: "slot-179",
-    mandiId: "mandi-indore-01",
-    crop: "Wheat (Sharbati)",
-    date: "2026-09-01",
-    slotDate: "2026-09-01",
-    startTime: "08:00",
-    endTime: "11:30",
-    totalCapacityQuintals: 600,
-    maxCapacityQuintals: 600,
-    bookedCapacityQuintals: 0,
-    maxFarmers: 25,
-    maxFarmersLimit: 25,
-    bookedFarmers: 0,
-    currentFarmersBooked: 0,
-    bufferMinutes: 15,
-    bufferTimeMinutes: 15,
-    bufferPercentage: 10,
-    bufferTolerancePercentage: 10,
-    status: "OPEN",
-    createdAt: "2026-08-30",
-  },
-  {
-    id: "slot-735",
-    mandiId: "mandi-indore-01",
-    crop: "Mustard (Sarson)",
-    date: "2026-09-01",
-    slotDate: "2026-09-01",
-    startTime: "12:00",
-    endTime: "15:30",
-    totalCapacityQuintals: 400,
-    maxCapacityQuintals: 400,
-    bookedCapacityQuintals: 0,
-    maxFarmers: 18,
-    maxFarmersLimit: 18,
-    bookedFarmers: 0,
-    currentFarmersBooked: 0,
-    bufferMinutes: 20,
-    bufferTimeMinutes: 20,
-    bufferPercentage: 10,
-    bufferTolerancePercentage: 10,
-    status: "OPEN",
-    createdAt: "2026-08-30",
-  },
-  {
-    id: "slot-101",
-    mandiId: "mandi-indore-01",
-    crop: "Wheat (Sharbati)",
-    date: "2026-08-31",
-    slotDate: "2026-08-31",
-    startTime: "08:00",
-    endTime: "11:00",
-    totalCapacityQuintals: 500,
-    maxCapacityQuintals: 500,
-    bookedCapacityQuintals: 380,
-    maxFarmers: 20,
-    maxFarmersLimit: 20,
-    bookedFarmers: 15,
-    currentFarmersBooked: 15,
-    bufferMinutes: 15,
-    bufferTimeMinutes: 15,
-    bufferPercentage: 10,
-    bufferTolerancePercentage: 10,
-    status: "OPEN",
-    createdAt: "2026-08-25",
-  },
-  {
-    id: "slot-102",
-    mandiId: "mandi-indore-01",
-    crop: "Mustard (Sarson)",
-    date: "2026-08-31",
-    slotDate: "2026-08-31",
-    startTime: "11:30",
-    endTime: "14:30",
-    totalCapacityQuintals: 350,
-    maxCapacityQuintals: 350,
-    bookedCapacityQuintals: 310,
-    maxFarmers: 15,
-    maxFarmersLimit: 15,
-    bookedFarmers: 13,
-    currentFarmersBooked: 13,
-    bufferMinutes: 20,
-    bufferTimeMinutes: 20,
-    bufferPercentage: 15,
-    bufferTolerancePercentage: 15,
-    status: "OPEN",
-    createdAt: "2026-08-25",
-  },
-  {
-    id: "slot-103",
-    mandiId: "mandi-indore-01",
-    crop: "Rice (Basmati 1121)",
-    date: "2026-09-01",
-    slotDate: "2026-09-01",
-    startTime: "09:00",
-    endTime: "13:00",
-    totalCapacityQuintals: 600,
-    maxCapacityQuintals: 600,
-    bookedCapacityQuintals: 240,
-    maxFarmers: 25,
-    maxFarmersLimit: 25,
-    bookedFarmers: 10,
-    currentFarmersBooked: 10,
-    bufferMinutes: 30,
-    bufferTimeMinutes: 30,
-    bufferPercentage: 10,
-    bufferTolerancePercentage: 10,
-    status: "OPEN",
-    createdAt: "2026-08-26",
-  },
-  {
-    id: "slot-104",
-    mandiId: "mandi-indore-01",
-    crop: "Soyabean (Yellow)",
-    date: "2026-09-01",
-    slotDate: "2026-09-01",
-    startTime: "13:30",
-    endTime: "17:00",
-    totalCapacityQuintals: 400,
-    maxCapacityQuintals: 400,
-    bookedCapacityQuintals: 100,
-    maxFarmers: 18,
-    maxFarmersLimit: 18,
-    bookedFarmers: 4,
-    currentFarmersBooked: 4,
-    bufferMinutes: 15,
-    bufferTimeMinutes: 15,
-    bufferPercentage: 5,
-    bufferTolerancePercentage: 5,
-    status: "OPEN",
-    createdAt: "2026-08-26",
-  },
-];
-
-const defaultInitialBookings: Booking[] = [
-  {
-    id: "BK-98421",
-    token: "TKN-7821",
-    farmerId: "usr_farmer_01",
-    farmerName: "Baldev Singh",
-    farmerPhone: "+91 98765 43210",
-    mandiId: "mandi-indore-01",
-    mandiName: "Indore APMC Grain & Oilseed Market Yard",
-    slotId: "slot-101",
-    crop: "Wheat (Sharbati)",
-    variety: "Grade-A Export Quality",
-    estimatedQuantityQuintals: 45,
-    quantityQuintals: 45,
-    vehicleNumber: "HR-26-DK-9042",
-    arrivalDate: "2026-08-31",
-    slotTimeWindow: "08:00 - 11:00",
-    status: "PENDING",
-    qrCodeString: "https://agrovia.gov.in/verify?tkn=TKN-7821",
-    createdAt: "2026-08-28T09:30:00Z",
-  },
-  {
-    id: "BK-98418",
-    token: "TKN-3190",
-    farmerId: "usr_farmer_02",
-    farmerName: "Ramesh Patel",
-    farmerPhone: "+91 94250 11223",
-    mandiId: "mandi-indore-01",
-    mandiName: "Indore APMC Grain & Oilseed Market Yard",
-    slotId: "slot-102",
-    crop: "Mustard (Black Bold)",
-    variety: "Grade-B Certified",
-    estimatedQuantityQuintals: 60,
-    quantityQuintals: 60,
-    vehicleNumber: "MP-09-AB-4412",
-    arrivalDate: "2026-08-31",
-    slotTimeWindow: "09:30 - 12:30",
-    status: "ACCEPTED",
-    qrCodeString: "https://agrovia.gov.in/verify?tkn=TKN-3190",
-    createdAt: "2026-08-29T11:15:00Z",
-  },
-  {
-    id: "BK-98402",
-    token: "TKN-5542",
-    farmerId: "usr_farmer_03",
-    farmerName: "Harpreet Kaur",
-    farmerPhone: "+91 98140 77889",
-    mandiId: "mandi-indore-01",
-    mandiName: "Indore APMC Grain & Oilseed Market Yard",
-    slotId: "slot-103",
-    crop: "Basmati Rice (1121 Pusa)",
-    variety: "Premium Long Grain",
-    estimatedQuantityQuintals: 80,
-    quantityQuintals: 80,
-    vehicleNumber: "PB-10-CZ-2201",
-    arrivalDate: "2026-08-31",
-    slotTimeWindow: "07:00 - 10:00",
-    status: "VERIFIED",
-    qrCodeString: "https://agrovia.gov.in/verify?tkn=TKN-5542",
-    gateEntryTimestamp: "2026-08-31T07:15:00Z",
-    createdAt: "2026-08-28T14:45:00Z",
-  },
-  {
-    id: "BK-98390",
-    token: "TKN-1092",
-    farmerId: "usr_farmer_04",
-    farmerName: "Devendra Yadav",
-    farmerPhone: "+91 99881 22334",
-    mandiId: "mandi-indore-01",
-    mandiName: "Indore APMC Grain & Oilseed Market Yard",
-    slotId: "slot-104",
-    crop: "Soyabean (Yellow-JS 335)",
-    variety: "Oilseed Special",
-    estimatedQuantityQuintals: 110,
-    quantityQuintals: 110,
-    vehicleNumber: "MP-13-CA-3030",
-    arrivalDate: "2026-08-31",
-    slotTimeWindow: "06:00 - 09:00",
-    status: "COMPLETED",
-    actualGrossWeightKg: 11200,
-    tareWeightKg: 200,
-    finalNetWeightQuintals: 110,
-    moisturePercentage: 11.4,
-    finalPayoutAmount: 594000,
-    qrCodeString: "https://agrovia.gov.in/verify?tkn=TKN-1092",
-    completedAt: "2026-08-31T08:50:00Z",
-    createdAt: "2026-08-27T10:00:00Z",
-  },
-];
-
-const defaultInitialPreviousBookings: Booking[] = [
-  {
-    id: "BK-98301",
-    token: "TKN-1092",
-    farmerId: "usr_farmer_04",
-    farmerName: "Gurpreet Singh",
-    farmerPhone: "+91 98111 22334",
-    mandiId: "mandi-indore-01",
-    mandiName: "Indore APMC Grain & Oilseed Market Yard",
-    slotId: "slot-098",
-    crop: "Rice (Basmati)",
-    variety: "1121 Premium",
-    estimatedQuantityQuintals: 80,
-    vehicleNumber: "PB-02-AX-1120",
-    arrivalDate: "2026-08-30",
-    slotTimeWindow: "08:00 - 11:00",
-    status: "COMPLETED",
-    actualGrossWeightKg: 8200,
-    tareWeightKg: 200,
-    finalNetWeightQuintals: 80,
-    moisturePercentage: 11.8,
-    finalPayoutAmount: 245000,
-    createdAt: "2026-08-27T10:00:00Z",
-  },
-  {
-    id: "BK-98299",
-    token: "TKN-1088",
-    farmerId: "usr_farmer_05",
-    farmerName: "Jagdish Verma",
-    farmerPhone: "+91 94250 88991",
-    mandiId: "mandi-indore-01",
-    mandiName: "Indore APMC Grain & Oilseed Market Yard",
-    slotId: "slot-097",
-    crop: "Wheat",
-    variety: "Lokwan",
-    estimatedQuantityQuintals: 55,
-    vehicleNumber: "MP-13-CA-3030",
-    arrivalDate: "2026-08-29",
-    slotTimeWindow: "12:00 - 15:00",
-    status: "COMPLETED",
-    actualGrossWeightKg: 5650,
-    tareWeightKg: 150,
-    finalNetWeightQuintals: 55,
-    moisturePercentage: 12.1,
-    finalPayoutAmount: 126500,
-    createdAt: "2026-08-26T11:00:00Z",
-  },
-];
 
 const initialState: MandiState = {
   stats: defaultInitialStats,
-  profile: defaultInitialProfile,
-  slots: defaultInitialSlots,
-  currentBookings: defaultInitialBookings,
-  previousBookings: defaultInitialPreviousBookings,
-  previousBookingsTotal: 2,
-  ratingData: {
-    rating: 4.8,
-    averageRating: 4.8,
-    totalReviews: 86,
-    gatePrecisionPercentage: 98.4,
-    averageGateWaitMinutes: 12,
-    breakdown: { 5: 68, 4: 14, 3: 3, 2: 1, 1: 0 },
-    reviews: [
-      {
-        id: "rev-1",
-        farmerName: "Baldev Singh",
-        rating: 5,
-        comment: "Excellent electronic weighbridge entry. No delay at Gate 2.",
-        date: "2026-08-30",
-        crop: "Wheat (Sharbati)",
-        createdAt: "2026-08-30",
-      },
-      {
-        id: "rev-2",
-        farmerName: "Rameshwar Patel",
-        rating: 4,
-        comment: "Fast moisture grading and transparent lot booking.",
-        date: "2026-08-29",
-        crop: "Mustard (Sarson)",
-        createdAt: "2026-08-29",
-      },
-    ],
-  },
+  profile: null,
+  slots: [],
+  currentBookings: [],
+  previousBookings: [],
+  previousBookingsTotal: 0,
+  ratingData: null,
   commodities: [],
   selectedFarmerDetails: null,
   queueAlertMessage: null,
@@ -608,76 +246,46 @@ export const fetchPreviousBookingsThunk = createAsyncThunk(
 
 export const updateBookingStatusThunk = createAsyncThunk(
   "mandi/updateBookingStatus",
-  async ({ id, status }: { id: string; status: "ACCEPTED" | "REJECTED" | "ARRIVED" | "CANCELLED" }, { getState, rejectWithValue }) => {
+  async ({ id, status }: { id: string; status: "ACCEPTED" | "REJECTED" | "ARRIVED" | "CANCELLED" }, { rejectWithValue }) => {
     try {
       const response = await mandiApi.updateBookingStatus(id, status);
       if (response.success && response.data?.booking) {
         return response.data.booking;
       }
+      return rejectWithValue(response.message || "Status update failed");
     } catch (err: any) {
-      // Graceful fallback for mock interactive demo
+      return rejectWithValue(err.response?.data?.message || err.message || "Status update failed");
     }
-    const state = getState() as { mandi: MandiState };
-    const existing = state.mandi.currentBookings.find((b) => b.id === id);
-    if (existing) {
-      return { ...existing, status };
-    }
-    return rejectWithValue("Status update failed");
   }
 );
 
 export const verifyGateTokenThunk = createAsyncThunk(
   "mandi/verifyGateToken",
-  async (tokenOrCode: string, { getState, rejectWithValue }) => {
+  async (tokenOrCode: string, { rejectWithValue }) => {
     try {
       const response = await mandiApi.verifyGateToken(tokenOrCode);
       if (response.success && response.data?.booking) {
         return response.data;
       }
+      return rejectWithValue(response.message || "Invalid or unconfirmed QR/Token");
     } catch (err: any) {
-      // Graceful fallback for mock interactive demo
+      return rejectWithValue(err.response?.data?.message || err.message || "Invalid or unconfirmed QR/Token");
     }
-    const state = getState() as { mandi: MandiState };
-    const cleanToken = tokenOrCode.trim().toLowerCase();
-    const found = state.mandi.currentBookings.find(
-      (b) => b.token.toLowerCase() === cleanToken || b.id.toLowerCase() === cleanToken
-    );
-    if (found) {
-      return {
-        booking: { ...found, status: "VERIFIED" as const, gateEntryTimestamp: new Date().toISOString() },
-        message: `Gate Pass Verified! Token: ${found.token}`,
-      };
-    }
-    return rejectWithValue("Invalid or unconfirmed QR/Token");
   }
 );
 
 export const completeBookingThunk = createAsyncThunk(
   "mandi/completeBooking",
-  async ({ id, payload }: { id: string; payload: CompleteBookingPayload }, { getState, rejectWithValue }) => {
+  async ({ id, payload }: { id: string; payload: CompleteBookingPayload }, { rejectWithValue }) => {
     try {
       const response = await mandiApi.completeWeighbridgeBooking(id, payload);
       if (response.success && response.data?.booking) {
         return response.data.booking;
       }
+      return rejectWithValue(response.message || "Completion failed");
     } catch (err: any) {
-      // Graceful fallback for mock interactive demo
+      return rejectWithValue(err.response?.data?.message || err.message || "Completion failed");
     }
-    const state = getState() as { mandi: MandiState };
-    const found = state.mandi.currentBookings.find((b) => b.id === id);
-    if (found) {
-      return {
-        ...found,
-        status: "COMPLETED" as const,
-        actualGrossWeightKg: (payload.actualWeightQuintals * 100) + 200,
-        tareWeightKg: 200,
-        finalNetWeightQuintals: payload.actualWeightQuintals,
-        moisturePercentage: 11.4,
-        finalPayoutAmount: payload.finalPayoutAmount,
-        completedAt: new Date().toISOString(),
-      };
-    }
-    return rejectWithValue("Completion failed");
   }
 );
 

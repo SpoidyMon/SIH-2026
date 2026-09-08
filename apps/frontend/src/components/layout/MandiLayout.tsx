@@ -26,6 +26,9 @@ import {
   setActiveNavTab,
   fetchDashboardStatsThunk,
   fetchProfileThunk,
+  fetchCurrentBookingsThunk,
+  fetchPreviousBookingsThunk,
+  fetchSlotsThunk,
   clearMandiSuccess,
   clearMandiError,
 } from "../../store/slices/mandiSlice";
@@ -66,6 +69,9 @@ export function MandiLayout({ children }: MandiLayoutProps) {
   useEffect(() => {
     dispatch(fetchDashboardStatsThunk());
     dispatch(fetchProfileThunk());
+    dispatch(fetchCurrentBookingsThunk());
+    dispatch(fetchPreviousBookingsThunk());
+    dispatch(fetchSlotsThunk());
   }, [dispatch]);
 
   useEffect(() => {
@@ -76,11 +82,11 @@ export function MandiLayout({ children }: MandiLayoutProps) {
   }, [successMessage, dispatch]);
 
   const pendingBookingsCount = currentBookings.filter((b) => b.status === "PENDING").length;
-  const activeSlotsCount = slots.length > 0 ? slots.length : 2;
+  const activeSlotsCount = slots.length;
 
-  const operatorName = "Warren P.";
-  const operatorRole = "Chief Mandi Officer";
-  const mandiName = profile?.mandiName || stats?.mandiName || "APMC Indore Central — Yard B";
+  const operatorName = user?.name || "Mandi Operator";
+  const operatorRole = user?.role === "MANDI_OPERATOR" ? "Mandi Yard Operator" : "Operator";
+  const mandiName = profile?.mandiName || stats?.mandiName || "APMC Mandi Yard";
 
   const [showBayModal, setShowBayModal] = useState<boolean>(false);
 

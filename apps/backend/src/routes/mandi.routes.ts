@@ -43,6 +43,11 @@ router.get(
   mandiController.getFarmerDetailsHandler
 );
 
+router.get(
+  "/farmers",
+  mandiController.getMandiFarmersHandler
+);
+
 router.post(
   "/kyc/aadhaar",
   validate(mandiSchema.aadhaarKycSchema),

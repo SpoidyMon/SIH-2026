@@ -3,29 +3,65 @@ import { Role, MandiApprovalStatus, LegalDocType } from "@prisma/client";
 import { hashPassword } from "../utils/password.js";
 
 async function main() {
-  console.log("🌱 Cleaning and seeding test accounts into PostgreSQL...");
+  console.log("🌱 Cleaning and seeding realistic production-grade data into PostgreSQL...");
 
   const testEmails = [
     "mandi.approved@agrimarket.gov.in",
+    "pune.mandi@agrimarket.gov.in",
+    "nashik.mandi@agrimarket.gov.in",
     "mandi.pending@agrimarket.gov.in",
     "mandi.new@agrimarket.gov.in",
     "admin@agrimarket.gov.in",
     "new.mandi@agrimarket.gov.in",
     "farmer.test@agrimarket.gov.in",
+    "baldev.singh@agrimarket.gov.in",
+    "harpreet.kaur@agrimarket.gov.in",
   ];
+
+  await prisma.booking.deleteMany({
+    where: { token: { startsWith: "8SEP" } },
+  });
+
+  await prisma.mandiProfile.deleteMany({
+    where: { mandiCode: { in: ["MAN001", "MAN002", "MAN003"] } },
+  });
 
   await prisma.user.deleteMany({
     where: { email: { in: testEmails } },
   });
 
   await prisma.farmerProfile.deleteMany({
-    where: { farmerCode: "FAR001" },
+    where: { farmerCode: { in: ["FAR001", "FAR002", "FAR003"] } },
   });
 
   const passwordHash = await hashPassword("Password@123");
 
   // ----------------------------------------------------
-  // 1. APPROVED MANDI OPERATOR (Full operational access)
+  // 1. STANDARD COMMODITIES
+  // ----------------------------------------------------
+  const commodities = [
+    { name: "Wheat (Sharbati)", category: "Cereals", defaultUnit: "quintal" },
+    { name: "Mustard (Sarson)", category: "Oilseeds", defaultUnit: "quintal" },
+    { name: "Soybean (Yellow)", category: "Oilseeds", defaultUnit: "quintal" },
+    { name: "Onion (Red)", category: "Vegetables", defaultUnit: "quintal" },
+    { name: "Tomato", category: "Vegetables", defaultUnit: "quintal" },
+    { name: "Basmati Rice (1121)", category: "Cereals", defaultUnit: "quintal" },
+    { name: "Cotton", category: "Cash Crops", defaultUnit: "quintal" },
+    { name: "Potato", category: "Vegetables", defaultUnit: "quintal" },
+    { name: "Gram (Chana)", category: "Pulses", defaultUnit: "quintal" },
+    { name: "Maize", category: "Cereals", defaultUnit: "quintal" },
+  ];
+
+  for (const comm of commodities) {
+    await prisma.commodity.upsert({
+      where: { name: comm.name },
+      update: { category: comm.category, defaultUnit: comm.defaultUnit },
+      create: comm,
+    });
+  }
+
+  // ----------------------------------------------------
+  // 2. APPROVED MANDI OPERATOR 1 (Indore Central)
   // ----------------------------------------------------
   const approvedUser = await prisma.user.create({
     data: {
@@ -55,7 +91,12 @@ async function main() {
       latitude: 22.7196,
       longitude: 75.8577,
       topCrop: "Wheat (Sharbati) & Mustard",
-      acceptedCrops: ["Wheat (Sharbati)", "Mustard (Sarson)", "Soybean (Yellow)", "Tomato", "Onion"],
+      acceptedCrops: ["Wheat (Sharbati)", "Mustard (Sarson)", "Soybean (Yellow)", "Tomato", "Onion (Red)"],
+      modalPrice: "₹2,750 / qtl",
+      priceTrend: "+₹140 today",
+      trendDirection: "up",
+      estimatedQueueTime: "20 mins wait",
+      activeFarmersCount: 142,
       aadhaarNumber: "5412 8901 2345",
       aadhaarVerified: true,
       approvalStatus: MandiApprovalStatus.APPROVED,
@@ -65,7 +106,7 @@ async function main() {
     },
   });
 
-  // Seed sample slots for approved mandi
+  // Slots for Mandi 1
   const todayStr = new Date().toISOString().split("T")[0] || "2026-09-08";
   const slot1 = await prisma.mandiSlot.create({
     data: {
@@ -74,7 +115,7 @@ async function main() {
       allowedCrops: [
         { crop: "Wheat (Sharbati)", quantityQuintals: 500, isFixed: true },
         { crop: "Tomato", quantityQuintals: 100, isFixed: true },
-        { crop: "Onion", isFixed: false },
+        { crop: "Onion (Red)", isFixed: false },
       ],
       date: todayStr,
       startTime: "08:00",
@@ -91,7 +132,7 @@ async function main() {
     },
   });
 
-  await prisma.mandiSlot.create({
+  const slot2 = await prisma.mandiSlot.create({
     data: {
       mandiProfileId: approvedProfile.id,
       crop: "Mustard (Sarson)",
@@ -114,8 +155,124 @@ async function main() {
     },
   });
 
-  // Seed Test Farmer and Bookings
-  const testFarmer = await prisma.user.create({
+  // ----------------------------------------------------
+  // 3. APPROVED MANDI OPERATOR 2 (Pune Gultekdi Yard)
+  // ----------------------------------------------------
+  const puneUser = await prisma.user.create({
+    data: {
+      name: "Nitin Kadam",
+      email: "pune.mandi@agrimarket.gov.in",
+      phone: "+919822019988",
+      passwordHash,
+      role: Role.MANDI_OPERATOR,
+      isVerified: true,
+    },
+  });
+
+  const puneProfile = await prisma.mandiProfile.create({
+    data: {
+      userId: puneUser.id,
+      mandiName: "Gultekdi Pune APMC Main Yard",
+      mandiCode: "MAN002",
+      apmcCode: "APMC-PUN-MH-011",
+      address: "Market Yard Road, Gultekdi",
+      pincode: "411037",
+      district: "Pune",
+      state: "Maharashtra",
+      operatingHours: "06:00 AM - 05:00 PM (Mon-Sat)",
+      closedDays: ["Sunday"],
+      closedHours: "01:00 PM - 02:00 PM",
+      isLocationSet: true,
+      latitude: 18.4965,
+      longitude: 73.8656,
+      topCrop: "Onion (Red) & Tomato",
+      acceptedCrops: ["Onion (Red)", "Tomato", "Soybean (Yellow)", "Wheat (Sharbati)"],
+      modalPrice: "₹2,890 / qtl",
+      priceTrend: "+₹80 today",
+      trendDirection: "up",
+      estimatedQueueTime: "15 mins wait",
+      activeFarmersCount: 168,
+      aadhaarNumber: "7821 4401 9912",
+      aadhaarVerified: true,
+      approvalStatus: MandiApprovalStatus.APPROVED,
+      approvedAt: new Date(),
+      rating: 4.7,
+      totalReviews: 98,
+    },
+  });
+
+  await prisma.mandiSlot.create({
+    data: {
+      mandiProfileId: puneProfile.id,
+      crop: "Onion (Red)",
+      allowedCrops: [
+        { crop: "Onion (Red)", quantityQuintals: 600, isFixed: true },
+        { crop: "Tomato", quantityQuintals: 200, isFixed: true },
+      ],
+      date: todayStr,
+      startTime: "07:00",
+      endTime: "11:00",
+      totalCapacityQuintals: 600,
+      bookedCapacityQuintals: 150,
+      capacityPercentage: 25.0,
+      maxFarmers: 25,
+      bookedFarmers: 5,
+      availableBookings: 20,
+      bufferMinutes: 15,
+      bufferPercentage: 10,
+      isActive: true,
+    },
+  });
+
+  // ----------------------------------------------------
+  // 4. APPROVED MANDI OPERATOR 3 (Nashik APMC Yard)
+  // ----------------------------------------------------
+  const nashikUser = await prisma.user.create({
+    data: {
+      name: "Sanjay Jagtap",
+      email: "nashik.mandi@agrimarket.gov.in",
+      phone: "+919823055443",
+      passwordHash,
+      role: Role.MANDI_OPERATOR,
+      isVerified: true,
+    },
+  });
+
+  await prisma.mandiProfile.create({
+    data: {
+      userId: nashikUser.id,
+      mandiName: "Nashik APMC Main Market Yard",
+      mandiCode: "MAN003",
+      apmcCode: "APMC-NSK-MH-008",
+      address: "Panchavati Market Yard, Mumbai-Agra Highway",
+      pincode: "422003",
+      district: "Nashik",
+      state: "Maharashtra",
+      operatingHours: "06:30 AM - 06:30 PM (Mon-Sat)",
+      closedDays: ["Sunday"],
+      isLocationSet: true,
+      latitude: 19.9975,
+      longitude: 73.7898,
+      topCrop: "Onion (Red) & Grapes",
+      acceptedCrops: ["Onion (Red)", "Tomato", "Soybean (Yellow)"],
+      modalPrice: "₹2,680 / qtl",
+      priceTrend: "+₹120 today",
+      trendDirection: "up",
+      estimatedQueueTime: "25 mins wait",
+      activeFarmersCount: 190,
+      aadhaarNumber: "4521 8901 3321",
+      aadhaarVerified: true,
+      approvalStatus: MandiApprovalStatus.APPROVED,
+      approvedAt: new Date(),
+      rating: 4.9,
+      totalReviews: 215,
+    },
+  });
+
+  // ----------------------------------------------------
+  // 5. REGISTERED FARMERS WITH VERIFIED PROFILES
+  // ----------------------------------------------------
+  const farmer1 = await prisma.user.create({
     data: {
       name: "Rameshwar Dhakad",
       email: "farmer.test@agrimarket.gov.in",
@@ -138,21 +295,85 @@ async function main() {
           idNumber: "9123 4567 8901",
           isProfileComplete: true,
           landSizeAcres: 8.5,
-          mainCrops: ["Wheat", "Soybean"],
-          secondaryCrops: ["Mustard", "Gram"],
+          mainCrops: ["Wheat (Sharbati)", "Soybean (Yellow)"],
+          secondaryCrops: ["Mustard (Sarson)", "Gram (Chana)"],
           irrigationType: "Drip & Tube-well",
         },
       },
     },
   });
 
-  // Seed sample queue bookings for First-Come First-Served demonstration
+  const farmer2 = await prisma.user.create({
+    data: {
+      name: "Baldev Singh",
+      email: "baldev.singh@agrimarket.gov.in",
+      phone: "+919876543210",
+      passwordHash,
+      role: Role.FARMER,
+      isVerified: true,
+      farmerProfile: {
+        create: {
+          farmerCode: "FAR002",
+          dob: "1978-08-22",
+          address: "Village Baramati, District Pune",
+          addressLine1: "Plot 12, Agro Green Zone",
+          village: "Baramati",
+          taluka: "Baramati",
+          district: "Pune",
+          state: "Maharashtra",
+          pincode: "413102",
+          idType: "AADHAAR",
+          idNumber: "8412 9012 3456",
+          isProfileComplete: true,
+          landSizeAcres: 14.0,
+          mainCrops: ["Onion (Red)", "Tomato"],
+          secondaryCrops: ["Soybean (Yellow)"],
+          irrigationType: "Canal & Well",
+        },
+      },
+    },
+  });
+
+  const farmer3 = await prisma.user.create({
+    data: {
+      name: "Harpreet Kaur",
+      email: "harpreet.kaur@agrimarket.gov.in",
+      phone: "+919814077889",
+      passwordHash,
+      role: Role.FARMER,
+      isVerified: true,
+      farmerProfile: {
+        create: {
+          farmerCode: "FAR003",
+          dob: "1985-11-03",
+          address: "Village Niphad, District Nashik",
+          addressLine1: "Kisan Colony Road",
+          village: "Niphad",
+          taluka: "Niphad",
+          district: "Nashik",
+          state: "Maharashtra",
+          pincode: "422303",
+          idType: "AADHAAR",
+          idNumber: "6512 3412 8821",
+          isProfileComplete: true,
+          landSizeAcres: 18.5,
+          mainCrops: ["Onion (Red)", "Wheat (Sharbati)"],
+          secondaryCrops: ["Mustard (Sarson)"],
+          irrigationType: "Drip Irrigation",
+        },
+      },
+    },
+  });
+
+  // ----------------------------------------------------
+  // 6. REAL BOOKINGS & FCFS ARRIVAL QUEUES
+  // ----------------------------------------------------
   await prisma.booking.createMany({
     data: [
       {
         token: "8SEP-10AM-001",
         queueNumber: 1,
-        farmerId: testFarmer.id,
+        farmerId: farmer1.id,
         mandiProfileId: approvedProfile.id,
         slotId: slot1.id,
         crop: "Wheat (Sharbati)",
@@ -165,21 +386,48 @@ async function main() {
       {
         token: "8SEP-10AM-002",
         queueNumber: 2,
-        farmerId: testFarmer.id,
+        farmerId: farmer2.id,
         mandiProfileId: approvedProfile.id,
         slotId: slot1.id,
         crop: "Tomato",
         variety: "Hybrid Red",
-        quantityQuintals: 10,
+        quantityQuintals: 30,
         vehicleNumber: "MP-09-CX-1934",
         qrCodeData: "https://agrovia.gov.in/verify?tkn=8SEP-10AM-002",
-        status: "PENDING",
+        status: "ACCEPTED",
+      },
+      {
+        token: "8SEP-10AM-003",
+        queueNumber: 3,
+        farmerId: farmer3.id,
+        mandiProfileId: approvedProfile.id,
+        slotId: slot2.id,
+        crop: "Mustard (Sarson)",
+        variety: "Grade-A Certified",
+        quantityQuintals: 50,
+        vehicleNumber: "MH-15-DK-9042",
+        qrCodeData: "https://agrovia.gov.in/verify?tkn=8SEP-10AM-003",
+        status: "VERIFIED",
+      },
+      {
+        token: "8SEP-10AM-004",
+        queueNumber: 4,
+        farmerId: farmer1.id,
+        mandiProfileId: approvedProfile.id,
+        slotId: slot2.id,
+        crop: "Soybean (Yellow)",
+        variety: "JS-335 Organic",
+        quantityQuintals: 65,
+        vehicleNumber: "MP-09-EA-7711",
+        qrCodeData: "https://agrovia.gov.in/verify?tkn=8SEP-10AM-004",
+        status: "COMPLETED",
+        servedAt: new Date(),
       },
     ],
   });
 
   // ----------------------------------------------------
-  // 2. PENDING APPROVAL MANDI (Submitted KYC, awaiting admin approval)
+  // 7. PENDING APPROVAL MANDI
   // ----------------------------------------------------
   const pendingUser = await prisma.user.create({
     data: {
@@ -227,7 +475,7 @@ async function main() {
   });
 
   // ----------------------------------------------------
-  // 3. FRESH / UN-ONBOARDED MANDI (Needs to fill KYC in Settings)
+  // 8. FRESH / UN-ONBOARDED MANDI
   // ----------------------------------------------------
   const newUser = await prisma.user.create({
     data: {
@@ -255,7 +503,7 @@ async function main() {
   });
 
   // ----------------------------------------------------
-  // 4. PLATFORM ADMINISTRATOR (Can verify and approve)
+  // 9. PLATFORM ADMINISTRATOR
   // ----------------------------------------------------
   await prisma.user.create({
     data: {
@@ -268,7 +516,7 @@ async function main() {
     },
   });
 
-  console.log("✅ All test accounts seeded into PostgreSQL successfully!");
+  console.log("✅ All realistic production seed data loaded into PostgreSQL successfully!");
 }
 
 main()

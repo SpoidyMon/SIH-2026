@@ -22,89 +22,6 @@ import type { BookingItem, BookingStatus, BookingsFilterCriteria } from '@/inter
 
 const ITEMS_PER_PAGE = 3;
 
-const STATIC_ALL_BOOKINGS: BookingItem[] = [
-  {
-    id: 'b-1',
-    bookingCode: 'BK-9402',
-    cropName: 'Onion',
-    cropVariety: 'Nashik Red A-Grade',
-    mandiName: 'Morwadi APMC Sub-Yard',
-    gateNo: 'Gate 3',
-    dateString: '08/09/2026',
-    timeSlot: '08:30 AM – 10:00 AM',
-    status: 'in_progress',
-    statusLabel: 'In Progress',
-    progressPercent: 65,
-    progressLabel: 'Grading & Quality Assay',
-    inspectorName: 'Assayer R. Patil',
-    quantityQuintals: 240,
-  },
-  {
-    id: 'b-2',
-    bookingCode: 'BK-8821',
-    cropName: 'Soybean',
-    cropVariety: 'JS-335 Organic',
-    mandiName: 'Gultekdi Pune APMC Main Yard',
-    gateNo: 'Gate 1',
-    dateString: '12/09/2026',
-    timeSlot: '10:30 AM – 12:00 PM',
-    status: 'confirmed',
-    statusLabel: 'Confirmed',
-    progressPercent: 20,
-    progressLabel: 'QR Pass Issued',
-    inspectorName: 'Officer Deshmukh',
-    quantityQuintals: 160,
-  },
-  {
-    id: 'b-3',
-    bookingCode: 'BK-7612',
-    cropName: 'Wheat',
-    cropVariety: 'Sharbati Premium',
-    mandiName: 'Pimpri Central Market Yard',
-    gateNo: 'Gate 2',
-    dateString: '15/09/2026',
-    timeSlot: '02:00 PM – 03:30 PM',
-    status: 'confirmed',
-    statusLabel: 'Confirmed',
-    progressPercent: 10,
-    progressLabel: 'Slot Confirmed',
-    inspectorName: 'Inspector Shinde',
-    quantityQuintals: 300,
-  },
-  {
-    id: 'b-4',
-    bookingCode: 'BK-6504',
-    cropName: 'Cotton',
-    cropVariety: 'Long Staple BT',
-    mandiName: 'Chakan Onion Hub',
-    gateNo: 'Gate 4',
-    dateString: '02/09/2026',
-    timeSlot: '09:00 AM – 11:00 AM',
-    status: 'completed',
-    statusLabel: 'Completed',
-    progressPercent: 100,
-    progressLabel: 'Auction & Payout Settled',
-    inspectorName: 'Officer Kale',
-    quantityQuintals: 420,
-  },
-  {
-    id: 'b-5',
-    bookingCode: 'BK-5520',
-    cropName: 'Maize',
-    cropVariety: 'Yellow Hybrid',
-    mandiName: 'Bhosari Krishi Utpanna Yard',
-    gateNo: 'Gate 1',
-    dateString: '18/09/2026',
-    timeSlot: '11:30 AM – 01:00 PM',
-    status: 'confirmed',
-    statusLabel: 'Confirmed',
-    progressPercent: 15,
-    progressLabel: 'Gate Token Generated',
-    inspectorName: 'Officer Pawar',
-    quantityQuintals: 190,
-  },
-];
-
 const INITIAL_BOOKING_CRITERIA: BookingsFilterCriteria = {
   searchQuery: '',
   selectedCrop: 'All Crops',
@@ -202,7 +119,7 @@ export const BookingsSectionView = memo(function BookingsSectionView() {
     return () => { isMounted = false; };
   }, [token]);
 
-  const allBookings = liveBookings.length > 0 ? liveBookings : STATIC_ALL_BOOKINGS;
+  const allBookings = liveBookings;
 
   const filteredBookings = useMemo(() => {
     return allBookings.filter((b) => {

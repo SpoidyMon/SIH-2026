@@ -985,3 +985,72 @@ export async function getFarmerDetailsForMandi(userId: string, farmerId: string)
   };
 }
 
+export async function getFarmersForMandi(userId: string) {
+  const profile = await getOrCreateMandiProfile(userId);
+
+  // 1. Fetch all bookings for this mandi with associated farmer and farmerProfile
+  const bookings = await prisma.booking.findMany({
+    where: { mandiProfileId: profile.id },
+    include: {
+      farmer: {
+        include: {
+          farmerProfile: true,
+        },
+      },
+    },
+    orderBy: { createdAt: "desc" },
+  });
+
+  const farmerMap = new Map<string, any>();
+
+  for (const b of bookings) {
+    if (!farmerMap.has(b.farmerId)) {
+      const fp = b.farmer.farmerProfile;
+      farmerMap.set(b.farmerId, {
+        id: b.farmer.id,
+        name: b.farmer.name,
+        phone: b.farmer.phone || "N/A",
+        village: fp?.village || fp?.district || "Local",
+        district: fp?.district || profile.district || "Local",
+        landAcres: fp?.landSizeAcres || 5.0,
+        kycStatus: fp?.isProfileComplete ? "VERIFIED" : "PENDING",
+        primaryCrops: fp?.mainCrops?.length ? fp.mainCrops : [b.crop],
+        totalConsignments: 0,
+        totalQuintalsSupplied: 0,
+        lastArrival: b.createdAt.toISOString().split("T")[0],
+      });
+    }
+    const item = farmerMap.get(b.farmerId);
+    item.totalConsignments += 1;
+    item.totalQuintalsSupplied += (b.quantityQuintals || 0);
+  }
+
+  // 2. If no bookings exist yet for this specific mandi, return all registered farmers from DB
+  if (farmerMap.size === 0) {
+    const allFarmers = await prisma.user.findMany({
+      where: { role: Role.FARMER },
+      include: { farmerProfile: true },
+      take: 20,
+    });
+
+    for (const f of allFarmers) {
+      const fp = f.farmerProfile;
+      farmerMap.set(f.id, {
+        id: f.id,
+        name: f.name,
+        phone: f.phone || "N/A",
+        village: fp?.village || fp?.district || "Sanwer",
+        district: fp?.district || "Indore",
+        landAcres: fp?.landSizeAcres || 5.0,
+        kycStatus: fp?.isProfileComplete ? "VERIFIED" : "PENDING",
+        primaryCrops: fp?.mainCrops?.length ? fp.mainCrops : ["Wheat"],
+        totalConsignments: 0,
+        totalQuintalsSupplied: 0,
+        lastArrival: "None",
+      });
+    }
+  }
+
+  return Array.from(farmerMap.values());
+}
+

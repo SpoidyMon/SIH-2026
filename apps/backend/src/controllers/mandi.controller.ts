@@ -459,3 +459,21 @@ export async function getFarmerDetailsHandler(
   }
 }
 
+export async function getMandiFarmersHandler(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const userId = req.user!.userId;
+    const farmers = await mandiService.getFarmersForMandi(userId);
+
+    res.status(200).json({
+      success: true,
+      data: { farmers },
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+

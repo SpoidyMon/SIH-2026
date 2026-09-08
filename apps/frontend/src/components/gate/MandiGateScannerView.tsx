@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   ScanLine,
   Truck,
@@ -13,6 +13,7 @@ import {
   Search,
   Printer,
   AlertTriangle,
+  AlertCircle,
   X,
   ExternalLink,
 } from "lucide-react";
@@ -36,47 +37,68 @@ export function MandiGateScannerView() {
   const [tokenInput, setTokenInput] = useState("");
   const [scannedResult, setScannedResult] = useState<Booking | null>(null);
   const [showFarmerModal, setShowFarmerModal] = useState(false);
+  const [scanError, setScanError] = useState<string | null>(null);
 
-  // Unloading docks mock status
-  const [docks, setDocks] = useState([
-    { id: 1, name: "Intake Bay 01 (Wheat Hopper)", status: "OCCUPIED", crop: "Wheat", truck: "HR-26-DK-9042", progress: 65 },
-    { id: 2, name: "Intake Bay 02 (Oilseed Pit)", status: "AVAILABLE", crop: "None", truck: "-", progress: 0 },
-    { id: 3, name: "Intake Bay 03 (Coarse Grains)", status: "OCCUPIED", crop: "Mustard", truck: "MP-09-AB-4412", progress: 30 },
-    { id: 4, name: "Intake Bay 04 (Weighbridge Out)", status: "AVAILABLE", crop: "None", truck: "-", progress: 0 },
-  ]);
+  // Unloading bays dynamically computed from live verified bookings
+  const verifiedBookings = useMemo(
+    () => currentBookings.filter((b) => b.status === "VERIFIED" || b.status === "ARRIVED"),
+    [currentBookings]
+  );
+
+  const docks = useMemo(() => {
+    const bays = [
+      { id: 1, name: "Intake Bay 01 (Wheat Hopper)" },
+      { id: 2, name: "Intake Bay 02 (Oilseed Pit)" },
+      { id: 3, name: "Intake Bay 03 (Coarse Grains & Pulses)" },
+      { id: 4, name: "Intake Bay 04 (Weighbridge Out)" },
+    ];
+
+    return bays.map((bay, idx) => {
+      const activeBooking = verifiedBookings[idx];
+      if (activeBooking) {
+        return {
+          id: bay.id,
+          name: bay.name,
+          status: "OCCUPIED" as const,
+          crop: activeBooking.crop,
+          truck: activeBooking.vehicleNumber || `Vehicle #${activeBooking.token}`,
+          progress: 50,
+        };
+      }
+      return {
+        id: bay.id,
+        name: bay.name,
+        status: "AVAILABLE" as const,
+        crop: "None",
+        truck: "-",
+        progress: 0,
+      };
+    });
+  }, [verifiedBookings]);
 
   const handleVerify = (e: React.FormEvent) => {
     e.preventDefault();
     if (!tokenInput.trim()) return;
 
+    setScanError(null);
     const query = tokenInput.trim().toUpperCase();
-    const found = currentBookings.find((b) => b.token === query || b.id === query);
+    const found = currentBookings.find((b) => b.token.toUpperCase() === query || b.id.toUpperCase() === query);
+
     if (found) {
       setScannedResult(found);
       dispatch(verifyGateTokenThunk(query));
     } else {
-      // Mock lookup if not in state
-      const mockBooking: Booking = {
-        id: `BK-${Math.floor(10000 + Math.random() * 90000)}`,
-        token: query,
-        farmerId: "usr_farmer_09",
-        farmerName: "Harinder Singh",
-        farmerPhone: "+91 98765 00112",
-        mandiId: "mandi-indore-01",
-        mandiName: "Indore APMC Yard",
-        slotId: "slot-101",
-        crop: "Wheat (Sharbati)",
-        variety: "Grade-A Export Quality",
-        estimatedQuantityQuintals: 50,
-        vehicleNumber: "PB-11-AA-9988",
-        arrivalDate: new Date().toISOString().split("T")[0],
-        slotTimeWindow: "08:00 - 11:00",
-        status: "VERIFIED",
-        qrCodeString: `https://agrovia.gov.in/verify?tkn=${query}`,
-        createdAt: new Date().toISOString(),
-      };
-      setScannedResult(mockBooking);
-      dispatch(verifyGateTokenThunk(query));
+      dispatch(verifyGateTokenThunk(query))
+        .unwrap()
+        .then((res: any) => {
+          if (res?.booking) {
+            setScannedResult(res.booking);
+          }
+        })
+        .catch((err: any) => {
+          setScannedResult(null);
+          setScanError(typeof err === "string" ? err : "Token not found in active bookings");
+        });
     }
   };
 
@@ -138,6 +160,22 @@ export function MandiGateScannerView() {
                   Acknowledge &amp; Override
                 </button>
               </div>
+            </div>
+          )}
+
+          {scanError && (
+            <div className="p-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/60 rounded-xl text-red-700 dark:text-red-300 text-xs flex items-center justify-between animate-fade-in">
+              <div className="flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
+                <span className="font-medium">{scanError}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setScanError(null)}
+                className="text-red-500 hover:text-red-800 dark:hover:text-red-200 cursor-pointer"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
             </div>
           )}
 
