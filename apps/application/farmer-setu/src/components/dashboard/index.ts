@@ -15,4 +15,6 @@ export * from './BookingsSectionView';
 export * from './BookingsFilterModal';
 export * from './SettingsSectionView';
 export * from './SlotBookingModal';
+export * from './AiSectionView';
+
 

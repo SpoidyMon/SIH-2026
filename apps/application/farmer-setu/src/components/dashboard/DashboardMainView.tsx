@@ -14,11 +14,13 @@ import type { StatCardItem, BookingItem } from '@/interfaces';
 interface DashboardMainViewProps {
   onNavigateToBookings: () => void;
   onNavigateToMandi: () => void;
+  onNavigateToAi?: () => void;
 }
 
 export const DashboardMainView = memo(function DashboardMainView({
   onNavigateToBookings,
   onNavigateToMandi,
+  onNavigateToAi,
 }: DashboardMainViewProps) {
   const { token } = useAuth();
   const { language, t } = useLanguage();
@@ -157,7 +159,7 @@ export const DashboardMainView = memo(function DashboardMainView({
       {/* Floating AI Voice Booking Button */}
       <Pressable
         style={styles.floatingAiBtn}
-        onPress={() => setIsAiModalVisible(true)}
+        onPress={() => (onNavigateToAi ? onNavigateToAi() : setIsAiModalVisible(true))}
       >
         <Ionicons name="mic" size={22} color="#C8F52F" />
         <Text style={styles.floatingAiText}>AI Voice Booking</Text>
