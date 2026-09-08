@@ -516,6 +516,7 @@ export const SlotBookingModal = memo(function SlotBookingModal({
                         })}
                       </View>
                     );
+                  })()}
                 </View>
 
                 {/* 2. Expected Queue Position */}
