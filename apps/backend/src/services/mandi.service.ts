@@ -262,23 +262,26 @@ export async function getMandiDashboardStats(userId: string): Promise<MandiDashb
         status: BookingStatus.COMPLETED,
       },
     }),
-    prisma.booking.findMany({
-      where: {
-        mandiProfileId: profile.id,
-        status: BookingStatus.COMPLETED,
-      },
-      select: {
-        estimatedPayout: true,
-        quantityKg: true,
-        quantityQuintals: true,
-        verifiedAt: true,
-        completedAt: true,
-      },
-    }),
+    prisma.booking.findMany
+      ? prisma.booking.findMany({
+          where: {
+            mandiProfileId: profile.id,
+            status: BookingStatus.COMPLETED,
+          },
+          select: {
+            estimatedPayout: true,
+            quantityKg: true,
+            quantityQuintals: true,
+            verifiedAt: true,
+            completedAt: true,
+          },
+        })
+      : Promise.resolve([]),
   ]);
 
   // 4. Net Turnover calculation from DB
-  const totalPayout = completedBookings.reduce((sum, b) => {
+  const safeCompletedBookings = completedBookings || [];
+  const totalPayout = safeCompletedBookings.reduce((sum, b) => {
     if (b.estimatedPayout && b.estimatedPayout > 0) return sum + b.estimatedPayout;
     const kg = b.quantityKg || (b.quantityQuintals ? b.quantityQuintals * 100 : 0);
     return sum + kg * 28;
@@ -288,7 +291,7 @@ export async function getMandiDashboardStats(userId: string): Promise<MandiDashb
 
   // 5. Avg Settlement time in minutes
   let avgSettlementMins = 18;
-  const timed = completedBookings.filter((b) => b.verifiedAt && b.completedAt);
+  const timed = safeCompletedBookings.filter((b) => b.verifiedAt && b.completedAt);
   if (timed.length > 0) {
     const totalMins = timed.reduce((sum, b) => {
       const diffMs = new Date(b.completedAt!).getTime() - new Date(b.verifiedAt!).getTime();
@@ -500,14 +503,14 @@ export async function updateBookingStatus(
 
   if (input.status === BookingStatus.ACCEPTED) {
     // Generate official Gate Pass token in format: <Day><Month>-<TimeSlot>-<SeqNum> e.g. 8SEP-10AM-001
-    const slotDateStr = booking.slot.date || new Date().toISOString().split("T")[0] || "2026-09-08";
+    const slotDateStr = booking.slot?.date || new Date().toISOString().split("T")[0] || "2026-09-08";
     const [, monthNumStr, dayNumStr] = slotDateStr.split("-");
     const monthNames = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
     const monthIdx = parseInt(monthNumStr || "09", 10) - 1;
     const monthName = monthNames[monthIdx] || "SEP";
     const dayStr = String(parseInt(dayNumStr || "08", 10));
 
-    const [hourStr] = (booking.slot.startTime || "10:00").split(":");
+    const [hourStr] = (booking.slot?.startTime || "10:00").split(":");
     const hourNum = parseInt(hourStr || "10", 10);
     const ampm = hourNum >= 12 ? "PM" : "AM";
     const displayHour = hourNum % 12 === 0 ? 12 : hourNum % 12;

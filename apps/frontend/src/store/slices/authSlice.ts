@@ -1,5 +1,12 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
-import { UserSession, LoginPayload, RegisterMandiPayload, VerifyOtpPayload, AuthState } from "../../interfaces";
+import {
+  UserSession,
+  LoginPayload,
+  RegisterMandiPayload,
+  VerifyOtpPayload,
+  CompleteMandiOnboardingPayload,
+  AuthState,
+} from "../../interfaces";
 import { authApi } from "../../services/auth.api";
 import { getAccessToken, clearTokens } from "../../services/apiClient";
 
@@ -81,9 +88,25 @@ export const verifyOtpThunk = createAsyncThunk(
   }
 );
 
+export const completeMandiOnboardingThunk = createAsyncThunk(
+  "auth/completeMandiOnboarding",
+  async (payload: CompleteMandiOnboardingPayload, { rejectWithValue }) => {
+    try {
+      const response = await authApi.completeMandiOnboarding(payload);
+      if (response.success && response.data) {
+        return response.data;
+      }
+      return rejectWithValue(response.message || "Onboarding failed");
+    } catch (err: any) {
+      return rejectWithValue(err.response?.data?.message || err.message || "Onboarding failed");
+    }
+  }
+);
+
 export const logoutThunk = createAsyncThunk("auth/logout", async () => {
   await authApi.logout();
 });
+
 
 export const authSlice = createSlice({
   name: "auth",
@@ -142,7 +165,10 @@ export const authSlice = createSlice({
       })
       .addCase(loginMandiThunk.rejected, (state, action: any) => {
         state.isLoading = false;
-        if (action.payload?.code === "ACCOUNT_NOT_VERIFIED") {
+        if (
+          action.payload?.code === "ACCOUNT_NOT_VERIFIED" ||
+          action.payload?.code === "ONBOARDING_INCOMPLETE"
+        ) {
           state.otpRequiredForEmail = action.payload.email;
           state.error = action.payload.message;
         } else {
@@ -174,19 +200,36 @@ export const authSlice = createSlice({
         state.isLoading = true;
         state.error = null;
       })
-      .addCase(verifyOtpThunk.fulfilled, (state) => {
+      .addCase(verifyOtpThunk.fulfilled, (state, action) => {
         state.isLoading = false;
         if (state.user) {
           state.user.isVerified = true;
         }
-        // If the user is currently completing the registration wizard, do NOT mark authenticated yet
-        // so App.tsx does not redirect to /mandi/dashboard before Step 2 & 3 are complete.
-        if (!state.isOnboarding) {
+        // If OTP response indicates ongoing onboarding or no tokens were returned, do not mark authenticated yet
+        if (!state.isOnboarding && (action.payload as any)?.accessToken) {
           state.isAuthenticated = true;
         }
         state.otpRequiredForEmail = null;
       })
       .addCase(verifyOtpThunk.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload as string;
+      });
+
+    // completeMandiOnboarding
+    builder
+      .addCase(completeMandiOnboardingThunk.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(completeMandiOnboardingThunk.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.user = action.payload.user;
+        state.isAuthenticated = true;
+        state.isOnboarding = false;
+        state.error = null;
+      })
+      .addCase(completeMandiOnboardingThunk.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload as string;
       });

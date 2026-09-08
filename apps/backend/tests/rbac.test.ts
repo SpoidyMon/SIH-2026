@@ -22,6 +22,7 @@ vi.mock("../src/lib/prisma.js", () => {
     },
     booking: {
       count: vi.fn(),
+      findMany: vi.fn(),
     },
   };
   return {
@@ -93,6 +94,7 @@ describe("Role-Based Access Control (RBAC) Suite", () => {
       } as any);
       vi.mocked(prisma.mandiSlot.findMany).mockResolvedValue([]);
       vi.mocked(prisma.booking.count).mockResolvedValue(0);
+      vi.mocked(prisma.booking.findMany).mockResolvedValue([]);
 
       const response = await request(app)
         .get("/api/v1/mandi/dashboard")

@@ -1,8 +1,9 @@
 import React, { useState } from "react";
-import { Check, Calendar, Sparkles, RefreshCw, CheckCircle2, AlertCircle } from "lucide-react";
+import { Check, Calendar, Sparkles, RefreshCw, AlertCircle } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "../../store";
-import { batchCreateSlotsThunk, updateWeeklyScheduleThunk, fetchProfileThunk } from "../../store/slices/mandiSlice";
+import { completeMandiOnboardingThunk } from "../../store/slices/authSlice";
 import { DayOfWeek, CreateSlotPayload } from "../../interfaces";
+import { LocationData } from "./RegisterStep2Location";
 import { TIME_OPTIONS, to24Hour, getNextDateForDay } from "../../utils/timeFormat";
 
 const DAYS: DayOfWeek[] = [
@@ -16,12 +17,18 @@ const DAYS: DayOfWeek[] = [
 ];
 
 interface RegisterStep3SlotsProps {
+  email: string;
+  locationData: LocationData;
   onCompleteOnboarding: () => void;
 }
 
-export function RegisterStep3Slots({ onCompleteOnboarding }: RegisterStep3SlotsProps) {
+export function RegisterStep3Slots({
+  email,
+  locationData,
+  onCompleteOnboarding,
+}: RegisterStep3SlotsProps) {
   const dispatch = useAppDispatch();
-  const { isActionLoading } = useAppSelector((state) => state.mandi);
+  const { isLoading } = useAppSelector((state) => state.auth);
 
   const [activeDays, setActiveDays] = useState<Record<DayOfWeek, boolean>>({
     Monday: true,
@@ -77,31 +84,29 @@ export function RegisterStep3Slots({ onCompleteOnboarding }: RegisterStep3SlotsP
     });
 
     try {
-      // 1. Update weekly schedule rules
       await dispatch(
-        updateWeeklyScheduleThunk({
-          closedDays,
+        completeMandiOnboardingThunk({
+          email: email.trim().toLowerCase(),
+          address: locationData.address,
+          pincode: locationData.pincode,
+          district: locationData.district,
+          state: locationData.state,
+          latitude: locationData.latitude,
+          longitude: locationData.longitude,
           operatingHours: `${startTime} - ${endTime}`,
-        })
-      ).unwrap();
-
-      // 2. Batch generate upcoming arrival slots
-      await dispatch(
-        batchCreateSlotsThunk({
-          slots: slotsToGenerate,
           closedDays,
           closedHours: "20:00 - 06:00",
+          capacity: Number(capacity),
+          slots: slotsToGenerate,
         })
       ).unwrap();
-
-      // 3. Refresh profile
-      await dispatch(fetchProfileThunk());
 
       onCompleteOnboarding();
     } catch (err: any) {
-      setErrorMsg(err || "Failed to initialize operating slots.");
+      setErrorMsg(err || "Failed to initialize operating slots and complete onboarding.");
     }
   };
+
 
   return (
     <div className="space-y-4 animate-fade-in">

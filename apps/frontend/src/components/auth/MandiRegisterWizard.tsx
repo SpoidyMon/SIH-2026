@@ -1,7 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { RegisterStep1Credentials } from "./RegisterStep1Credentials";
 import { RegisterOtpVerification } from "./RegisterOtpVerification";
-import { RegisterStep2Location } from "./RegisterStep2Location";
+import { RegisterStep2Location, LocationData } from "./RegisterStep2Location";
 import { RegisterStep3Slots } from "./RegisterStep3Slots";
 import { Check } from "lucide-react";
 
@@ -12,12 +13,50 @@ interface MandiRegisterWizardProps {
 
 type WizardStage = "STEP1_CREDENTIALS" | "STEP1_OTP" | "STEP2_LOCATION" | "STEP3_SLOTS";
 
+const STORAGE_LOCATION_KEY = "mandi_temp_onboarding_location";
+
 export function MandiRegisterWizard({
   onSwitchToLogin,
   onFinishRegistration,
 }: MandiRegisterWizardProps) {
-  const [stage, setStage] = useState<WizardStage>("STEP1_CREDENTIALS");
-  const [registeredEmail, setRegisteredEmail] = useState<string>("");
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Read query params for step and email
+  const stepParam = searchParams.get("step") || "account";
+  const emailParam = searchParams.get("email") || "";
+
+  const [registeredEmail, setRegisteredEmail] = useState<string>(emailParam);
+  const [locationData, setLocationData] = useState<LocationData>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_LOCATION_KEY);
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return {
+      address: "",
+      pincode: "",
+      district: "Indore",
+      state: "Madhya Pradesh",
+      latitude: 22.7196,
+      longitude: 75.8577,
+    };
+  });
+
+  // Sync emailParam from URL if changed
+  useEffect(() => {
+    if (emailParam && emailParam !== registeredEmail) {
+      setRegisteredEmail(emailParam);
+    }
+  }, [emailParam, registeredEmail]);
+
+  // Determine active stage from query param
+  const stage: WizardStage =
+    stepParam === "otp"
+      ? "STEP1_OTP"
+      : stepParam === "location"
+      ? "STEP2_LOCATION"
+      : stepParam === "slots"
+      ? "STEP3_SLOTS"
+      : "STEP1_CREDENTIALS";
 
   const currentStepNumber =
     stage === "STEP1_CREDENTIALS" || stage === "STEP1_OTP"
@@ -25,6 +64,30 @@ export function MandiRegisterWizard({
       : stage === "STEP2_LOCATION"
       ? 2
       : 3;
+
+  const navigateToStep = (newStep: "account" | "otp" | "location" | "slots", email?: string) => {
+    const params: Record<string, string> = { step: newStep };
+    const emailToUse = email || registeredEmail || emailParam;
+    if (emailToUse) {
+      params.email = emailToUse;
+    }
+    setSearchParams(params, { replace: true });
+  };
+
+  const handleLocationSaved = (data: LocationData) => {
+    setLocationData(data);
+    try {
+      localStorage.setItem(STORAGE_LOCATION_KEY, JSON.stringify(data));
+    } catch {}
+    navigateToStep("slots");
+  };
+
+  const handleFinish = () => {
+    try {
+      localStorage.removeItem(STORAGE_LOCATION_KEY);
+    } catch {}
+    onFinishRegistration();
+  };
 
   return (
     <div className="space-y-5">
@@ -112,7 +175,7 @@ export function MandiRegisterWizard({
         <RegisterStep1Credentials
           onSuccessRegistered={(email) => {
             setRegisteredEmail(email);
-            setStage("STEP1_OTP");
+            navigateToStep("otp", email);
           }}
           onSwitchToLogin={onSwitchToLogin}
         />
@@ -120,27 +183,29 @@ export function MandiRegisterWizard({
 
       {stage === "STEP1_OTP" && (
         <RegisterOtpVerification
-          email={registeredEmail}
+          email={registeredEmail || emailParam}
           onVerifiedSuccess={() => {
-            setStage("STEP2_LOCATION");
+            navigateToStep("location");
           }}
-          onBackToStep1={() => setStage("STEP1_CREDENTIALS")}
+          onBackToStep1={() => navigateToStep("account")}
         />
       )}
 
       {stage === "STEP2_LOCATION" && (
         <RegisterStep2Location
-          onLocationSaved={() => {
-            setStage("STEP3_SLOTS");
-          }}
+          initialData={locationData}
+          onLocationSaved={handleLocationSaved}
         />
       )}
 
       {stage === "STEP3_SLOTS" && (
         <RegisterStep3Slots
-          onCompleteOnboarding={onFinishRegistration}
+          email={registeredEmail || emailParam}
+          locationData={locationData}
+          onCompleteOnboarding={handleFinish}
         />
       )}
     </div>
   );
 }
+

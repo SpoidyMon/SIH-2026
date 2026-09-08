@@ -1,25 +1,90 @@
 import React, { useState } from "react";
-import { MapPin, Navigation, ArrowRight, RefreshCw, CheckCircle2, AlertCircle } from "lucide-react";
-import { useAppDispatch, useAppSelector } from "../../store";
-import { updateMandiLocationThunk } from "../../store/slices/mandiSlice";
+import { MapPin, Navigation, ArrowRight, CheckCircle2, AlertCircle, Sparkles } from "lucide-react";
 
-interface RegisterStep2LocationProps {
-  onLocationSaved: () => void;
+export interface LocationData {
+  address: string;
+  pincode: string;
+  district: string;
+  state: string;
+  latitude: number;
+  longitude: number;
 }
 
-export function RegisterStep2Location({ onLocationSaved }: RegisterStep2LocationProps) {
-  const dispatch = useAppDispatch();
-  const { isActionLoading } = useAppSelector((state) => state.mandi);
+interface RegisterStep2LocationProps {
+  initialData?: Partial<LocationData>;
+  onLocationSaved: (data: LocationData) => void;
+}
 
-  const [address, setAddress] = useState("");
-  const [pincode, setPincode] = useState("");
-  const [district, setDistrict] = useState("Indore");
-  const [state, setState] = useState("Madhya Pradesh");
-  const [latitude, setLatitude] = useState<number>(22.7196);
-  const [longitude, setLongitude] = useState<number>(75.8577);
+export function RegisterStep2Location({ initialData, onLocationSaved }: RegisterStep2LocationProps) {
+  const [address, setAddress] = useState(initialData?.address || "");
+  const [pincode, setPincode] = useState(initialData?.pincode || "");
+  const [district, setDistrict] = useState(initialData?.district || "Indore");
+  const [state, setState] = useState(initialData?.state || "Madhya Pradesh");
+  const [latitude, setLatitude] = useState<number>(initialData?.latitude ?? 22.7196);
+  const [longitude, setLongitude] = useState<number>(initialData?.longitude ?? 75.8577);
   const [isLocating, setIsLocating] = useState(false);
   const [locationSuccess, setLocationSuccess] = useState<string | null>(null);
   const [locationError, setLocationError] = useState<string | null>(null);
+
+  /**
+   * Reverse-geocodes GPS coordinates using OpenStreetMap Nominatim API
+   * and auto-fills physical street address, district, state, and postal PIN code.
+   */
+  const reverseGeocodeCoordinates = async (lat: number, lon: number) => {
+    try {
+      setIsLocating(true);
+      setLocationError(null);
+      setLocationSuccess("Resolving yard address, district, state & pincode from coordinates...");
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&addressdetails=1`,
+        {
+          headers: {
+            "Accept-Language": "en",
+          },
+        }
+      );
+      if (res.ok) {
+        const data = await res.json();
+        const addr = data.address || {};
+
+        // 1. Build physical street address
+        const streetParts = [
+          addr.building || addr.amenity || addr.office || addr.commercial,
+          addr.road,
+          addr.suburb || addr.neighbourhood || addr.industrial,
+        ].filter(Boolean);
+
+        const autoAddress =
+          streetParts.length > 0
+            ? streetParts.join(", ")
+            : data.display_name
+            ? data.display_name.split(",").slice(0, 3).join(", ")
+            : "";
+
+        // 2. Build district, state, and postal PIN code
+        const autoDistrict =
+          addr.state_district || addr.district || addr.city || addr.county || addr.town || "";
+        const autoState = addr.state || "";
+        const autoPincode = (addr.postcode || "").replace(/\D/g, "").slice(0, 6);
+
+        if (autoAddress) setAddress(autoAddress);
+        if (autoDistrict) setDistrict(autoDistrict);
+        if (autoState) setState(autoState);
+        if (autoPincode) setPincode(autoPincode);
+
+        setLocationSuccess("✓ Address, district, state & postal PIN code auto-filled from map location!");
+        setTimeout(() => setLocationSuccess(null), 5000);
+      } else {
+        setLocationSuccess("✓ Coordinates updated.");
+        setTimeout(() => setLocationSuccess(null), 3000);
+      }
+    } catch {
+      setLocationSuccess("✓ Coordinates updated.");
+      setTimeout(() => setLocationSuccess(null), 3000);
+    } finally {
+      setIsLocating(false);
+    }
+  };
 
   const handleFetchCurrentLocation = () => {
     if (!navigator.geolocation) {
@@ -29,51 +94,42 @@ export function RegisterStep2Location({ onLocationSaved }: RegisterStep2Location
 
     setIsLocating(true);
     setLocationError(null);
-    setLocationSuccess(null);
+    setLocationSuccess("Acquiring GPS fix from device...");
 
     navigator.geolocation.getCurrentPosition(
-      (position) => {
+      async (position) => {
         const lat = Number(position.coords.latitude.toFixed(6));
         const lng = Number(position.coords.longitude.toFixed(6));
         setLatitude(lat);
         setLongitude(lng);
-        setIsLocating(false);
-        setLocationSuccess(`Current GPS coordinates fetched: ${lat}, ${lng}`);
-        setTimeout(() => setLocationSuccess(null), 5000);
+        await reverseGeocodeCoordinates(lat, lng);
       },
       (err) => {
         setIsLocating(false);
-        // Default to active APMC coordinates
         setLatitude(22.7196);
         setLongitude(75.8577);
-        setLocationError(`Location request failed (${err.message}). Using regional APMC coordinates.`);
+        setLocationError(`GPS fix failed (${err.message}). Enter coordinates manually or adjust on map.`);
       },
       { enableHighAccuracy: true, timeout: 10000 }
     );
   };
 
-  const handleSubmitLocation = async (e: React.FormEvent) => {
+  const handleSubmitLocation = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!address || !pincode) return;
+    if (!address.trim() || !pincode.trim()) {
+      setLocationError("Please provide yard address and 6-digit postal PIN code.");
+      return;
+    }
 
     setLocationError(null);
-
-    try {
-      await dispatch(
-        updateMandiLocationThunk({
-          address: address.trim(),
-          pincode: pincode.trim(),
-          district: district.trim(),
-          state: state.trim(),
-          latitude: Number(latitude),
-          longitude: Number(longitude),
-        })
-      ).unwrap();
-
-      onLocationSaved();
-    } catch (err: any) {
-      setLocationError(err || "Failed to update location coordinates");
-    }
+    onLocationSaved({
+      address: address.trim(),
+      pincode: pincode.trim(),
+      district: district.trim(),
+      state: state.trim(),
+      latitude: Number(latitude),
+      longitude: Number(longitude),
+    });
   };
 
   return (
@@ -124,7 +180,7 @@ export function RegisterStep2Location({ onLocationSaved }: RegisterStep2Location
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1">
-              Pincode <span className="text-emerald-600">*</span>
+              Postal PIN Code <span className="text-emerald-600">*</span>
             </label>
             <input
               type="text"
@@ -162,22 +218,48 @@ export function RegisterStep2Location({ onLocationSaved }: RegisterStep2Location
           />
         </div>
 
-        {/* GPS Coordinates & Fetch Button */}
-        <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-2.5">
-          <div className="flex items-center justify-between">
+        {/* GPS Coordinates & Interactive Map Embed */}
+        <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-3">
+          <div className="flex items-center justify-between flex-wrap gap-2">
             <span className="text-xs font-semibold text-slate-800 flex items-center gap-1.5">
               <MapPin className="w-3.5 h-3.5 text-emerald-600" />
-              Geo Coordinates (For Farmer Map Discovery)
+              Mandi Yard Map &amp; Geo-Coordinates
             </span>
-            <button
-              type="button"
-              onClick={handleFetchCurrentLocation}
-              disabled={isLocating}
-              className="flex items-center gap-1.5 px-3 py-1 bg-white hover:bg-emerald-50 text-emerald-800 border border-emerald-300 rounded-lg text-xs font-semibold transition cursor-pointer shadow-2xs disabled:opacity-50"
-            >
-              <Navigation className={`w-3.5 h-3.5 ${isLocating ? "animate-spin" : ""}`} />
-              <span>{isLocating ? "Locating..." : "Fetch GPS Location"}</span>
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => reverseGeocodeCoordinates(latitude, longitude)}
+                disabled={isLocating}
+                className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 rounded-lg transition-colors cursor-pointer disabled:opacity-50"
+                title="Auto-fill address, district, state and PIN code from current coordinates"
+              >
+                <Sparkles className="w-3 h-3 text-emerald-600" />
+                <span>Auto-Fill Address</span>
+              </button>
+              <button
+                type="button"
+                onClick={handleFetchCurrentLocation}
+                disabled={isLocating}
+                className="flex items-center gap-1.5 px-3 py-1 bg-white hover:bg-emerald-50 text-emerald-800 border border-emerald-300 rounded-lg text-xs font-semibold transition cursor-pointer shadow-2xs disabled:opacity-50"
+              >
+                <Navigation className={`w-3.5 h-3.5 ${isLocating ? "animate-spin" : ""}`} />
+                <span>{isLocating ? "Locating..." : "Fetch GPS Location"}</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Interactive OpenStreetMap Embed Preview */}
+          <div className="relative rounded-xl overflow-hidden border border-slate-200 h-44 bg-slate-100 shadow-inner">
+            <iframe
+              title="Mandi Yard Map"
+              src={`https://www.openstreetmap.org/export/embed.html?bbox=${longitude - 0.01}%2C${latitude - 0.008}%2C${longitude + 0.01}%2C${latitude + 0.008}&layer=mapnik&marker=${latitude}%2C${longitude}`}
+              className="w-full h-full border-0"
+              loading="lazy"
+            />
+            <div className="absolute bottom-2 right-2 bg-white/95 backdrop-blur-xs px-2.5 py-1 rounded-lg border border-slate-200 text-[10px] font-bold text-slate-700 flex items-center gap-1 shadow-2xs">
+              <MapPin className="w-3 h-3 text-red-500" />
+              <span>Marked APMC Yard Entrance ({latitude.toFixed(4)}° N, {longitude.toFixed(4)}° E)</span>
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-2 text-xs">
@@ -206,19 +288,13 @@ export function RegisterStep2Location({ onLocationSaved }: RegisterStep2Location
 
         <button
           type="submit"
-          disabled={isActionLoading}
-          className="w-full mt-2 py-3 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold rounded-xl flex items-center justify-center gap-2 transition-all shadow-xs cursor-pointer disabled:opacity-50"
+          className="w-full mt-2 py-3 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold rounded-xl flex items-center justify-center gap-2 transition-all shadow-xs cursor-pointer"
         >
-          {isActionLoading ? (
-            <RefreshCw className="w-4 h-4 animate-spin" />
-          ) : (
-            <>
-              <span>Save Location &amp; Set Operating Slots</span>
-              <ArrowRight className="w-4 h-4" />
-            </>
-          )}
+          <span>Save Location &amp; Set Operating Slots</span>
+          <ArrowRight className="w-4 h-4" />
         </button>
       </form>
     </div>
   );
 }
+

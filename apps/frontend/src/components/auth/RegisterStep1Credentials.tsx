@@ -38,9 +38,8 @@ export function RegisterStep1Credentials({
         })
       ).unwrap();
 
-      if (res?.email) {
-        onSuccessRegistered(res.email);
-      }
+      const targetEmail = res?.email || email.trim().toLowerCase();
+      onSuccessRegistered(targetEmail);
     } catch {
       // Handled in Redux error state
     }

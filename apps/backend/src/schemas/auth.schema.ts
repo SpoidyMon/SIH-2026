@@ -59,4 +59,41 @@ export const resetPasswordSchema = z.object({
   newPassword: passwordValidator,
 });
 
+export const completeMandiOnboardingSchema = z.object({
+  email: z.string().trim().toLowerCase().email("Please provide a valid email address"),
+  address: z.string().trim().min(3, "Physical yard address is required"),
+  pincode: z.string().trim().regex(/^\d{6}$/, "Pincode must be a 6-digit number"),
+  district: z.string().trim().optional(),
+  state: z.string().trim().optional(),
+  latitude: z.number().min(-90).max(90),
+  longitude: z.number().min(-180).max(180),
+  operatingHours: z.string().trim().optional(),
+  closedDays: z.array(z.string()).optional(),
+  closedHours: z.string().trim().optional(),
+  capacity: z.number().positive().optional(),
+  slots: z
+    .array(
+      z.object({
+        crop: z.string().min(1),
+        date: z.string().min(1),
+        startTime: z.string().min(1),
+        endTime: z.string().min(1),
+        totalCapacityQuintals: z.number().positive(),
+        maxFarmers: z.number().int().positive().optional(),
+        bufferMinutes: z.number().int().nonnegative().optional(),
+        bufferPercentage: z.number().nonnegative().optional(),
+        allowedCrops: z
+          .array(
+            z.object({
+              crop: z.string(),
+              isFixed: z.boolean().optional(),
+            })
+          )
+          .optional(),
+      })
+    )
+    .optional(),
+});
+
 export * from "../interfaces/index.js";
+

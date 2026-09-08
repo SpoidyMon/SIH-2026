@@ -28,9 +28,10 @@ export interface AuthState {
 
 export interface AuthResponseData {
   user: UserSession;
-  accessToken: string;
-  refreshToken: string;
+  accessToken?: string;
+  refreshToken?: string;
   message?: string;
+  isOnboarding?: boolean;
 }
 
 export interface ApiResponse<T = unknown> {
@@ -65,3 +66,29 @@ export interface SendOtpPayload {
   identifier: string;
   type: "EMAIL_VERIFICATION" | "LOGIN_OTP" | "PASSWORD_RESET";
 }
+
+export interface CompleteMandiOnboardingPayload {
+  email: string;
+  address: string;
+  pincode: string;
+  district?: string;
+  state?: string;
+  latitude: number;
+  longitude: number;
+  operatingHours?: string;
+  closedDays?: string[];
+  closedHours?: string;
+  capacity?: number;
+  slots?: Array<{
+    crop: string;
+    date: string;
+    startTime: string;
+    endTime: string;
+    totalCapacityQuintals: number;
+    maxFarmers?: number;
+    bufferMinutes?: number;
+    bufferPercentage?: number;
+    allowedCrops?: Array<{ crop: string; isFixed?: boolean }>;
+  }>;
+}
+

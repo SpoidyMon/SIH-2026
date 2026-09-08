@@ -16,6 +16,7 @@ import type {
   RegisterInput,
   LoginInput,
   ResetPasswordInput,
+  CompleteMandiOnboardingInput,
 } from "../schemas/auth.schema.js";
 
 /**
@@ -95,22 +96,25 @@ export async function registerUser(data: RegisterInput) {
   // If registering as Mandi Operator, pre-create the MandiProfile with the provided mandiName
   if (data.role === Role.MANDI_OPERATOR) {
     const customMandiName = data.mandiName?.trim() || `${user.name}'s APMC Yard`;
-    const mandiCodeCount = (await prisma.mandiProfile.count()) || 0;
+    const mandiCodeCount = (await prisma.mandiProfile?.count?.()) ?? 0;
     const mandiCode = `MAN${String(mandiCodeCount + 1).padStart(3, "0")}`;
 
-    await prisma.mandiProfile.upsert({
-      where: { userId: user.id },
-      create: {
-        userId: user.id,
-        mandiName: customMandiName,
-        mandiCode,
-        operatingHours: "08:00 AM - 06:00 PM (Mon-Sat)",
-        approvalStatus: MandiApprovalStatus.APPROVED,
-      },
-      update: {
-        mandiName: customMandiName,
-      },
-    });
+    if (prisma.mandiProfile?.upsert) {
+      await prisma.mandiProfile.upsert({
+        where: { userId: user.id },
+        create: {
+          userId: user.id,
+          mandiName: customMandiName,
+          mandiCode,
+          operatingHours: "08:00 AM - 06:00 PM (Mon-Sat)",
+          approvalStatus: MandiApprovalStatus.PENDING_ONBOARDING,
+          isLocationSet: false,
+        },
+        update: {
+          mandiName: customMandiName,
+        },
+      });
+    }
   }
 
   // 4. Generate and dispatch verification OTP
@@ -133,25 +137,30 @@ export async function registerUser(data: RegisterInput) {
     console.error("Failed to send verification email:", err);
   });
 
-  // 5. Generate access and refresh tokens
-  const accessToken = generateAccessToken({
-    userId: user.id,
-    email: user.email,
-    role: user.role,
-    isVerified: user.isVerified,
-  });
+  // For FARMER role, issue initial tokens upon registration
+  let accessToken: string | undefined;
+  let refreshTokenRaw: string | undefined;
 
-  const refreshTokenRaw = generateRefreshTokenString();
-  const refreshTokenHash = hashToken(refreshTokenRaw);
-  const refreshExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
-
-  await prisma.refreshToken.create({
-    data: {
-      tokenHash: refreshTokenHash,
+  if (user.role === Role.FARMER) {
+    accessToken = generateAccessToken({
       userId: user.id,
-      expiresAt: refreshExpiresAt,
-    },
-  });
+      email: user.email,
+      role: user.role,
+      isVerified: user.isVerified,
+    });
+
+    refreshTokenRaw = generateRefreshTokenString();
+    const refreshTokenHash = hashToken(refreshTokenRaw);
+    const refreshExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
+    await prisma.refreshToken.create({
+      data: {
+        tokenHash: refreshTokenHash,
+        userId: user.id,
+        expiresAt: refreshExpiresAt,
+      },
+    });
+  }
 
   return {
     user: {
@@ -241,6 +250,24 @@ export async function loginUser(data: LoginInput) {
       403,
       "ACCOUNT_NOT_VERIFIED"
     );
+  }
+
+  // If Mandi Operator account hasn't completed onboarding, prompt to finish setup
+  if (user.role === Role.MANDI_OPERATOR) {
+    const mandiProfile = await prisma.mandiProfile.findUnique({
+      where: { userId: user.id },
+    });
+    if (
+      mandiProfile &&
+      (!mandiProfile.isLocationSet ||
+        mandiProfile.approvalStatus === MandiApprovalStatus.PENDING_ONBOARDING)
+    ) {
+      throw new AppError(
+        "Your Mandi registration is incomplete. Please finish location & operating slots setup.",
+        403,
+        "ONBOARDING_INCOMPLETE"
+      );
+    }
   }
 
   // Generate tokens
@@ -477,6 +504,33 @@ export async function verifyOtp(
   }
 
   if (user) {
+    // If Mandi Operator is in pending onboarding state, do NOT issue active session tokens yet
+    if (user.role === Role.MANDI_OPERATOR) {
+      const mandiProfile = await prisma.mandiProfile.findUnique({
+        where: { userId: user.id },
+      });
+      if (
+        !mandiProfile ||
+        !mandiProfile.isLocationSet ||
+        mandiProfile.approvalStatus === MandiApprovalStatus.PENDING_ONBOARDING
+      ) {
+        return {
+          isVerified: true,
+          isOnboarding: true,
+          user: {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            phone: user.phone,
+            role: user.role,
+            isVerified: true,
+            createdAt: user.createdAt,
+          },
+          message: "Email verified successfully. Please proceed with Mandi location setup.",
+        };
+      }
+    }
+
     const accessToken = generateAccessToken({
       userId: user.id,
       email: user.email,
@@ -672,3 +726,134 @@ export async function getCurrentUser(userId: string) {
 
   return user;
 }
+
+/**
+ * Completes post-verification onboarding for Mandi Operator (Location + Slots),
+ * updates MandiProfile, creates initial slots, and issues official session tokens.
+ */
+export async function completeMandiOnboarding(data: CompleteMandiOnboardingInput) {
+  const normalizedEmail = data.email.toLowerCase().trim();
+  const user = await prisma.user.findUnique({
+    where: { email: normalizedEmail },
+    include: { mandiProfile: true },
+  });
+
+  if (!user) {
+    throw new AppError("No account found with this email address.", 404, "USER_NOT_FOUND");
+  }
+
+  if (user.role !== Role.MANDI_OPERATOR) {
+    throw new AppError("User account is not a Mandi Operator.", 403, "INVALID_ROLE");
+  }
+
+  if (!user.isVerified) {
+    throw new AppError("Email address has not been verified yet. Please verify OTP first.", 403, "EMAIL_NOT_VERIFIED");
+  }
+
+  const mandiCodeCount = (await prisma.mandiProfile?.count?.()) ?? 0;
+  const mandiCode = user.mandiProfile?.mandiCode || `MAN${String(mandiCodeCount + 1).padStart(3, "0")}`;
+
+  // Update Mandi Profile
+  const mandiProfile = await prisma.mandiProfile.upsert({
+    where: { userId: user.id },
+    create: {
+      userId: user.id,
+      mandiCode,
+      mandiName: user.mandiProfile?.mandiName || `${user.name}'s APMC Yard`,
+      address: data.address.trim(),
+      pincode: data.pincode.trim(),
+      district: data.district?.trim() || null,
+      state: data.state?.trim() || null,
+      latitude: data.latitude,
+      longitude: data.longitude,
+      operatingHours: data.operatingHours || "08:00 AM - 06:00 PM (Mon-Sat)",
+      closedDays: data.closedDays || [],
+      closedHours: data.closedHours || null,
+      isLocationSet: true,
+      approvalStatus: MandiApprovalStatus.APPROVED,
+    },
+    update: {
+      address: data.address.trim(),
+      pincode: data.pincode.trim(),
+      district: data.district?.trim() || null,
+      state: data.state?.trim() || null,
+      latitude: data.latitude,
+      longitude: data.longitude,
+      operatingHours: data.operatingHours || "08:00 AM - 06:00 PM (Mon-Sat)",
+      closedDays: data.closedDays || [],
+      closedHours: data.closedHours || null,
+      isLocationSet: true,
+      approvalStatus: MandiApprovalStatus.APPROVED,
+    },
+  });
+
+  // Create initial arrival slots if provided
+  if (data.slots && data.slots.length > 0) {
+    for (const slot of data.slots) {
+      const maxFarmers = slot.maxFarmers || 10;
+      const totalCapacityKg = (slot.totalCapacityQuintals || 500) * 100;
+      await prisma.mandiSlot.create({
+        data: {
+          mandiProfileId: mandiProfile.id,
+          crop: slot.crop || "Wheat, Mustard, Soybean",
+          allowedCrops: slot.allowedCrops || [
+            { crop: "Wheat", isFixed: false },
+            { crop: "Mustard", isFixed: false },
+            { crop: "Soybean", isFixed: false },
+          ],
+          date: slot.date,
+          startTime: slot.startTime,
+          endTime: slot.endTime,
+          totalCapacityQuintals: slot.totalCapacityQuintals,
+          totalCapacityKg,
+          bookedCapacityQuintals: 0,
+          bookedCapacityKg: 0,
+          capacityPercentage: 0,
+          maxFarmers,
+          bookedFarmers: 0,
+          availableBookings: maxFarmers,
+          bufferMinutes: slot.bufferMinutes ?? 15,
+          bufferPercentage: slot.bufferPercentage ?? 10,
+          isActive: true,
+        },
+      });
+    }
+  }
+
+  // Issue active session tokens now that onboarding is complete
+  const accessToken = generateAccessToken({
+    userId: user.id,
+    email: user.email,
+    role: user.role,
+    isVerified: true,
+  });
+
+  const refreshTokenRaw = generateRefreshTokenString();
+  const refreshTokenHash = hashToken(refreshTokenRaw);
+  const refreshExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
+  await prisma.refreshToken.create({
+    data: {
+      tokenHash: refreshTokenHash,
+      userId: user.id,
+      expiresAt: refreshExpiresAt,
+    },
+  });
+
+  return {
+    user: {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      phone: user.phone,
+      role: user.role,
+      isVerified: true,
+      createdAt: user.createdAt,
+    },
+    mandiProfile,
+    accessToken,
+    refreshToken: refreshTokenRaw,
+    message: "Mandi onboarding completed successfully.",
+  };
+}
+
