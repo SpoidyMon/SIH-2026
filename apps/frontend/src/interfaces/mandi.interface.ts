@@ -40,12 +40,19 @@ export interface MandiProfile {
   id: string;
   userId: string;
   mandiName?: string | null;
+  mandiCode?: string | null;
   apmcCode?: string | null;
   address?: string | null;
   yardAddress?: string | null;
+  pincode?: string | null;
   district?: string | null;
   state?: string | null;
   pinCode?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  closedDays?: string[];
+  closedHours?: string | null;
+  isLocationSet?: boolean;
   weighbridgeCount?: number | null;
   operatingLicense?: string | null;
   operatingHours?: string | null;
@@ -63,11 +70,40 @@ export interface MandiProfile {
   legalDocs?: MandiLegalDoc[];
 }
 
+export interface SlotCropItem {
+  crop: string;
+  quantityQuintals?: number;
+  isFixed?: boolean;
+}
+
+export type DayOfWeek =
+  | "Monday"
+  | "Tuesday"
+  | "Wednesday"
+  | "Thursday"
+  | "Friday"
+  | "Saturday"
+  | "Sunday";
+
+export interface DayMandiConfig {
+  day: DayOfWeek;
+  enabled: boolean;
+  startTime: string; // e.g. "9:00 AM" or "09:00"
+  endTime: string;   // e.g. "5:00 PM" or "17:00"
+  capacityQuintals: number;
+  maxFarmers: number;
+  bufferMinutes: number;
+  bufferPercentage: number;
+  selectedCrops: string[];
+  isExpanded?: boolean;
+}
+
 export interface MandiSlot {
   id: string;
   mandiId?: string;
   mandiProfileId?: string;
   crop: string;
+  allowedCrops?: SlotCropItem[] | null;
   date: string; // YYYY-MM-DD
   slotDate?: string;
   startTime: string; // HH:mm
@@ -107,7 +143,9 @@ export interface Booking {
   vehicleNumber?: string | null;
   arrivalDate?: string;
   slotTimeWindow?: string;
-  token: string; // TKN-XXXX
+  token: string; // TKN-XXXX or 4MAY-10AM-001
+  queueNumber?: number;
+  qrCodeData?: string | null;
   qrCodeUrl?: string | null;
   qrCodeString?: string | null;
   gateEntryTimestamp?: string | null;
@@ -120,6 +158,7 @@ export interface Booking {
   actualWeightQuintals?: number | null;
   finalPayoutAmount?: number | null;
   verifiedAt?: string | null;
+  servedAt?: string | null;
   completedAt?: string | null;
   createdAt: string;
   updatedAt?: string;
@@ -153,6 +192,7 @@ export interface MandiDashboardStats {
   rating?: number;
   mandiName?: string | null;
   apmcCode?: string | null;
+  mandiCode?: string | null;
 }
 
 export interface MandiRatingData {
@@ -175,6 +215,7 @@ export interface MandiRatingData {
 
 export interface CreateSlotPayload {
   crop: string;
+  allowedCrops?: SlotCropItem[];
   date: string;
   startTime: string;
   endTime: string;
@@ -188,11 +229,70 @@ export interface OnboardingPayload {
   mandiName: string;
   apmcCode: string;
   address: string;
+  pincode?: string;
   district: string;
   state: string;
+  latitude?: number;
+  longitude?: number;
   operatingHours: string;
+  closedDays?: string[];
+  closedHours?: string;
   operatingCommodities: string[];
 }
+
+export interface UpdateMandiLocationPayload {
+  address: string;
+  pincode: string;
+  latitude: number;
+  longitude: number;
+  district?: string;
+  state?: string;
+  operatingHours?: string;
+  closedDays?: string[];
+  closedHours?: string;
+}
+
+export interface FarmerDetails {
+  id: string;
+  name: string;
+  email: string;
+  phone?: string | null;
+  farmerCode?: string | null;
+  dob?: string | null;
+  address?: string | null;
+  idType?: string | null;
+  idNumber?: string | null;
+  village?: string | null;
+  taluka?: string | null;
+  district?: string | null;
+  state?: string | null;
+  pincode?: string | null;
+  landSizeAcres?: number | null;
+  mainCrops?: string[];
+  secondaryCrops?: string[];
+  irrigationType?: string | null;
+  avatarUrl?: string | null;
+  totalBookingsCount: number;
+  verifiedBookingsCount: number;
+}
+
+export interface VerifyTokenResponse {
+  booking: Booking;
+  isOutOfOrder?: boolean;
+  nextInQueueToken?: string;
+  warningMessage?: string | null;
+}
+
+export type NavTab =
+  | "dashboard"
+  | "bookings"
+  | "slots"
+  | "scanner"
+  | "verification"
+  | "farmers"
+  | "history"
+  | "settings"
+  | "rating";
 
 export interface AadhaarKycPayload {
   aadhaarNumber: string;
@@ -209,3 +309,4 @@ export interface CompleteBookingPayload {
   actualWeightQuintals: number;
   finalPayoutAmount: number;
 }
+

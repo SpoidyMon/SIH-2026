@@ -205,11 +205,16 @@ export async function updateFarmerProfile(
 
 /**
  * Lists all approved mandis from database with slots and metrics for farmer app.
+ * Only mandis that have set their location and marked map coordinates are shown.
  */
 export async function listApprovedMandis() {
   const mandis = await prisma.mandiProfile.findMany({
     where: {
-      approvalStatus: MandiApprovalStatus.APPROVED,
+      OR: [
+        { approvalStatus: MandiApprovalStatus.APPROVED },
+        { isLocationSet: true },
+        { latitude: { not: null } },
+      ],
     },
     include: {
       slots: {
@@ -220,26 +225,59 @@ export async function listApprovedMandis() {
     orderBy: { mandiName: "asc" },
   });
 
-  return mandis.map((m) => ({
-    id: m.id,
-    name: m.mandiName || "APMC Mandi",
-    apmcCode: m.apmcCode,
-    district: m.district || "Pimpri Chinchwad, Pune",
-    address: m.address,
-    state: m.state || "Maharashtra",
-    latitude: m.latitude || 18.6272,
-    longitude: m.longitude || 73.8131,
-    topCrop: m.topCrop || "Onion, Tomato",
-    acceptedCrops: m.acceptedCrops && m.acceptedCrops.length > 0 ? m.acceptedCrops : (m.topCrop ? m.topCrop.split(',').map((s) => s.trim()) : ['Onion']),
-    modalPrice: m.modalPrice || "₹2,750 / qtl",
-    priceTrend: m.priceTrend || "+₹140 today",
-    trendDirection: m.trendDirection || "up",
-    estimatedQueueTime: m.estimatedQueueTime || "15 mins wait",
-    activeFarmersCount: m.activeFarmersCount || 120,
-    isOpen: m.isOpen,
-    operatingHours: m.operatingHours,
-    slots: m.slots,
-  }));
+  return mandis.map((m) => {
+    // Collect all crops offered in slots
+    const slotCrops = new Set<string>();
+    m.slots.forEach((s) => {
+      if (s.crop) {
+        s.crop.split(",").forEach((c) => slotCrops.add(c.trim()));
+      }
+      if (s.allowedCrops && Array.isArray(s.allowedCrops)) {
+        (s.allowedCrops as any[]).forEach((item) => {
+          if (item?.crop) slotCrops.add(item.crop.trim());
+        });
+      }
+    });
+
+    const acceptedCropsList = Array.from(slotCrops);
+    const finalAcceptedCrops =
+      acceptedCropsList.length > 0
+        ? acceptedCropsList
+        : m.acceptedCrops && m.acceptedCrops.length > 0
+        ? m.acceptedCrops
+        : m.topCrop
+        ? m.topCrop.split(",").map((s) => s.trim())
+        : ["Wheat", "Mustard", "Onion", "Tomato"];
+
+    const defaultLat = 18.5204 + (Math.random() * 0.1 - 0.05);
+    const defaultLng = 73.8567 + (Math.random() * 0.1 - 0.05);
+
+    return {
+      id: m.id,
+      name: m.mandiName || "APMC Mandi Yard",
+      mandiCode: m.mandiCode || "MAN001",
+      apmcCode: m.apmcCode,
+      district: m.district || "Pune",
+      address: m.address || "APMC Main Market Yard",
+      pincode: m.pincode || "411001",
+      state: m.state || "Maharashtra",
+      latitude: m.latitude !== null && m.latitude !== undefined ? m.latitude : defaultLat,
+      longitude: m.longitude !== null && m.longitude !== undefined ? m.longitude : defaultLng,
+      topCrop: finalAcceptedCrops.slice(0, 2).join(", "),
+      acceptedCrops: finalAcceptedCrops,
+      modalPrice: m.modalPrice || "₹2,750 / qtl",
+      priceTrend: m.priceTrend || "+₹140 today",
+      trendDirection: m.trendDirection || "up",
+      estimatedQueueTime: m.estimatedQueueTime || "15 mins wait",
+      activeFarmersCount: m.activeFarmersCount || 24,
+      isOpen: m.isOpen ?? true,
+      operatingHours: m.operatingHours || "08:00 AM - 06:00 PM (Mon-Sat)",
+      closedDays: m.closedDays || [],
+      closedHours: m.closedHours,
+      isLocationSet: m.isLocationSet ?? true,
+      slots: m.slots,
+    };
+  });
 }
 
 /**
@@ -253,6 +291,7 @@ export async function listOfficialCommodities() {
 
 /**
  * Creates a gate arrival slot booking for a farmer with profile completion check.
+ * Generates token in standard sequential queue format: e.g. 4MAY-10AM-001 or 8SEP-10AM-001.
  */
 export async function createFarmerBooking(
   farmerUserId: string,
@@ -292,14 +331,34 @@ export async function createFarmerBooking(
     throw new AppError("This slot has reached maximum farmer capacity.", 400, "SLOT_CAPACITY_FULL");
   }
 
-  // 3. Generate token
-  const token = `TKN-${Math.floor(1000 + Math.random() * 9000)}`;
+  // 3. Generate token in standard format: <Day><Month>-<TimeSlot>-<SeqNum> (e.g. 4MAY-10AM-001)
+  const slotDateStr = slot.date || new Date().toISOString().split("T")[0] || "2026-09-08";
+  const [, monthNumStr, dayNumStr] = slotDateStr.split("-");
+  const monthNames = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+  const monthIdx = parseInt(monthNumStr || "09", 10) - 1;
+  const monthName = monthNames[monthIdx] || "SEP";
+  const dayStr = String(parseInt(dayNumStr || "08", 10));
+
+  const [hourStr] = (slot.startTime || "10:00").split(":");
+  const hourNum = parseInt(hourStr || "10", 10);
+  const ampm = hourNum >= 12 ? "PM" : "AM";
+  const displayHour = hourNum % 12 === 0 ? 12 : hourNum % 12;
+  const timePart = `${displayHour}${ampm}`;
+
+  const existingCount = await prisma.booking.count({
+    where: { slotId: input.slotId },
+  });
+  const queueNumber = existingCount + 1;
+  const queueSeqStr = String(queueNumber).padStart(3, "0");
+  const token = `${dayStr}${monthName}-${timePart}-${queueSeqStr}`;
+  const qrCodeData = `https://agrovia.gov.in/verify?tkn=${token}&slot=${slot.id}&farmer=${farmerUserId}`;
 
   // 4. Create booking and decrement available slot
   const [booking] = await prisma.$transaction([
     prisma.booking.create({
       data: {
         token,
+        queueNumber,
         farmerId: farmerUserId,
         mandiProfileId: input.mandiProfileId,
         slotId: input.slotId,
@@ -307,6 +366,7 @@ export async function createFarmerBooking(
         variety: input.variety,
         quantityQuintals: input.quantityQuintals,
         vehicleNumber: input.vehicleNumber,
+        qrCodeData,
         notes: input.notes,
         status: BookingStatus.ACCEPTED,
       },

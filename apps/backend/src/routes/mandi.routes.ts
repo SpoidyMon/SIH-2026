@@ -33,6 +33,22 @@ router.put(
 );
 
 router.post(
+  "/location",
+  validate(mandiSchema.updateMandiLocationSchema),
+  mandiController.updateLocationHandler
+);
+
+router.get(
+  "/farmers/:farmerId/details",
+  mandiController.getFarmerDetailsHandler
+);
+
+router.get(
+  "/farmers",
+  mandiController.getMandiFarmersHandler
+);
+
+router.post(
   "/kyc/aadhaar",
   validate(mandiSchema.aadhaarKycSchema),
   mandiController.updateAadhaarKycHandler
@@ -123,6 +139,12 @@ router.post(
   "/slots/default-preset",
   requireApprovedMandi,
   mandiController.applyDefaultSlotsPresetHandler
+);
+
+router.post(
+  "/slots/batch",
+  requireApprovedMandi,
+  mandiController.batchCreateSlotsHandler
 );
 
 export default router;

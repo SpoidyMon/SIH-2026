@@ -7,7 +7,7 @@ import {
 } from "../controllers/upload.controller.js";
 import { authenticate } from "../middlewares/auth.middleware.js";
 
-const uploadRouter = Router();
+const uploadRouter: Router = Router();
 
 const multerFactory = (typeof multer === "function" ? multer : (multer as any).default) as typeof multer;
 

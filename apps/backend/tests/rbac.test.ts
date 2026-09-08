@@ -13,7 +13,9 @@ vi.mock("../src/lib/prisma.js", () => {
     },
     mandiProfile: {
       findUnique: vi.fn(),
+      count: vi.fn().mockResolvedValue(1),
       create: vi.fn(),
+      update: vi.fn(),
     },
     mandiSlot: {
       findMany: vi.fn(),
@@ -82,6 +84,7 @@ describe("Role-Based Access Control (RBAC) Suite", () => {
         id: "profile_1",
         userId: "mandi-user-2",
         mandiName: "Mandi Yard",
+        mandiCode: "MAN001",
         apmcCode: "APMC-001",
         rating: 4.8,
         totalReviews: 10,

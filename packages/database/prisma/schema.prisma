@@ -170,11 +170,16 @@ model MandiProfile {
   userId              String               @unique
   user                User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
   mandiName           String?
+  mandiCode           String?              @unique // Sequential code e.g. MAN001, MAN002
   apmcCode            String?              @unique
   address             String?
+  pincode             String?
   district            String?
   state               String?
   operatingHours      String?              @default("08:00 AM - 06:00 PM (Mon-Sat)")
+  closedDays          String[]             @default([]) // e.g. ["Sunday"]
+  closedHours         String?              // e.g. "13:00 - 14:00 Lunch break"
+  isLocationSet       Boolean              @default(false)
   
   // Real-time Geo Coordinates & APMC Auction Metrics
   latitude            Float?
@@ -205,6 +210,7 @@ model MandiProfile {
   legalDocs           MandiLegalDoc[]
 
   @@index([userId])
+  @@index([mandiCode])
   @@index([apmcCode])
   @@index([approvalStatus])
   @@index([district, state])
@@ -225,6 +231,7 @@ model MandiSlot {
   mandiProfileId         String
   mandiProfile           MandiProfile @relation(fields: [mandiProfileId], references: [id], onDelete: Cascade)
   crop                   String
+  allowedCrops           Json?        // Detailed multi-crop configurations: [{ crop: string, quantityQuintals?: number, isFixed?: boolean }]
   date                   String       // Format: YYYY-MM-DD
   startTime              String       // Format: HH:mm
   endTime                String       // Format: HH:mm
@@ -249,7 +256,8 @@ model MandiSlot {
 
 model Booking {
   id                 String        @id @default(cuid())
-  token              String        @unique // e.g. TKN-7821
+  token              String        @unique // e.g. 4MAY-10AM-001 or TKN-7821
+  queueNumber        Int           @default(1) // Queue sequence number per slot (e.g. 1 for 001)
   farmerId           String
   farmer             User          @relation("FarmerBookings", fields: [farmerId], references: [id], onDelete: Cascade)
   mandiProfileId     String
@@ -261,9 +269,11 @@ model Booking {
   quantityQuintals   Float
   capacityPercentage Float         @default(0)
   vehicleNumber      String?
+  qrCodeData         String?
   status             BookingStatus @default(PENDING)
   notes              String?
   verifiedAt         DateTime?
+  servedAt           DateTime?
   completedAt        DateTime?
   createdAt          DateTime      @default(now())
   updatedAt          DateTime      @updatedAt

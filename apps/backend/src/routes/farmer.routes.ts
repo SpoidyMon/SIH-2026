@@ -12,7 +12,11 @@ import { Role } from "@prisma/client";
 
 const router: Router = Router();
 
-// Protect all farmer routes with authentication and requireRole(Role.FARMER)
+// Public access to list mandis and commodities for farmer app & discovery
+router.get("/mandis", listApprovedMandisHandler);
+router.get("/commodities", listCommoditiesHandler);
+
+// Protect sensitive farmer routes with authentication and requireRole(Role.FARMER)
 router.use(authenticate, requireRole(Role.FARMER));
 
 // Profile & KYC management routes
@@ -20,9 +24,7 @@ router.get("/profile", getFarmerProfileHandler);
 router.put("/profile", updateFarmerProfileHandler);
 router.patch("/profile", updateFarmerProfileHandler);
 
-// Mandi listing, Commodities & Slot Booking
-router.get("/mandis", listApprovedMandisHandler);
-router.get("/commodities", listCommoditiesHandler);
+// Slot Booking & history
 router.get("/bookings", getFarmerBookingsHandler);
 router.post("/bookings", createFarmerBookingHandler);
 
