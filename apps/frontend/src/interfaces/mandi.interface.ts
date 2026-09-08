@@ -76,6 +76,28 @@ export interface SlotCropItem {
   isFixed?: boolean;
 }
 
+export type DayOfWeek =
+  | "Monday"
+  | "Tuesday"
+  | "Wednesday"
+  | "Thursday"
+  | "Friday"
+  | "Saturday"
+  | "Sunday";
+
+export interface DayMandiConfig {
+  day: DayOfWeek;
+  enabled: boolean;
+  startTime: string; // e.g. "9:00 AM" or "09:00"
+  endTime: string;   // e.g. "5:00 PM" or "17:00"
+  capacityQuintals: number;
+  maxFarmers: number;
+  bufferMinutes: number;
+  bufferPercentage: number;
+  selectedCrops: string[];
+  isExpanded?: boolean;
+}
+
 export interface MandiSlot {
   id: string;
   mandiId?: string;

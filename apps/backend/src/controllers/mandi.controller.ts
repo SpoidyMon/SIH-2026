@@ -305,6 +305,31 @@ export async function applyDefaultSlotsPresetHandler(
   }
 }
 
+export async function batchCreateSlotsHandler(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const userId = req.user!.userId;
+    const { slots, closedDays, closedHours, operatingHours } = req.body;
+    const createdSlots = await mandiService.batchCreateMandiSlots(userId, {
+      slots: slots || [],
+      closedDays,
+      closedHours,
+      operatingHours,
+    });
+
+    res.status(201).json({
+      success: true,
+      message: `${createdSlots.length} arrival slots generated and availability schedule saved.`,
+      data: { slots: createdSlots },
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
 // ----------------------------------------------------
 // SETTINGS & KYC CONTROLLERS
 // ----------------------------------------------------

@@ -82,6 +82,11 @@ export const mandiApi = {
     return response.data;
   },
 
+  batchCreateSlots: async (payload: { slots: CreateSlotPayload[]; closedDays?: string[]; closedHours?: string; operatingHours?: string }): Promise<ApiResponse<{ slots: MandiSlot[]; message: string }>> => {
+    const response = await apiClient.post<ApiResponse<{ slots: MandiSlot[]; message: string }>>("/mandi/slots/batch", payload);
+    return response.data;
+  },
+
   // 4. Live Bookings Pipeline & Gate Pass Verification
   getCurrentBookings: async (params?: { status?: string; date?: string; crop?: string; search?: string }): Promise<ApiResponse<{ bookings: Booking[] }>> => {
     const response = await apiClient.get<ApiResponse<{ bookings: Booking[] }>>("/mandi/bookings/current", { params });

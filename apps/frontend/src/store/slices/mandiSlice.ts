@@ -214,6 +214,60 @@ export const applyDefaultPresetsThunk = createAsyncThunk(
   }
 );
 
+export const batchCreateSlotsThunk = createAsyncThunk(
+  "mandi/batchCreateSlots",
+  async (
+    payload: {
+      slots: CreateSlotPayload[];
+      closedDays?: string[];
+      closedHours?: string;
+      operatingHours?: string;
+    },
+    { dispatch, rejectWithValue }
+  ) => {
+    try {
+      const response = await mandiApi.batchCreateSlots(payload);
+      if (response.success && response.data?.slots) {
+        dispatch(fetchSlotsThunk());
+        dispatch(fetchProfileThunk());
+        return response.data.slots;
+      }
+      return rejectWithValue(response.message || "Failed to generate weekly schedule");
+    } catch (err: any) {
+      return rejectWithValue(err.response?.data?.message || "Error generating weekly slots");
+    }
+  }
+);
+
+export const updateWeeklyScheduleThunk = createAsyncThunk(
+  "mandi/updateWeeklySchedule",
+  async (
+    payload: {
+      closedDays: string[];
+      operatingHours: string;
+      closedHours?: string;
+    },
+    { dispatch, rejectWithValue }
+  ) => {
+    try {
+      const response = await mandiApi.batchCreateSlots({
+        slots: [],
+        closedDays: payload.closedDays,
+        operatingHours: payload.operatingHours,
+        closedHours: payload.closedHours,
+      });
+      if (response.success) {
+        dispatch(fetchProfileThunk());
+        return response.data;
+      }
+      return rejectWithValue(response.message || "Failed to update weekly schedule");
+    } catch (err: any) {
+      return rejectWithValue(err.response?.data?.message || "Error updating weekly schedule");
+    }
+  }
+);
+
+
 export const fetchCurrentBookingsThunk = createAsyncThunk(
   "mandi/fetchCurrentBookings",
   async (params: { status?: string; date?: string; crop?: string } | undefined, { rejectWithValue }) => {
@@ -427,6 +481,10 @@ export const mandiSlice = createSlice({
       .addCase(applyDefaultPresetsThunk.fulfilled, (state, action) => {
         state.slots = [...action.payload, ...state.slots];
         state.successMessage = "Default morning & afternoon presets generated!";
+      })
+      .addCase(batchCreateSlotsThunk.fulfilled, (state, action) => {
+        state.isActionLoading = false;
+        state.successMessage = "Weekly arrival schedule saved and live slots generated!";
       });
 
     // Current Bookings

@@ -141,4 +141,10 @@ router.post(
   mandiController.applyDefaultSlotsPresetHandler
 );
 
+router.post(
+  "/slots/batch",
+  requireApprovedMandi,
+  mandiController.batchCreateSlotsHandler
+);
+
 export default router;

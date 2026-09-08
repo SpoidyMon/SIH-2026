@@ -782,6 +782,76 @@ export async function applyDefaultSlotsPreset(userId: string) {
   return created;
 }
 
+/**
+ * Batch creates multiple arrival slots and updates weekly closed days
+ */
+export async function batchCreateMandiSlots(
+  userId: string,
+  input: {
+    slots: CreateSlotInput[];
+    closedDays?: string[];
+    closedHours?: string;
+    operatingHours?: string;
+  }
+) {
+  const profile = await getOrCreateMandiProfile(userId);
+
+  if (
+    input.closedDays !== undefined ||
+    input.closedHours !== undefined ||
+    input.operatingHours !== undefined
+  ) {
+    await prisma.mandiProfile.update({
+      where: { id: profile.id },
+      data: {
+        closedDays: input.closedDays !== undefined ? input.closedDays : profile.closedDays,
+        closedHours: input.closedHours !== undefined ? input.closedHours : profile.closedHours,
+        operatingHours:
+          input.operatingHours !== undefined ? input.operatingHours : profile.operatingHours,
+      },
+    });
+  }
+
+  const createdSlots = [];
+  for (const s of input.slots) {
+    const existing = await prisma.mandiSlot.findFirst({
+      where: {
+        mandiProfileId: profile.id,
+        date: s.date,
+        startTime: s.startTime,
+        crop: s.crop,
+      },
+    });
+
+    if (!existing) {
+      const newSlot = await prisma.mandiSlot.create({
+        data: {
+          mandiProfileId: profile.id,
+          crop: s.crop,
+          allowedCrops: (s.allowedCrops as any) || null,
+          date: s.date,
+          startTime: s.startTime,
+          endTime: s.endTime,
+          totalCapacityQuintals: s.totalCapacityQuintals,
+          bookedCapacityQuintals: 0,
+          capacityPercentage: 0,
+          maxFarmers: s.maxFarmers,
+          bookedFarmers: 0,
+          availableBookings: s.maxFarmers,
+          bufferMinutes: s.bufferMinutes ?? 15,
+          bufferPercentage: s.bufferPercentage ?? 10,
+          isActive: true,
+        },
+      });
+      createdSlots.push(newSlot);
+    } else {
+      createdSlots.push(existing);
+    }
+  }
+
+  return createdSlots;
+}
+
 // ----------------------------------------------------
 // SETTINGS, KYC & REPUTATION FUNCTIONS
 // ----------------------------------------------------
