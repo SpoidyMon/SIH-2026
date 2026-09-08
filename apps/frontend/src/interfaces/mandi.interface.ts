@@ -371,3 +371,10 @@ export interface VerifyTokenModalProps {
   initialToken?: string;
 }
 
+export interface WeighbridgeSettlementModalProps {
+  booking: Booking | null;
+  onClose: () => void;
+  onComplete: (bookingId: string, actualWeightQuintals: number, finalPayoutAmount: number) => void;
+  isPreVerified?: boolean;
+}
+

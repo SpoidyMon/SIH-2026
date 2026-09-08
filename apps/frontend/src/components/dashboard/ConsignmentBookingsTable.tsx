@@ -19,7 +19,7 @@ interface ConsignmentBookingsTableProps {
   onAccept: (bookingId: string) => void;
   onReject: (bookingId: string, reason?: string) => void;
   onVerifyEntry?: (token: string) => void;
-  onOpenWeighbridge: (booking: Booking) => void;
+  onOpenWeighbridge: (booking: Booking, isPreVerified?: boolean) => void;
   onViewSlip: (booking: Booking) => void;
   onViewDetails: (booking: Booking) => void;
   onOpenVerifyModal: () => void;
@@ -391,23 +391,24 @@ export const ConsignmentBookingsTable = React.memo(function ConsignmentBookingsT
                           )}
                           {b.status === "ACCEPTED" && (
                             <button
-                              onClick={() => onOpenVerifyModal()}
+                              onClick={() => onOpenWeighbridge(b, false)}
                               disabled={isActionLoading}
-                              className="px-3 py-1 text-xs font-semibold rounded-full bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 flex items-center gap-1.5 transition cursor-pointer"
-                              title="Scan farmer QR code or enter token to verify gate entry"
+                              className="px-3.5 py-1 text-xs font-semibold rounded-full bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 flex items-center gap-1.5 transition cursor-pointer"
+                              title="Scan farmer QR code or enter token to settle consignment"
                             >
-                              <QrCode className="w-3.5 h-3.5" />
-                              <span>Scan / Verify</span>
+                              <Scale className="w-3.5 h-3.5" />
+                              <span>Scan QR to Settle</span>
                             </button>
                           )}
                           {b.status === "VERIFIED" && (
                             <button
-                              onClick={() => onOpenWeighbridge(b)}
+                              onClick={() => onOpenWeighbridge(b, false)}
                               disabled={isActionLoading}
-                              className="px-3.5 py-1 text-xs font-semibold rounded-full bg-emerald-500 hover:bg-emerald-600 text-white flex items-center gap-1.5 shadow-xs transition cursor-pointer"
+                              className="px-3.5 py-1 text-xs font-semibold rounded-full bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-1.5 shadow-xs transition cursor-pointer"
+                              title="Scan farmer QR code or enter token to settle consignment"
                             >
                               <Scale className="w-3.5 h-3.5" />
-                              <span>Mark Complete</span>
+                              <span>Scan QR to Settle</span>
                             </button>
                           )}
                           {b.status === "COMPLETED" && (

@@ -55,8 +55,11 @@ export function MandiDashboardView() {
     dispatch(verifyGateTokenThunk(token));
   }, [dispatch]);
 
-  const handleOpenWeighbridge = useCallback((booking: Booking) => {
+  const [isWeighbridgePreVerified, setIsWeighbridgePreVerified] = useState(false);
+
+  const handleOpenWeighbridge = useCallback((booking: Booking, isPreVerified: boolean = false) => {
     setSelectedBookingForWeighbridge(booking);
+    setIsWeighbridgePreVerified(isPreVerified);
   }, []);
 
   const handleCompleteSettlement = useCallback((
@@ -121,8 +124,12 @@ export function MandiDashboardView() {
 
       <WeighbridgeSettlementModal
         booking={selectedBookingForWeighbridge}
-        onClose={() => setSelectedBookingForWeighbridge(null)}
+        onClose={() => {
+          setSelectedBookingForWeighbridge(null);
+          setIsWeighbridgePreVerified(false);
+        }}
         onComplete={handleCompleteSettlement}
+        isPreVerified={isWeighbridgePreVerified}
       />
 
       <SettlementSlipModal
