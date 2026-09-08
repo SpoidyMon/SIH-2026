@@ -19,8 +19,21 @@ import {
   MandiRatingDto,
   MandiOnboardingInput,
   AdminApprovalInput,
+  UpdateMandiLocationInput,
+  FarmerDetailsForMandi,
 } from "../interfaces/mandi.interface.js";
 import { generateBookingToken } from "../utils/qr-token.util.js";
+
+/**
+ * Generates the next sequential unique Mandi ID in the format MAN001, MAN002, etc.
+ */
+export async function generateNextMandiCode(): Promise<string> {
+  const count = (await prisma.mandiProfile.count?.({
+    where: { mandiCode: { not: null } },
+  })) ?? 0;
+  const nextNum = count + 1;
+  return `MAN${String(nextNum).padStart(3, "0")}`;
+}
 
 /**
  * Gets or creates the initial MandiProfile record for the authenticated User
@@ -37,16 +50,25 @@ export async function getOrCreateMandiProfile(userId: string) {
       throw { status: 404, message: "User account not found", code: "USER_NOT_FOUND" };
     }
 
+    const nextCode = await generateNextMandiCode();
     profile = await prisma.mandiProfile.create({
       data: {
         userId,
         mandiName: null,
+        mandiCode: nextCode,
         apmcCode: null,
         operatingHours: "08:00 AM - 06:00 PM (Mon-Sat)",
         approvalStatus: MandiApprovalStatus.PENDING_ONBOARDING,
         rating: 4.8,
         totalReviews: 0,
       },
+      include: { legalDocs: true },
+    });
+  } else if (!profile.mandiCode) {
+    const nextCode = await generateNextMandiCode();
+    profile = await prisma.mandiProfile.update({
+      where: { id: profile.id },
+      data: { mandiCode: nextCode },
       include: { legalDocs: true },
     });
   }
@@ -289,12 +311,14 @@ export async function getCurrentBookings(userId: string, filters: BookingFilterQ
       farmer: { select: { id: true, name: true, phone: true, email: true } },
       slot: { select: { id: true, date: true, startTime: true, endTime: true } },
     },
-    orderBy: { createdAt: "desc" },
+    orderBy: [{ queueNumber: "asc" }, { createdAt: "desc" }],
   });
 
   return bookings.map((b) => ({
     id: b.id,
     token: b.token,
+    queueNumber: b.queueNumber,
+    qrCodeData: b.qrCodeData,
     farmerId: b.farmerId,
     farmerName: b.farmer.name,
     farmerPhone: b.farmer.phone,
@@ -309,6 +333,7 @@ export async function getCurrentBookings(userId: string, filters: BookingFilterQ
     status: b.status,
     notes: b.notes,
     verifiedAt: b.verifiedAt,
+    servedAt: b.servedAt,
     completedAt: b.completedAt,
     createdAt: b.createdAt,
     updatedAt: b.updatedAt,
@@ -364,6 +389,8 @@ export async function getPreviousBookings(userId: string, filters: BookingFilter
     bookings: bookings.map((b) => ({
       id: b.id,
       token: b.token,
+      queueNumber: b.queueNumber,
+      qrCodeData: b.qrCodeData,
       farmerId: b.farmerId,
       farmerName: b.farmer.name,
       farmerPhone: b.farmer.phone,
@@ -378,6 +405,7 @@ export async function getPreviousBookings(userId: string, filters: BookingFilter
       status: b.status,
       notes: b.notes,
       verifiedAt: b.verifiedAt,
+      servedAt: b.servedAt,
       completedAt: b.completedAt,
       createdAt: b.createdAt,
       updatedAt: b.updatedAt,
@@ -426,7 +454,7 @@ export async function updateBookingStatus(
 }
 
 /**
- * Verifies farmer booking entry via QR code or token
+ * Verifies farmer booking entry via QR code or token with First-Come First-Served queue check
  */
 export async function verifyBookingToken(userId: string, token: string) {
   const profile = await getOrCreateMandiProfile(userId);
@@ -441,7 +469,7 @@ export async function verifyBookingToken(userId: string, token: string) {
       ],
     },
     include: {
-      farmer: { select: { name: true, phone: true, email: true } },
+      farmer: { select: { id: true, name: true, phone: true, email: true } },
       slot: true,
     },
   });
@@ -454,16 +482,40 @@ export async function verifyBookingToken(userId: string, token: string) {
     };
   }
 
-  // Check in farmer as VERIFIED
+  // First-Come, First-Served Queue Check:
+  // Check if there are earlier unserved bookings (lower queueNumber) in the same slot
+  const earlierPending = await prisma.booking.findFirst({
+    where: {
+      slotId: booking.slotId,
+      queueNumber: { lt: booking.queueNumber },
+      status: { in: [BookingStatus.PENDING, BookingStatus.ACCEPTED] },
+    },
+    orderBy: { queueNumber: "asc" },
+    include: { farmer: { select: { name: true } } },
+  });
+
+  const isOutOfOrder = Boolean(earlierPending);
+  const nextInQueueToken = earlierPending?.token || booking.token;
+  const nextQueueSeqStr = earlierPending
+    ? String(earlierPending.queueNumber).padStart(3, "0")
+    : String(booking.queueNumber).padStart(3, "0");
+  const currentQueueSeqStr = String(booking.queueNumber).padStart(3, "0");
+
+  const warningMessage = earlierPending
+    ? `Queue Order Warning: First-Come, First-Served queue requires token ${earlierPending.token} (#${nextQueueSeqStr} - ${earlierPending.farmer.name}) to be served first. You are scanning #${currentQueueSeqStr} (${booking.farmer.name}). Please serve #${nextQueueSeqStr} first or confirm queue override.`
+    : null;
+
+  // Check in farmer as VERIFIED and record servedAt
   const updated = await prisma.booking.update({
     where: { id: booking.id },
     data: {
       status: BookingStatus.VERIFIED,
       verifiedAt: new Date(),
+      servedAt: new Date(),
       notes: booking.notes ? `${booking.notes} | Gate entry verified.` : "Gate entry verified.",
     },
     include: {
-      farmer: { select: { name: true, phone: true } },
+      farmer: { select: { id: true, name: true, phone: true } },
       slot: true,
     },
   });
@@ -471,6 +523,8 @@ export async function verifyBookingToken(userId: string, token: string) {
   return {
     id: updated.id,
     token: updated.token,
+    queueNumber: updated.queueNumber,
+    farmerId: updated.farmer.id,
     farmerName: updated.farmer.name,
     farmerPhone: updated.farmer.phone,
     crop: updated.crop,
@@ -479,6 +533,10 @@ export async function verifyBookingToken(userId: string, token: string) {
     slotDate: updated.slot.date,
     status: updated.status,
     verifiedAt: updated.verifiedAt,
+    servedAt: updated.servedAt,
+    isOutOfOrder,
+    nextInQueueToken,
+    warningMessage,
   };
 }
 
@@ -527,6 +585,7 @@ export async function createMandiSlot(userId: string, input: CreateSlotInput) {
     data: {
       mandiProfileId: profile.id,
       crop: input.crop,
+      allowedCrops: (input.allowedCrops as any) || null,
       date: input.date,
       startTime: input.startTime,
       endTime: input.endTime,
@@ -618,6 +677,7 @@ export async function updateMandiSlot(userId: string, slotId: string, input: Upd
     where: { id: slotId },
     data: {
       ...input,
+      allowedCrops: input.allowedCrops !== undefined ? (input.allowedCrops as any) : undefined,
       capacityPercentage: Number(capacityPct.toFixed(1)),
       availableBookings: availableB,
     },
@@ -837,3 +897,91 @@ export async function getMandiRatingMetrics(userId: string): Promise<MandiRating
     ],
   };
 }
+
+/**
+ * Updates physical yard coordinates and location marker for farmer map discovery
+ */
+export async function updateMandiLocation(userId: string, input: UpdateMandiLocationInput) {
+  const profile = await getOrCreateMandiProfile(userId);
+
+  const updated = await prisma.mandiProfile.update({
+    where: { id: profile.id },
+    data: {
+      address: input.address,
+      pincode: input.pincode,
+      latitude: input.latitude,
+      longitude: input.longitude,
+      district: input.district || profile.district,
+      state: input.state || profile.state,
+      operatingHours: input.operatingHours || profile.operatingHours,
+      closedDays: input.closedDays !== undefined ? input.closedDays : profile.closedDays,
+      closedHours: input.closedHours !== undefined ? input.closedHours : profile.closedHours,
+      isLocationSet: true,
+    },
+    include: { legalDocs: true },
+  });
+
+  return updated;
+}
+
+/**
+ * Retrieves full farmer profile details, KYC documents, and delivery record for Mandi Operator view
+ */
+export async function getFarmerDetailsForMandi(userId: string, farmerId: string): Promise<FarmerDetailsForMandi> {
+  const profile = await getOrCreateMandiProfile(userId);
+
+  const farmerUser = await prisma.user.findUnique({
+    where: { id: farmerId },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      phone: true,
+      farmerProfile: true,
+    },
+  });
+
+  if (!farmerUser) {
+    throw { status: 404, message: "Farmer not found", code: "FARMER_NOT_FOUND" };
+  }
+
+  const [totalBookingsCount, verifiedBookingsCount] = await Promise.all([
+    prisma.booking.count({
+      where: { farmerId, mandiProfileId: profile.id },
+    }),
+    prisma.booking.count({
+      where: {
+        farmerId,
+        mandiProfileId: profile.id,
+        status: { in: [BookingStatus.VERIFIED, BookingStatus.COMPLETED] },
+      },
+    }),
+  ]);
+
+  const fp = farmerUser.farmerProfile;
+
+  return {
+    id: farmerUser.id,
+    name: farmerUser.name,
+    email: farmerUser.email,
+    phone: farmerUser.phone,
+    farmerCode: fp?.farmerCode || "FAR001",
+    dob: fp?.dob,
+    address: fp?.address || fp?.addressLine1,
+    idType: fp?.idType,
+    idNumber: fp?.idNumber,
+    village: fp?.village,
+    taluka: fp?.taluka,
+    district: fp?.district,
+    state: fp?.state,
+    pincode: fp?.pincode,
+    landSizeAcres: fp?.landSizeAcres,
+    mainCrops: fp?.mainCrops || [],
+    secondaryCrops: fp?.secondaryCrops || [],
+    irrigationType: fp?.irrigationType,
+    avatarUrl: fp?.avatarUrl,
+    totalBookingsCount,
+    verifiedBookingsCount,
+  };
+}
+

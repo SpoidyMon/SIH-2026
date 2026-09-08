@@ -19,6 +19,7 @@ import {
   QrCode,
   Bell,
   Users,
+  Ticket,
 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "../../store";
 import {
@@ -236,8 +237,32 @@ export function MandiLayout({ children }: MandiLayoutProps) {
                 </span>
                 <span>Dashboard</span>
                 <span className="ml-auto text-[11px] bg-slate-200 dark:bg-neutral-800 px-1.5 py-0.5 rounded-md font-bold text-slate-700 dark:text-neutral-300">
-                  42
+                  {currentBookings.length}
                 </span>
+              </button>
+
+              {/* Bookings */}
+              <button
+                onClick={() => dispatch(setActiveNavTab("bookings"))}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition cursor-pointer text-left ${
+                  activeNavTab === "bookings"
+                    ? "bg-slate-100 dark:bg-neutral-800 text-slate-900 dark:text-[#E5E5E5] shadow-xs font-semibold"
+                    : "text-slate-500 hover:text-slate-800 dark:text-neutral-400 dark:hover:text-neutral-200 hover:bg-slate-50 dark:hover:bg-neutral-800/50"
+                }`}
+              >
+                <span className="w-5 h-5 flex items-center justify-center">
+                  <Ticket className="w-5 h-5" />
+                </span>
+                <span>Bookings</span>
+                {pendingBookingsCount > 0 ? (
+                  <span className="ml-auto text-[10px] text-amber-600 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 px-1.5 py-0.5 rounded-md font-semibold">
+                    {pendingBookingsCount} Active
+                  </span>
+                ) : (
+                  <span className="ml-auto text-[11px] bg-slate-200 dark:bg-neutral-800 px-1.5 py-0.5 rounded-md font-bold text-slate-700 dark:text-neutral-300">
+                    {currentBookings.length}
+                  </span>
+                )}
               </button>
 
               {/* Manage slots */}

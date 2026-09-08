@@ -21,11 +21,14 @@ export interface MandiState {
   previousBookings: Booking[];
   previousBookingsTotal: number;
   ratingData: MandiRatingData | null;
+  commodities: Array<{ id: string; name: string; category?: string }>;
+  selectedFarmerDetails: any | null;
+  queueAlertMessage: string | null;
   isLoading: boolean;
   isActionLoading: boolean;
   error: string | null;
   successMessage: string | null;
-  activeNavTab: "dashboard" | "slots" | "scanner" | "verification" | "farmers" | "history" | "settings" | "rating" | "bayAllocation";
+  activeNavTab: "dashboard" | "bookings" | "slots" | "scanner" | "verification" | "farmers" | "history" | "settings" | "rating" | "bayAllocation";
 }
 
 const defaultInitialStats: MandiDashboardStats = {
@@ -412,6 +415,9 @@ const initialState: MandiState = {
       },
     ],
   },
+  commodities: [],
+  selectedFarmerDetails: null,
+  queueAlertMessage: null,
   isLoading: false,
   isActionLoading: false,
   error: null,
@@ -690,6 +696,54 @@ export const fetchRatingThunk = createAsyncThunk(
   }
 );
 
+export const updateMandiLocationThunk = createAsyncThunk(
+  "mandi/updateLocation",
+  async (
+    payload: { address: string; pincode: string; latitude: number; longitude: number; operatingHours?: string; closedDays?: string[]; closedHours?: string },
+    { rejectWithValue }
+  ) => {
+    try {
+      const response = await mandiApi.updateLocation(payload);
+      if (response.success && response.data?.profile) {
+        return response.data.profile;
+      }
+      return rejectWithValue(response.message || "Failed to update location");
+    } catch (err: any) {
+      return rejectWithValue(err.response?.data?.message || "Error updating physical location");
+    }
+  }
+);
+
+export const fetchFarmerDetailsThunk = createAsyncThunk(
+  "mandi/fetchFarmerDetails",
+  async (farmerId: string, { rejectWithValue }) => {
+    try {
+      const response = await mandiApi.getFarmerDetails(farmerId);
+      if (response.success && response.data?.farmer) {
+        return response.data.farmer;
+      }
+      return rejectWithValue(response.message || "Failed to fetch farmer details");
+    } catch (err: any) {
+      return rejectWithValue(err.response?.data?.message || "Error loading farmer profile");
+    }
+  }
+);
+
+export const fetchCommoditiesThunk = createAsyncThunk(
+  "mandi/fetchCommodities",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await mandiApi.getCommodities();
+      if (response.success && response.data?.commodities) {
+        return response.data.commodities;
+      }
+      return rejectWithValue(response.message || "Failed to fetch commodities");
+    } catch (err: any) {
+      return rejectWithValue(err.response?.data?.message || "Error loading commodities list");
+    }
+  }
+);
+
 export const mandiSlice = createSlice({
   name: "mandi",
   initialState,
@@ -702,6 +756,12 @@ export const mandiSlice = createSlice({
     },
     clearMandiSuccess: (state) => {
       state.successMessage = null;
+    },
+    clearQueueAlert: (state) => {
+      state.queueAlertMessage = null;
+    },
+    setSelectedFarmerDetails: (state, action: PayloadAction<any | null>) => {
+      state.selectedFarmerDetails = action.payload;
     },
   },
   extraReducers: (builder) => {
@@ -781,6 +841,7 @@ export const mandiSlice = createSlice({
         } else {
           state.currentBookings.unshift(updated);
         }
+        state.queueAlertMessage = action.payload.warningMessage || null;
         state.successMessage = `Gate Pass Verified! Token: ${updated.token}`;
       })
       .addCase(completeBookingThunk.fulfilled, (state, action) => {
@@ -802,8 +863,30 @@ export const mandiSlice = createSlice({
     builder.addCase(fetchRatingThunk.fulfilled, (state, action) => {
       state.ratingData = action.payload;
     });
+
+    // Location
+    builder.addCase(updateMandiLocationThunk.fulfilled, (state, action) => {
+      state.profile = action.payload;
+      state.successMessage = "Physical yard location updated! Mandi is now active on the farmer app.";
+    });
+
+    // Farmer Details
+    builder.addCase(fetchFarmerDetailsThunk.fulfilled, (state, action) => {
+      state.selectedFarmerDetails = action.payload;
+    });
+
+    // Commodities
+    builder.addCase(fetchCommoditiesThunk.fulfilled, (state, action) => {
+      state.commodities = action.payload;
+    });
   },
 });
 
-export const { setActiveNavTab, clearMandiError, clearMandiSuccess } = mandiSlice.actions;
+export const {
+  setActiveNavTab,
+  clearMandiError,
+  clearMandiSuccess,
+  clearQueueAlert,
+  setSelectedFarmerDetails,
+} = mandiSlice.actions;
 export default mandiSlice.reducer;

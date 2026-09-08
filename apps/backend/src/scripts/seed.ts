@@ -11,10 +11,15 @@ async function main() {
     "mandi.new@agrimarket.gov.in",
     "admin@agrimarket.gov.in",
     "new.mandi@agrimarket.gov.in",
+    "farmer.test@agrimarket.gov.in",
   ];
 
   await prisma.user.deleteMany({
     where: { email: { in: testEmails } },
+  });
+
+  await prisma.farmerProfile.deleteMany({
+    where: { farmerCode: "FAR001" },
   });
 
   const passwordHash = await hashPassword("Password@123");
@@ -37,11 +42,20 @@ async function main() {
     data: {
       userId: approvedUser.id,
       mandiName: "Indore APMC Central Grain Yard",
+      mandiCode: "MAN001",
       apmcCode: "APMC-IND-MP-042",
       address: "Plot No. 44, Industrial Area, Bypass Highway",
+      pincode: "452010",
       district: "Indore",
       state: "Madhya Pradesh",
       operatingHours: "07:30 AM - 06:00 PM (Mon-Sat)",
+      closedDays: ["Sunday"],
+      closedHours: "01:00 PM - 02:00 PM (Lunch Break)",
+      isLocationSet: true,
+      latitude: 22.7196,
+      longitude: 75.8577,
+      topCrop: "Wheat (Sharbati) & Mustard",
+      acceptedCrops: ["Wheat (Sharbati)", "Mustard (Sarson)", "Soybean (Yellow)", "Tomato", "Onion"],
       aadhaarNumber: "5412 8901 2345",
       aadhaarVerified: true,
       approvalStatus: MandiApprovalStatus.APPROVED,
@@ -52,40 +66,114 @@ async function main() {
   });
 
   // Seed sample slots for approved mandi
-  const todayStr = new Date().toISOString().split("T")[0] || "2026-08-30";
-  await prisma.mandiSlot.createMany({
+  const todayStr = new Date().toISOString().split("T")[0] || "2026-09-08";
+  const slot1 = await prisma.mandiSlot.create({
+    data: {
+      mandiProfileId: approvedProfile.id,
+      crop: "Wheat (Sharbati)",
+      allowedCrops: [
+        { crop: "Wheat (Sharbati)", quantityQuintals: 500, isFixed: true },
+        { crop: "Tomato", quantityQuintals: 100, isFixed: true },
+        { crop: "Onion", isFixed: false },
+      ],
+      date: todayStr,
+      startTime: "08:00",
+      endTime: "11:30",
+      totalCapacityQuintals: 500,
+      bookedCapacityQuintals: 245,
+      capacityPercentage: 49.0,
+      maxFarmers: 20,
+      bookedFarmers: 6,
+      availableBookings: 14,
+      bufferMinutes: 15,
+      bufferPercentage: 10,
+      isActive: true,
+    },
+  });
+
+  await prisma.mandiSlot.create({
+    data: {
+      mandiProfileId: approvedProfile.id,
+      crop: "Mustard (Sarson)",
+      allowedCrops: [
+        { crop: "Mustard (Sarson)", quantityQuintals: 400, isFixed: true },
+        { crop: "Soybean (Yellow)", isFixed: false },
+      ],
+      date: todayStr,
+      startTime: "12:00",
+      endTime: "15:30",
+      totalCapacityQuintals: 400,
+      bookedCapacityQuintals: 160,
+      capacityPercentage: 40.0,
+      maxFarmers: 16,
+      bookedFarmers: 4,
+      availableBookings: 12,
+      bufferMinutes: 20,
+      bufferPercentage: 10,
+      isActive: true,
+    },
+  });
+
+  // Seed Test Farmer and Bookings
+  const testFarmer = await prisma.user.create({
+    data: {
+      name: "Rameshwar Dhakad",
+      email: "farmer.test@agrimarket.gov.in",
+      phone: "+919893011223",
+      passwordHash,
+      role: Role.FARMER,
+      isVerified: true,
+      farmerProfile: {
+        create: {
+          farmerCode: "FAR001",
+          dob: "1982-05-14",
+          address: "Village Sanwer, Tehsil Sanwer, Indore",
+          addressLine1: "House 24, Near Gram Panchayat",
+          village: "Sanwer",
+          taluka: "Sanwer",
+          district: "Indore",
+          state: "Madhya Pradesh",
+          pincode: "453551",
+          idType: "AADHAAR",
+          idNumber: "9123 4567 8901",
+          isProfileComplete: true,
+          landSizeAcres: 8.5,
+          mainCrops: ["Wheat", "Soybean"],
+          secondaryCrops: ["Mustard", "Gram"],
+          irrigationType: "Drip & Tube-well",
+        },
+      },
+    },
+  });
+
+  // Seed sample queue bookings for First-Come First-Served demonstration
+  await prisma.booking.createMany({
     data: [
       {
+        token: "8SEP-10AM-001",
+        queueNumber: 1,
+        farmerId: testFarmer.id,
         mandiProfileId: approvedProfile.id,
+        slotId: slot1.id,
         crop: "Wheat (Sharbati)",
-        date: todayStr,
-        startTime: "08:00",
-        endTime: "11:30",
-        totalCapacityQuintals: 500,
-        bookedCapacityQuintals: 245,
-        capacityPercentage: 49.0,
-        maxFarmers: 20,
-        bookedFarmers: 6,
-        availableBookings: 14,
-        bufferMinutes: 15,
-        bufferPercentage: 10,
-        isActive: true,
+        variety: "Sharbati Gold",
+        quantityQuintals: 45,
+        vehicleNumber: "MP-09-AB-4821",
+        qrCodeData: "https://agrovia.gov.in/verify?tkn=8SEP-10AM-001",
+        status: "PENDING",
       },
       {
+        token: "8SEP-10AM-002",
+        queueNumber: 2,
+        farmerId: testFarmer.id,
         mandiProfileId: approvedProfile.id,
-        crop: "Mustard (Sarson)",
-        date: todayStr,
-        startTime: "12:00",
-        endTime: "15:30",
-        totalCapacityQuintals: 400,
-        bookedCapacityQuintals: 160,
-        capacityPercentage: 40.0,
-        maxFarmers: 16,
-        bookedFarmers: 4,
-        availableBookings: 12,
-        bufferMinutes: 20,
-        bufferPercentage: 10,
-        isActive: true,
+        slotId: slot1.id,
+        crop: "Tomato",
+        variety: "Hybrid Red",
+        quantityQuintals: 10,
+        vehicleNumber: "MP-09-CX-1934",
+        qrCodeData: "https://agrovia.gov.in/verify?tkn=8SEP-10AM-002",
+        status: "PENDING",
       },
     ],
   });

@@ -205,11 +205,16 @@ export async function updateFarmerProfile(
 
 /**
  * Lists all approved mandis from database with slots and metrics for farmer app.
+ * Only mandis that have set their location and marked map coordinates are shown.
  */
 export async function listApprovedMandis() {
   const mandis = await prisma.mandiProfile.findMany({
     where: {
       approvalStatus: MandiApprovalStatus.APPROVED,
+      isLocationSet: true,
+      latitude: { not: null },
+      longitude: { not: null },
+      address: { not: null },
     },
     include: {
       slots: {
@@ -223,9 +228,11 @@ export async function listApprovedMandis() {
   return mandis.map((m) => ({
     id: m.id,
     name: m.mandiName || "APMC Mandi",
+    mandiCode: m.mandiCode || "MAN001",
     apmcCode: m.apmcCode,
     district: m.district || "Pimpri Chinchwad, Pune",
     address: m.address,
+    pincode: m.pincode,
     state: m.state || "Maharashtra",
     latitude: m.latitude || 18.6272,
     longitude: m.longitude || 73.8131,
@@ -238,6 +245,9 @@ export async function listApprovedMandis() {
     activeFarmersCount: m.activeFarmersCount || 120,
     isOpen: m.isOpen,
     operatingHours: m.operatingHours,
+    closedDays: m.closedDays || [],
+    closedHours: m.closedHours,
+    isLocationSet: m.isLocationSet,
     slots: m.slots,
   }));
 }
@@ -253,6 +263,7 @@ export async function listOfficialCommodities() {
 
 /**
  * Creates a gate arrival slot booking for a farmer with profile completion check.
+ * Generates token in standard sequential queue format: e.g. 4MAY-10AM-001 or 8SEP-10AM-001.
  */
 export async function createFarmerBooking(
   farmerUserId: string,
@@ -292,14 +303,34 @@ export async function createFarmerBooking(
     throw new AppError("This slot has reached maximum farmer capacity.", 400, "SLOT_CAPACITY_FULL");
   }
 
-  // 3. Generate token
-  const token = `TKN-${Math.floor(1000 + Math.random() * 9000)}`;
+  // 3. Generate token in standard format: <Day><Month>-<TimeSlot>-<SeqNum> (e.g. 4MAY-10AM-001)
+  const slotDateStr = slot.date || new Date().toISOString().split("T")[0] || "2026-09-08";
+  const [, monthNumStr, dayNumStr] = slotDateStr.split("-");
+  const monthNames = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+  const monthIdx = parseInt(monthNumStr || "09", 10) - 1;
+  const monthName = monthNames[monthIdx] || "SEP";
+  const dayStr = String(parseInt(dayNumStr || "08", 10));
+
+  const [hourStr] = (slot.startTime || "10:00").split(":");
+  const hourNum = parseInt(hourStr || "10", 10);
+  const ampm = hourNum >= 12 ? "PM" : "AM";
+  const displayHour = hourNum % 12 === 0 ? 12 : hourNum % 12;
+  const timePart = `${displayHour}${ampm}`;
+
+  const existingCount = await prisma.booking.count({
+    where: { slotId: input.slotId },
+  });
+  const queueNumber = existingCount + 1;
+  const queueSeqStr = String(queueNumber).padStart(3, "0");
+  const token = `${dayStr}${monthName}-${timePart}-${queueSeqStr}`;
+  const qrCodeData = `https://agrovia.gov.in/verify?tkn=${token}&slot=${slot.id}&farmer=${farmerUserId}`;
 
   // 4. Create booking and decrement available slot
   const [booking] = await prisma.$transaction([
     prisma.booking.create({
       data: {
         token,
+        queueNumber,
         farmerId: farmerUserId,
         mandiProfileId: input.mandiProfileId,
         slotId: input.slotId,
@@ -307,6 +338,7 @@ export async function createFarmerBooking(
         variety: input.variety,
         quantityQuintals: input.quantityQuintals,
         vehicleNumber: input.vehicleNumber,
+        qrCodeData,
         notes: input.notes,
         status: BookingStatus.ACCEPTED,
       },

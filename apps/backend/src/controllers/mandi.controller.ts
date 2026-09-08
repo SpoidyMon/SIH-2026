@@ -420,3 +420,42 @@ export async function getRatingHandler(
     next(error);
   }
 }
+
+export async function updateLocationHandler(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const userId = req.user!.userId;
+    const profile = await mandiService.updateMandiLocation(userId, req.body);
+
+    res.status(200).json({
+      success: true,
+      message: "Physical yard location coordinates updated. Mandi is now active on the farmer app.",
+      data: { profile },
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function getFarmerDetailsHandler(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const userId = req.user!.userId;
+    const { farmerId } = req.params as { farmerId: string };
+    const details = await mandiService.getFarmerDetailsForMandi(userId, farmerId);
+
+    res.status(200).json({
+      success: true,
+      data: { farmer: details },
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+

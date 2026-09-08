@@ -10,6 +10,13 @@ import {
   CheckCircle2,
   FileText,
   Save,
+  MapPin,
+  Navigation,
+  Clock,
+  AlertCircle,
+  Check,
+  Calendar,
+  ExternalLink,
 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "../../store";
 import {
@@ -18,6 +25,7 @@ import {
   submitAadhaarKycThunk,
   uploadLegalDocThunk,
   deleteLegalDocThunk,
+  updateMandiLocationThunk,
 } from "../../store/slices/mandiSlice";
 import { LegalDocType } from "../../interfaces";
 
@@ -31,6 +39,14 @@ export function MandiSettingsView() {
   const [state, setState] = useState("Madhya Pradesh");
   const [pinCode, setPinCode] = useState("452010");
   const [weighbridgeCount, setWeighbridgeCount] = useState<number>(4);
+
+  // Location & Coordinates State
+  const [latitude, setLatitude] = useState<number>(22.7196);
+  const [longitude, setLongitude] = useState<number>(75.8577);
+  const [closedDays, setClosedDays] = useState<string[]>(["Sunday"]);
+  const [closedHours, setClosedHours] = useState<string>("20:00 - 06:00");
+  const [isLocating, setIsLocating] = useState<boolean>(false);
+  const [locationStatusMsg, setLocationStatusMsg] = useState<string | null>(null);
 
   // Aadhaar Modal / Update State
   const [showAadhaarModal, setShowAadhaarModal] = useState(false);
@@ -47,13 +63,68 @@ export function MandiSettingsView() {
 
   useEffect(() => {
     if (profile) {
-      if (profile.yardAddress) setYardAddress(profile.yardAddress);
+      if (profile.yardAddress || profile.address) setYardAddress(profile.yardAddress || profile.address || "");
       if (profile.district) setDistrict(profile.district);
       if (profile.state) setState(profile.state);
-      if (profile.pinCode) setPinCode(profile.pinCode);
+      if (profile.pinCode || profile.pincode) setPinCode(profile.pinCode || profile.pincode || "");
       if (profile.weighbridgeCount) setWeighbridgeCount(profile.weighbridgeCount);
+      if (profile.latitude != null) setLatitude(profile.latitude);
+      if (profile.longitude != null) setLongitude(profile.longitude);
+      if (profile.closedDays && profile.closedDays.length > 0) setClosedDays(profile.closedDays);
+      if (profile.closedHours) setClosedHours(profile.closedHours);
     }
   }, [profile]);
+
+  const handleFetchCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      setLocationStatusMsg("Geolocation is not supported by your browser.");
+      return;
+    }
+    setIsLocating(true);
+    setLocationStatusMsg("Acquiring GPS fix from browser...");
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setLatitude(Number(pos.coords.latitude.toFixed(6)));
+        setLongitude(Number(pos.coords.longitude.toFixed(6)));
+        setIsLocating(false);
+        setLocationStatusMsg("✓ GPS coordinates acquired successfully!");
+        setTimeout(() => setLocationStatusMsg(null), 4000);
+      },
+      (err) => {
+        setIsLocating(false);
+        setLocationStatusMsg(`GPS acquisition failed: ${err.message}. Enter coordinates manually.`);
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  };
+
+  const handleSaveYardLocation = async () => {
+    setLocationStatusMsg("Saving yard coordinates and operating schedule...");
+    const res = await dispatch(
+      updateMandiLocationThunk({
+        address: yardAddress,
+        pincode: pinCode,
+        latitude,
+        longitude,
+        closedDays,
+        closedHours,
+      })
+    );
+    if (updateMandiLocationThunk.fulfilled.match(res)) {
+      setLocationStatusMsg("✓ Mandi yard location saved! Visible to farmers for booking.");
+      setTimeout(() => setLocationStatusMsg(null), 5000);
+    } else {
+      setLocationStatusMsg("Failed to save yard location. Please try again.");
+    }
+  };
+
+  const toggleClosedDay = (day: string) => {
+    if (closedDays.includes(day)) {
+      setClosedDays(closedDays.filter((d) => d !== day));
+    } else {
+      setClosedDays([...closedDays, day]);
+    }
+  };
 
   const handleSaveSettings = (e: React.FormEvent) => {
     e.preventDefault();
@@ -68,6 +139,7 @@ export function MandiSettingsView() {
         operatingCommodities: ["WHEAT", "SOYBEAN", "MUSTARD", "RICE"],
       })
     );
+    handleSaveYardLocation();
   };
 
   const handleUpdateAadhaar = (e: React.FormEvent) => {
@@ -104,33 +176,80 @@ export function MandiSettingsView() {
 
   const legalDocs = profile?.legalDocs || [];
 
+  const daysOfWeek = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+
   return (
     <div className="space-y-6 max-w-5xl mx-auto animate-fade-in pb-12">
-      {/* ═══ TITLE ═══ */}
-      <div className="border-b border-gray-200 dark:border-neutral-800 pb-3">
-        <h1 className="text-xl font-black text-black dark:text-[#E5E5E5] tracking-tight">
-          Mandi & KYC Settings
-        </h1>
-        <p className="text-xs text-gray-500 dark:text-neutral-400 mt-0.5 font-medium">
-          APMC accreditation, operator identity verification, and statutory legal licenses.
-        </p>
+      {/* ═══ TITLE & MANDI CODE BADGE ═══ */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-200 dark:border-neutral-800 pb-4">
+        <div>
+          <div className="flex items-center gap-2.5">
+            <h1 className="text-xl font-black text-black dark:text-[#E5E5E5] tracking-tight">
+              Mandi &amp; Yard Settings
+            </h1>
+            <span className="px-2.5 py-0.5 rounded-md bg-emerald-600 text-white font-mono font-black text-xs tracking-wider shadow-xs">
+              {profile?.mandiCode || "MAN001"}
+            </span>
+          </div>
+          <p className="text-xs text-gray-500 dark:text-neutral-400 mt-1 font-medium">
+            APMC accreditation, physical yard coordinate markup, and operating schedule.
+          </p>
+        </div>
+
+        {/* Visibility Status on Farmer App */}
+        <div className="flex items-center gap-2">
+          {profile?.isLocationSet ? (
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 text-xs font-bold">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+              <span>Visible on Farmer App</span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 text-amber-800 dark:text-amber-300 text-xs font-bold">
+              <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+              <span>Location Not Set • Hidden from Farmers</span>
+            </div>
+          )}
+        </div>
       </div>
 
+      {locationStatusMsg && (
+        <div className={`p-3 rounded-xl text-xs font-semibold flex items-center gap-2 border ${
+          locationStatusMsg.includes("failed") || locationStatusMsg.includes("not supported")
+            ? "bg-red-50 text-red-700 border-red-200 dark:bg-red-950/30 dark:text-red-400 dark:border-red-900"
+            : "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-900"
+        }`}>
+          <MapPin className="w-4 h-4 shrink-0" />
+          <span>{locationStatusMsg}</span>
+        </div>
+      )}
+
       <form onSubmit={handleSaveSettings} className="space-y-6">
-        {/* ═══ CARD 1: PHYSICAL YARD ADDRESS ═══ */}
-        <div className="mandi-card p-6 space-y-4">
-          <div className="flex items-center gap-2 border-b border-gray-100 dark:border-neutral-800 pb-3">
-            <Building2 className="w-4 h-4 text-[#15803D] dark:text-emerald-400" />
-            <h2 className="text-sm font-bold text-black dark:text-[#E5E5E5]">Physical Yard Address & Facility Info</h2>
+        {/* ═══ CARD 1: PHYSICAL YARD ADDRESS & INTERACTIVE MAP MARKUP ═══ */}
+        <div className="mandi-card p-6 space-y-5">
+          <div className="flex items-center justify-between border-b border-gray-100 dark:border-neutral-800 pb-3">
+            <div className="flex items-center gap-2">
+              <Building2 className="w-4 h-4 text-[#15803D] dark:text-emerald-400" />
+              <h2 className="text-sm font-bold text-black dark:text-[#E5E5E5]">Physical Yard Address &amp; Location Markup</h2>
+            </div>
+            <button
+              type="button"
+              onClick={handleFetchCurrentLocation}
+              disabled={isLocating}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition shadow-xs cursor-pointer disabled:opacity-50"
+            >
+              <Navigation className={`w-3.5 h-3.5 ${isLocating ? "animate-spin" : ""}`} />
+              <span>{isLocating ? "Acquiring GPS..." : "Fetch Current Location"}</span>
+            </button>
           </div>
 
           <div className="space-y-4 text-xs">
             <div>
-              <label className="block font-bold text-gray-700 dark:text-neutral-300 mb-1.5">Physical Yard Address</label>
+              <label className="block font-bold text-gray-700 dark:text-neutral-300 mb-1.5">Physical Yard Street Address</label>
               <textarea
                 rows={2}
                 value={yardAddress}
                 onChange={(e) => setYardAddress(e.target.value)}
+                placeholder="Complete street address of the Mandi yard entrance"
                 className="w-full px-3.5 py-2.5 bg-gray-50 dark:bg-black border border-gray-300 dark:border-neutral-800 rounded-xl text-xs font-semibold text-black dark:text-[#E5E5E5] focus:outline-none focus:border-[#5CE65C]"
               />
             </div>
@@ -167,7 +286,66 @@ export function MandiSettingsView() {
               </div>
             </div>
 
-            <div className="sm:w-1/3">
+            {/* GPS Coordinates Markup Section */}
+            <div className="pt-3 border-t border-gray-100 dark:border-neutral-800 space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <label className="block font-bold text-gray-800 dark:text-neutral-200">
+                    Yard Map Coordinates (Latitude / Longitude)
+                  </label>
+                  <p className="text-[11px] text-gray-500 dark:text-neutral-400">
+                    Required for farmers to locate the yard on the app and book slots.
+                  </p>
+                </div>
+                <div className="font-mono text-xs font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-1 rounded-lg border border-emerald-200 dark:border-emerald-800">
+                  {latitude.toFixed(4)}° N, {longitude.toFixed(4)}° E
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block font-semibold text-gray-600 dark:text-neutral-400 mb-1 text-[11px]">
+                    Latitude
+                  </label>
+                  <input
+                    type="number"
+                    step="0.0001"
+                    value={latitude}
+                    onChange={(e) => setLatitude(parseFloat(e.target.value) || 0)}
+                    className="w-full px-3.5 py-2 bg-gray-50 dark:bg-black border border-gray-300 dark:border-neutral-800 rounded-xl text-xs font-mono font-bold text-black dark:text-[#E5E5E5] focus:outline-none focus:border-[#5CE65C]"
+                  />
+                </div>
+                <div>
+                  <label className="block font-semibold text-gray-600 dark:text-neutral-400 mb-1 text-[11px]">
+                    Longitude
+                  </label>
+                  <input
+                    type="number"
+                    step="0.0001"
+                    value={longitude}
+                    onChange={(e) => setLongitude(parseFloat(e.target.value) || 0)}
+                    className="w-full px-3.5 py-2 bg-gray-50 dark:bg-black border border-gray-300 dark:border-neutral-800 rounded-xl text-xs font-mono font-bold text-black dark:text-[#E5E5E5] focus:outline-none focus:border-[#5CE65C]"
+                  />
+                </div>
+              </div>
+
+              {/* Interactive OpenStreetMap Embed */}
+              <div className="relative rounded-xl overflow-hidden border border-gray-200 dark:border-neutral-800 h-64 bg-slate-100 dark:bg-neutral-900 shadow-inner">
+                <iframe
+                  title="Mandi Yard Map"
+                  src={`https://www.openstreetmap.org/export/embed.html?bbox=${longitude - 0.01}%2C${latitude - 0.008}%2C${longitude + 0.01}%2C${latitude + 0.008}&layer=mapnik&marker=${latitude}%2C${longitude}`}
+                  className="w-full h-full border-0"
+                  loading="lazy"
+                />
+                <div className="absolute bottom-2 right-2 bg-white/90 dark:bg-black/90 backdrop-blur-sm px-2.5 py-1 rounded-lg border border-slate-200 dark:border-neutral-800 text-[10px] font-bold text-slate-700 dark:text-neutral-300 flex items-center gap-1.5 shadow-sm">
+                  <MapPin className="w-3 h-3 text-red-500" />
+                  <span>Marked Yard Entrance</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Electronic Weighbridges Count */}
+            <div className="sm:w-1/3 pt-2">
               <label className="block font-bold text-gray-700 dark:text-neutral-300 mb-1.5">Electronic Weighbridges</label>
               <input
                 type="number"
@@ -175,6 +353,71 @@ export function MandiSettingsView() {
                 onChange={(e) => setWeighbridgeCount(Number(e.target.value))}
                 className="w-full px-3.5 py-2 bg-gray-50 dark:bg-black border border-gray-300 dark:border-neutral-800 rounded-xl text-xs font-semibold text-black dark:text-[#E5E5E5] focus:outline-none focus:border-[#5CE65C]"
               />
+            </div>
+          </div>
+        </div>
+
+        {/* ═══ CARD 1.5: OPERATING SCHEDULE & CLOSED DAYS ═══ */}
+        <div className="mandi-card p-6 space-y-4">
+          <div className="flex items-center gap-2 border-b border-gray-100 dark:border-neutral-800 pb-3">
+            <Calendar className="w-4 h-4 text-[#15803D] dark:text-emerald-400" />
+            <h2 className="text-sm font-bold text-black dark:text-[#E5E5E5]">Operating Schedule &amp; Mandi Closed Timing</h2>
+          </div>
+
+          <div className="space-y-4 text-xs">
+            <div>
+              <label className="block font-bold text-gray-700 dark:text-neutral-300 mb-2">
+                Weekly Closed Days (Slots Disabled)
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {daysOfWeek.map((day) => {
+                  const isSelected = closedDays.includes(day);
+                  return (
+                    <button
+                      key={day}
+                      type="button"
+                      onClick={() => toggleClosedDay(day)}
+                      className={`px-3 py-1.5 rounded-xl font-bold text-xs transition cursor-pointer border ${
+                        isSelected
+                          ? "bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-400 border-red-300 dark:border-red-800"
+                          : "bg-gray-50 dark:bg-neutral-900 text-gray-600 dark:text-neutral-400 border-gray-200 dark:border-neutral-800 hover:bg-gray-100"
+                      }`}
+                    >
+                      {isSelected ? "✕ Closed on " : "Open: "}
+                      {day}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="sm:w-1/2">
+              <label className="block font-bold text-gray-700 dark:text-neutral-300 mb-1.5">
+                Yard Night / Closed Hours
+              </label>
+              <div className="flex items-center gap-2">
+                <Clock className="w-4 h-4 text-gray-400 dark:text-neutral-500 shrink-0" />
+                <input
+                  type="text"
+                  value={closedHours}
+                  onChange={(e) => setClosedHours(e.target.value)}
+                  placeholder="e.g. 20:00 - 06:00"
+                  className="w-full px-3.5 py-2 bg-gray-50 dark:bg-black border border-gray-300 dark:border-neutral-800 rounded-xl text-xs font-semibold text-black dark:text-[#E5E5E5] focus:outline-none focus:border-[#5CE65C]"
+                />
+              </div>
+              <p className="text-[10px] text-gray-400 mt-1">Bookings will be disallowed during these hours.</p>
+            </div>
+
+            <div className="pt-2 flex justify-end">
+              <button
+                type="button"
+                onClick={handleSaveYardLocation}
+                disabled={isActionLoading}
+                className="flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition shadow-xs cursor-pointer disabled:opacity-50"
+              >
+                <Save className="w-4 h-4" />
+                <span>Save Yard Coordinates &amp; Schedule</span>
+              </button>
             </div>
           </div>
         </div>

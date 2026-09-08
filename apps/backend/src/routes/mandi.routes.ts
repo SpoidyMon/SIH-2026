@@ -33,6 +33,17 @@ router.put(
 );
 
 router.post(
+  "/location",
+  validate(mandiSchema.updateMandiLocationSchema),
+  mandiController.updateLocationHandler
+);
+
+router.get(
+  "/farmers/:farmerId/details",
+  mandiController.getFarmerDetailsHandler
+);
+
+router.post(
   "/kyc/aadhaar",
   validate(mandiSchema.aadhaarKycSchema),
   mandiController.updateAadhaarKycHandler
