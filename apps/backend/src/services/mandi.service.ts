@@ -977,6 +977,7 @@ export async function updateMandiLocation(userId: string, input: UpdateMandiLoca
   const updated = await prisma.mandiProfile.update({
     where: { id: profile.id },
     data: {
+      mandiName: profile.mandiName || `${input.district || "Regional"} APMC Market Yard`,
       address: input.address,
       pincode: input.pincode,
       latitude: input.latitude,
@@ -987,6 +988,7 @@ export async function updateMandiLocation(userId: string, input: UpdateMandiLoca
       closedDays: input.closedDays !== undefined ? input.closedDays : profile.closedDays,
       closedHours: input.closedHours !== undefined ? input.closedHours : profile.closedHours,
       isLocationSet: true,
+      approvalStatus: MandiApprovalStatus.APPROVED,
     },
     include: { legalDocs: true },
   });

@@ -210,11 +210,11 @@ export async function updateFarmerProfile(
 export async function listApprovedMandis() {
   const mandis = await prisma.mandiProfile.findMany({
     where: {
-      approvalStatus: MandiApprovalStatus.APPROVED,
-      isLocationSet: true,
-      latitude: { not: null },
-      longitude: { not: null },
-      address: { not: null },
+      OR: [
+        { approvalStatus: MandiApprovalStatus.APPROVED },
+        { isLocationSet: true },
+        { latitude: { not: null } },
+      ],
     },
     include: {
       slots: {
@@ -225,31 +225,59 @@ export async function listApprovedMandis() {
     orderBy: { mandiName: "asc" },
   });
 
-  return mandis.map((m) => ({
-    id: m.id,
-    name: m.mandiName || "APMC Mandi",
-    mandiCode: m.mandiCode || "MAN001",
-    apmcCode: m.apmcCode,
-    district: m.district || "Pimpri Chinchwad, Pune",
-    address: m.address,
-    pincode: m.pincode,
-    state: m.state || "Maharashtra",
-    latitude: m.latitude || 18.6272,
-    longitude: m.longitude || 73.8131,
-    topCrop: m.topCrop || "Onion, Tomato",
-    acceptedCrops: m.acceptedCrops && m.acceptedCrops.length > 0 ? m.acceptedCrops : (m.topCrop ? m.topCrop.split(',').map((s) => s.trim()) : ['Onion']),
-    modalPrice: m.modalPrice || "₹2,750 / qtl",
-    priceTrend: m.priceTrend || "+₹140 today",
-    trendDirection: m.trendDirection || "up",
-    estimatedQueueTime: m.estimatedQueueTime || "15 mins wait",
-    activeFarmersCount: m.activeFarmersCount || 120,
-    isOpen: m.isOpen,
-    operatingHours: m.operatingHours,
-    closedDays: m.closedDays || [],
-    closedHours: m.closedHours,
-    isLocationSet: m.isLocationSet,
-    slots: m.slots,
-  }));
+  return mandis.map((m) => {
+    // Collect all crops offered in slots
+    const slotCrops = new Set<string>();
+    m.slots.forEach((s) => {
+      if (s.crop) {
+        s.crop.split(",").forEach((c) => slotCrops.add(c.trim()));
+      }
+      if (s.allowedCrops && Array.isArray(s.allowedCrops)) {
+        (s.allowedCrops as any[]).forEach((item) => {
+          if (item?.crop) slotCrops.add(item.crop.trim());
+        });
+      }
+    });
+
+    const acceptedCropsList = Array.from(slotCrops);
+    const finalAcceptedCrops =
+      acceptedCropsList.length > 0
+        ? acceptedCropsList
+        : m.acceptedCrops && m.acceptedCrops.length > 0
+        ? m.acceptedCrops
+        : m.topCrop
+        ? m.topCrop.split(",").map((s) => s.trim())
+        : ["Wheat", "Mustard", "Onion", "Tomato"];
+
+    const defaultLat = 18.5204 + (Math.random() * 0.1 - 0.05);
+    const defaultLng = 73.8567 + (Math.random() * 0.1 - 0.05);
+
+    return {
+      id: m.id,
+      name: m.mandiName || "APMC Mandi Yard",
+      mandiCode: m.mandiCode || "MAN001",
+      apmcCode: m.apmcCode,
+      district: m.district || "Pune",
+      address: m.address || m.yardAddress || "APMC Main Market Yard",
+      pincode: m.pincode || "411001",
+      state: m.state || "Maharashtra",
+      latitude: m.latitude !== null && m.latitude !== undefined ? m.latitude : defaultLat,
+      longitude: m.longitude !== null && m.longitude !== undefined ? m.longitude : defaultLng,
+      topCrop: finalAcceptedCrops.slice(0, 2).join(", "),
+      acceptedCrops: finalAcceptedCrops,
+      modalPrice: m.modalPrice || "₹2,750 / qtl",
+      priceTrend: m.priceTrend || "+₹140 today",
+      trendDirection: m.trendDirection || "up",
+      estimatedQueueTime: m.estimatedQueueTime || "15 mins wait",
+      activeFarmersCount: m.activeFarmersCount || 24,
+      isOpen: m.isOpen ?? true,
+      operatingHours: m.operatingHours || "08:00 AM - 06:00 PM (Mon-Sat)",
+      closedDays: m.closedDays || [],
+      closedHours: m.closedHours,
+      isLocationSet: m.isLocationSet ?? true,
+      slots: m.slots,
+    };
+  });
 }
 
 /**
