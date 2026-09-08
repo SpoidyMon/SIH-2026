@@ -22,6 +22,8 @@ export function AuthPage({ initialMode }: AuthPageProps) {
     return "LOGIN";
   });
 
+  const { otpRequiredForEmail, error } = useAppSelector((state) => state.auth);
+
   useEffect(() => {
     if (location.pathname === "/register") {
       setMode("REGISTER");
@@ -29,6 +31,14 @@ export function AuthPage({ initialMode }: AuthPageProps) {
       setMode("LOGIN");
     }
   }, [location.pathname]);
+
+  // Auto-navigate to incomplete registration wizard if login rejected due to incomplete onboarding or missing verification
+  useEffect(() => {
+    if (otpRequiredForEmail && (error?.includes("incomplete") || error?.includes("verified"))) {
+      setMode("REGISTER");
+      navigate(`/register?step=location&email=${encodeURIComponent(otpRequiredForEmail)}`);
+    }
+  }, [otpRequiredForEmail, error, navigate]);
 
   const [forgotEmail, setForgotEmail] = useState("");
   const [forgotMsg, setForgotMsg] = useState<string | null>(null);

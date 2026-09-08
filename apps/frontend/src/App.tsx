@@ -3,6 +3,8 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from "./store";
 import { checkAuthSessionThunk } from "./store/slices/authSlice";
 import { AuthPage } from "./components/auth/AuthPage";
+
+// Mandi Operator Components
 import { MandiLayout } from "./components/layout/MandiLayout";
 import { MandiDashboardView } from "./components/dashboard/MandiDashboardView";
 import { MandiSlotsView } from "./components/slots/MandiSlotsView";
@@ -13,6 +15,14 @@ import { MandiRatingView } from "./components/rating/MandiRatingView";
 import { MandiVerificationStatusView } from "./components/verification/MandiVerificationStatusView";
 import { MandiFarmersView } from "./components/farmers/MandiFarmersView";
 import { MandiBookingsView } from "./components/bookings/MandiBookingsView";
+
+// Farmer Components
+import { FarmerLayout } from "./components/layout/FarmerLayout";
+import { FarmerDashboardView } from "./components/farmers/FarmerDashboardView";
+import { FarmerMandiDiscoveryView } from "./components/farmers/FarmerMandiDiscoveryView";
+import { FarmerMandiDetailView } from "./components/farmers/FarmerMandiDetailView";
+import { FarmerBookingsView } from "./components/farmers/FarmerBookingsView";
+
 import { RefreshCw } from "lucide-react";
 
 export function App() {
@@ -33,7 +43,7 @@ export function App() {
           </div>
           <div className="flex items-center gap-2 text-xs font-semibold text-[#5A6C5F]">
             <RefreshCw className="w-3.5 h-3.5 animate-spin text-[#059669]" />
-            <span>Initializing Agrovia Mandi Cockpit...</span>
+            <span>Initializing Agrovia Mandi Setu...</span>
           </div>
         </div>
       </div>
@@ -51,7 +61,27 @@ export function App() {
     );
   }
 
-  // Authenticated Mandi Operator Desktop Cockpit Layout
+  // Role-Based Router
+  const isFarmer = user.role === "FARMER";
+
+  if (isFarmer) {
+    return (
+      <Routes>
+        <Route element={<FarmerLayout />}>
+          <Route path="/farmer/dashboard" element={<FarmerDashboardView />} />
+          <Route path="/farmer/mandis" element={<FarmerMandiDiscoveryView />} />
+          <Route path="/farmer/mandis/:mandiId" element={<FarmerMandiDetailView />} />
+          <Route path="/farmer/bookings" element={<FarmerBookingsView />} />
+          <Route path="/farmer/notifications" element={<FarmerBookingsView />} />
+          <Route path="/farmer/profile" element={<FarmerDashboardView />} />
+          <Route path="/farmer/settings" element={<FarmerDashboardView />} />
+        </Route>
+        <Route path="*" element={<Navigate to="/farmer/dashboard" replace />} />
+      </Routes>
+    );
+  }
+
+  // Mandi Operator Cockpit Router
   return (
     <Routes>
       <Route element={<MandiLayout />}>
@@ -65,7 +95,6 @@ export function App() {
         <Route path="/mandi/settings" element={<MandiSettingsView />} />
         <Route path="/mandi/rating" element={<MandiRatingView />} />
       </Route>
-      {/* Default redirect: any unknown path goes to mandi dashboard */}
       <Route path="*" element={<Navigate to="/mandi/dashboard" replace />} />
     </Routes>
   );
