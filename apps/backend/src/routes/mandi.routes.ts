@@ -147,4 +147,12 @@ router.post(
   mandiController.batchCreateSlotsHandler
 );
 
+router.post(
+  "/calendar/close-date",
+  requireApprovedMandi,
+  validate(mandiSchema.closeMandiDateSchema),
+  mandiController.closeMandiDateHandler
+);
+
 export default router;
+

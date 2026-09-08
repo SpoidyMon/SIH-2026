@@ -99,12 +99,12 @@ export const MandiSectionView = memo(function MandiSectionView() {
     };
   }, [token, userCoords]);
 
-  // Recalculate distances dynamically
+  // Recalculate distances dynamically & sort nearest 1st based on GPS
   const dynamicMandis = useMemo(() => {
     if (dbMandis.length === 0) {
       return [];
     }
-    return dbMandis.map((m) => {
+    const list = dbMandis.map((m) => {
       const distance = calculateDistanceKm(
         userCoords.latitude,
         userCoords.longitude,
@@ -116,6 +116,8 @@ export const MandiSectionView = memo(function MandiSectionView() {
         distanceKm: distance,
       };
     });
+    // Sort nearest 1st
+    return list.sort((a, b) => a.distanceKm - b.distanceKm);
   }, [dbMandis, userCoords]);
 
   const filteredMandis = useMemo(() => {

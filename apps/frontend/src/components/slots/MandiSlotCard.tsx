@@ -13,9 +13,10 @@ export const MandiSlotCard = React.memo(function MandiSlotCard({
   onEdit,
   onDelete,
 }: MandiSlotCardProps) {
-  const totalCap = slot.maxCapacityQuintals || slot.totalCapacityQuintals || 500;
-  const bookedPct = totalCap > 0
-    ? Math.round((slot.bookedCapacityQuintals / totalCap) * 100)
+  const totalCapKg = slot.totalCapacityKg || (slot.maxCapacityQuintals ? slot.maxCapacityQuintals * 100 : 50000);
+  const bookedCapKg = slot.bookedCapacityKg || (slot.bookedCapacityQuintals ? slot.bookedCapacityQuintals * 100 : 0);
+  const bookedPct = totalCapKg > 0
+    ? Math.round((bookedCapKg / totalCapKg) * 100)
     : 0;
   const maxFarmers = slot.maxFarmersLimit || slot.maxFarmers || 7;
   const currentFarmers = slot.currentFarmersBooked ?? slot.bookedFarmers ?? 0;
@@ -50,7 +51,7 @@ export const MandiSlotCard = React.memo(function MandiSlotCard({
                 key={idx}
                 className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800"
               >
-                {item.crop}: {item.isFixed ? `${item.quantityQuintals ?? 1} Qtl` : "Flexible Qty"}
+                {item.crop}: {item.quantityKg ?? ((item.quantityQuintals ?? 1) * 100)} KG {item.ratePerKg ? `@ ₹${item.ratePerKg}/kg` : ""}
               </span>
             ))}
           </div>
@@ -82,7 +83,7 @@ export const MandiSlotCard = React.memo(function MandiSlotCard({
             Intake Capacity Booked
           </span>
           <span className="font-bold text-black dark:text-[#E5E5E5]">
-            {slot.bookedCapacityQuintals} / {totalCap} Qtl ({bookedPct}%)
+            {bookedCapKg.toLocaleString("en-IN")} / {totalCapKg.toLocaleString("en-IN")} KG ({bookedPct}%)
           </span>
         </div>
         <div className="w-full bg-gray-100 dark:bg-neutral-800 h-2 rounded-full overflow-hidden">

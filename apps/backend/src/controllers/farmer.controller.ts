@@ -63,7 +63,9 @@ export async function listApprovedMandisHandler(
   next: NextFunction
 ): Promise<void> {
   try {
-    const mandis = await listApprovedMandis();
+    const lat = req.query.latitude ? parseFloat(req.query.latitude as string) : undefined;
+    const lng = req.query.longitude ? parseFloat(req.query.longitude as string) : undefined;
+    const mandis = await listApprovedMandis(lat, lng);
 
     res.status(200).json({
       success: true,
@@ -105,12 +107,12 @@ export async function createFarmerBookingHandler(
 ): Promise<void> {
   try {
     const userId = req.user!.userId;
-    const { mandiProfileId, slotId, crop, variety, quantityQuintals, vehicleNumber, notes } = req.body;
+    const { mandiProfileId, slotId, crop, variety, quantityQuintals, quantityKg, cropsList, vehicleNumber, notes } = req.body;
 
-    if (!mandiProfileId || !slotId || !crop || !quantityQuintals) {
+    if (!mandiProfileId || !slotId) {
       res.status(400).json({
         success: false,
-        message: "mandiProfileId, slotId, crop, and quantityQuintals are required fields.",
+        message: "mandiProfileId and slotId are required fields.",
         code: "INVALID_BOOKING_INPUT",
       });
       return;
@@ -121,20 +123,23 @@ export async function createFarmerBookingHandler(
       slotId,
       crop,
       variety,
-      quantityQuintals: Number(quantityQuintals),
+      quantityQuintals: quantityQuintals !== undefined ? Number(quantityQuintals) : undefined,
+      quantityKg: quantityKg !== undefined ? Number(quantityKg) : undefined,
+      cropsList,
       vehicleNumber,
       notes,
     });
 
     res.status(201).json({
       success: true,
-      message: `Slot booked successfully! Gate pass token: ${booking.token}`,
+      message: `Arrival booking request submitted to Mandi! Status: PENDING (Queue #${booking.queueNumber})`,
       data: { booking },
     });
   } catch (error) {
     next(error);
   }
 }
+
 
 /**
  * Controller to get all bookings for the authenticated farmer: GET /api/v1/farmer/bookings

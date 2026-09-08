@@ -231,12 +231,15 @@ model MandiSlot {
   mandiProfileId         String
   mandiProfile           MandiProfile @relation(fields: [mandiProfileId], references: [id], onDelete: Cascade)
   crop                   String
-  allowedCrops           Json?        // Detailed multi-crop configurations: [{ crop: string, quantityQuintals?: number, isFixed?: boolean }]
+  allowedCrops           Json?        // Multi-crop: [{ crop: string, quantityKg?: number, ratePerKg?: number, isFixed?: boolean }]
+  instructions           String?      // Gate arrival / intake instructions for farmers
   date                   String       // Format: YYYY-MM-DD
   startTime              String       // Format: HH:mm
   endTime                String       // Format: HH:mm
   totalCapacityQuintals  Float
+  totalCapacityKg        Float?       // Intake capacity in KG
   bookedCapacityQuintals Float        @default(0)
+  bookedCapacityKg       Float?       @default(0)
   capacityPercentage     Float        @default(0)
   maxFarmers             Int
   bookedFarmers          Int          @default(0)
@@ -266,12 +269,16 @@ model Booking {
   slot               MandiSlot     @relation(fields: [slotId], references: [id], onDelete: Cascade)
   crop               String
   variety            String?
+  cropsList          Json?         // Multi-crop breakdown: [{ crop: string, quantityKg: number, ratePerKg: number, estimatedAmount: number }]
   quantityQuintals   Float
+  quantityKg         Float?        // Explicit quantity in KG
   capacityPercentage Float         @default(0)
   vehicleNumber      String?
   qrCodeData         String?
   status             BookingStatus @default(PENDING)
   notes              String?
+  rejectionReason    String?       // Stored reason when rejected by Mandi operator
+  estimatedPayout    Float?        // Total estimated payout amount based on crop rates
   verifiedAt         DateTime?
   servedAt           DateTime?
   completedAt        DateTime?

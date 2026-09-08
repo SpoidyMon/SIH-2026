@@ -300,15 +300,39 @@ export const fetchPreviousBookingsThunk = createAsyncThunk(
 
 export const updateBookingStatusThunk = createAsyncThunk(
   "mandi/updateBookingStatus",
-  async ({ id, status }: { id: string; status: "ACCEPTED" | "REJECTED" | "ARRIVED" | "CANCELLED" }, { rejectWithValue }) => {
+  async (
+    payload: { id: string; status: "ACCEPTED" | "REJECTED" | "ARRIVED" | "CANCELLED"; rejectionReason?: string },
+    { rejectWithValue }
+  ) => {
     try {
-      const response = await mandiApi.updateBookingStatus(id, status);
+      const response = await mandiApi.updateBookingStatus(payload.id, {
+        status: payload.status,
+        rejectionReason: payload.rejectionReason,
+      });
       if (response.success && response.data?.booking) {
         return response.data.booking;
       }
       return rejectWithValue(response.message || "Status update failed");
     } catch (err: any) {
       return rejectWithValue(err.response?.data?.message || err.message || "Status update failed");
+    }
+  }
+);
+
+export const closeMandiDateThunk = createAsyncThunk(
+  "mandi/closeMandiDate",
+  async (payload: { date: string; reason?: string }, { dispatch, rejectWithValue }) => {
+    try {
+      const response = await mandiApi.closeMandiDate(payload);
+      if (response.success) {
+        dispatch(fetchSlotsThunk());
+        dispatch(fetchCurrentBookingsThunk());
+        dispatch(fetchDashboardStatsThunk());
+        return response.data;
+      }
+      return rejectWithValue(response.message || "Failed to mark day as closed");
+    } catch (err: any) {
+      return rejectWithValue(err.response?.data?.message || "Failed to close mandi for selected date");
     }
   }
 );

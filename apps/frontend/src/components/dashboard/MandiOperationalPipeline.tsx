@@ -17,7 +17,13 @@ export const MandiOperationalPipeline = React.memo(function MandiOperationalPipe
   profile,
 }: MandiOperationalPipelineProps) {
   // 1. Live Slots KPI Calculation
-  const arrivalSlots = slots.length > 0 ? slots.length : stats?.activeSlotsCount ?? 14;
+  const arrivalSlots =
+    stats?.metrics?.totalSlotsToday !== undefined
+      ? stats.metrics.totalSlotsToday
+      : stats?.totalSlotsToday !== undefined
+      ? stats.totalSlotsToday
+      : slots.length;
+
   const uniqueCrops = useMemo(() => {
     const crops = Array.from(new Set(slots.map((s) => s.crop).filter(Boolean)));
     return crops.length > 0 ? crops.slice(0, 2).join(" & ") : "Wheat & Mustard";
@@ -28,32 +34,42 @@ export const MandiOperationalPipeline = React.memo(function MandiOperationalPipe
   const acceptedCount = currentBookings.filter(
     (b) => b.status === "ACCEPTED" || b.status === "VERIFIED"
   ).length;
-  const totalActiveBookings = currentBookings.length > 0 ? currentBookings.length : 42;
+  const totalActiveBookings =
+    stats?.metrics?.activeBookings !== undefined
+      ? stats.metrics.activeBookings
+      : stats?.activeBookings !== undefined
+      ? stats.activeBookings
+      : pendingCount + acceptedCount;
 
   // 3. Live Yard Clearance Today Calculation
   const completedTodayList = previousBookings.filter((b) => b.status === "COMPLETED");
   const clearedCount =
-    completedTodayList.length > 0
-      ? completedTodayList.length
-      : stats?.completedCount ?? 28;
-  const weighedCount =
-    completedTodayList.length > 0
-      ? completedTodayList.length
-      : 19;
+    stats?.metrics?.completedToday !== undefined
+      ? stats.metrics.completedToday
+      : stats?.completedToday !== undefined
+      ? stats.completedToday
+      : completedTodayList.length;
+
+  const weighedCount = clearedCount;
 
   // 4. Live Net Turnover Calculation
   const calculatedPayout = completedTodayList.reduce((sum, b) => {
-    const weight = b.actualWeightQuintals || b.quantityQuintals || b.estimatedQuantityQuintals || 45;
-    const payout = b.finalPayoutAmount || weight * 2450;
-    return sum + payout;
+    if (b.estimatedPayout && b.estimatedPayout > 0) return sum + b.estimatedPayout;
+    const kg = b.quantityKg || (b.quantityQuintals ? b.quantityQuintals * 100 : 0);
+    return sum + kg * 28;
   }, 0);
 
   const turnoverLakhs =
-    calculatedPayout > 0
+    stats?.metrics?.netTurnoverLakhs !== undefined
+      ? stats.metrics.netTurnoverLakhs.toFixed(1)
+      : stats?.netTurnoverLakhs !== undefined
+      ? stats.netTurnoverLakhs.toFixed(1)
+      : calculatedPayout > 0
       ? (calculatedPayout / 100000).toFixed(1)
-      : stats?.completedTodayPayouts
-      ? (stats.completedTodayPayouts / 100000).toFixed(1)
-      : "96.7";
+      : "0.0";
+
+  const avgSettlementMins =
+    stats?.metrics?.avgSettlementMins || stats?.avgSettlementMins || 18;
 
   const mandiDisplayName = profile?.mandiName || stats?.mandiName || "APMC Market Yard";
 
@@ -131,10 +147,11 @@ export const MandiOperationalPipeline = React.memo(function MandiOperationalPipe
             ₹ {turnoverLakhs} Lakhs
           </p>
           <p className="text-[11px] text-slate-500 dark:text-neutral-400 mt-1 font-normal">
-            Avg. settlement: 18 mins
+            Avg. settlement: {avgSettlementMins} mins
           </p>
         </div>
       </div>
     </section>
   );
 });
+

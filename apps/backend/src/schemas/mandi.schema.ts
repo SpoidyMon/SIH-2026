@@ -41,11 +41,15 @@ export const createSlotSchema = z.object({
     .array(
       z.object({
         crop: z.string().min(1),
+        quantityKg: z.number().nonnegative().optional(),
         quantityQuintals: z.number().nonnegative().optional(),
+        ratePerKg: z.number().nonnegative().optional(),
+        instructions: z.string().optional(),
         isFixed: z.boolean().optional(),
       })
     )
     .optional(),
+  instructions: z.string().max(1000).optional(),
   date: z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be in YYYY-MM-DD format"),
@@ -56,8 +60,10 @@ export const createSlotSchema = z.object({
     .string()
     .regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "End time must be in HH:mm format (24h)"),
   totalCapacityQuintals: z
-    .number({ invalid_type_error: "Total capacity must be a positive number" })
-    .positive("Total capacity must be greater than 0"),
+    .number()
+    .positive("Total capacity must be greater than 0")
+    .optional(),
+  totalCapacityKg: z.number().positive().optional(),
   maxFarmers: z
     .number({ invalid_type_error: "Max farmers must be an integer" })
     .int()
@@ -83,15 +89,20 @@ export const updateSlotSchema = z.object({
     .array(
       z.object({
         crop: z.string().min(1),
+        quantityKg: z.number().nonnegative().optional(),
         quantityQuintals: z.number().nonnegative().optional(),
+        ratePerKg: z.number().nonnegative().optional(),
+        instructions: z.string().optional(),
         isFixed: z.boolean().optional(),
       })
     )
     .optional(),
+  instructions: z.string().max(1000).optional(),
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
   startTime: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/).optional(),
   endTime: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/).optional(),
   totalCapacityQuintals: z.number().positive().optional(),
+  totalCapacityKg: z.number().positive().optional(),
   maxFarmers: z.number().int().positive().optional(),
   bufferMinutes: z.number().int().min(0).max(180).optional(),
   bufferPercentage: z.number().min(0).max(100).optional(),
@@ -116,13 +127,16 @@ export const updateBookingStatusSchema = z.object({
     }),
   }),
   notes: z.string().max(500, "Notes cannot exceed 500 characters").optional(),
+  rejectionReason: z.string().max(500, "Rejection reason cannot exceed 500 characters").optional(),
 });
 
 export const verifyQrTokenSchema = z.object({
-  token: z
-    .string()
-    .min(3, "Token must be at least 3 characters")
-    .max(50, "Token is too long"),
+  token: z.string().min(1, "QR token or Booking ID is required"),
+});
+
+export const closeMandiDateSchema = z.object({
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be in YYYY-MM-DD format"),
+  reason: z.string().max(500, "Reason cannot exceed 500 characters").optional(),
 });
 
 export const completeBookingSchema = z.object({

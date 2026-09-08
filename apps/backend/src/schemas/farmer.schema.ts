@@ -44,3 +44,25 @@ export const updateFarmerProfileSchema = z.object({
   irrigationType: z.string().max(100, "Irrigation type cannot exceed 100 characters").optional(),
   farmLocation: z.string().max(255, "Farm location cannot exceed 255 characters").optional(),
 });
+
+export const createFarmerBookingSchema = z.object({
+  mandiProfileId: z.string().min(1, "Mandi ID is required"),
+  slotId: z.string().min(1, "Slot ID is required"),
+  crop: z.string().optional(),
+  variety: z.string().max(100).optional(),
+  quantityQuintals: z.number().nonnegative().optional(),
+  quantityKg: z.number().positive("Quantity must be greater than 0").optional(),
+  cropsList: z
+    .array(
+      z.object({
+        crop: z.string().min(1),
+        quantityKg: z.number().positive("Quantity in KG must be greater than 0"),
+        ratePerKg: z.number().nonnegative().optional(),
+        estimatedAmount: z.number().nonnegative().optional(),
+      })
+    )
+    .optional(),
+  vehicleNumber: z.string().max(50).optional(),
+  notes: z.string().max(500).optional(),
+});
+

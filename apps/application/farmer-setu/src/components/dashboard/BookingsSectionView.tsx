@@ -41,32 +41,43 @@ export const BookingsSectionView = memo(function BookingsSectionView() {
   const [selectedPassBooking, setSelectedPassBooking] = useState<BookingItem | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
-  const getStatusBadge = (status: BookingStatus) => {
+  const getStatusBadge = (status: BookingStatus | string) => {
     switch (status) {
+      case 'PENDING':
       case 'in_progress':
         return {
-          bg: '#FFE8C6',
-          text: '#8D4004',
-          label: t('status.in_progress'),
+          bg: '#FEF3C7',
+          text: '#B45309',
+          label: 'Awaiting Approval',
         };
+      case 'ACCEPTED':
+      case 'VERIFIED':
       case 'confirmed':
         return {
           bg: '#DCFCE7',
           text: '#15803D',
-          label: t('status.confirmed'),
+          label: 'Gate Pass Active',
         };
+      case 'COMPLETED':
       case 'completed':
         return {
           bg: '#EAECEE',
           text: '#374151',
-          label: t('status.completed'),
+          label: 'Completed',
         };
+      case 'REJECTED':
+        return {
+          bg: '#FEE2E2',
+          text: '#991B1B',
+          label: 'Rejected',
+        };
+      case 'CANCELLED':
       case 'cancelled':
       default:
         return {
           bg: '#FEE2E2',
           text: '#991B1B',
-          label: t('status.cancelled'),
+          label: 'Cancelled',
         };
     }
   };
@@ -79,34 +90,46 @@ export const BookingsSectionView = memo(function BookingsSectionView() {
       try {
         const res = await getFarmerBookingsApi(token);
         if (isMounted && res.success && res.data && res.data.bookings && res.data.bookings.length > 0) {
-          const mapped: BookingItem[] = res.data.bookings.map((b: any) => ({
-            id: b.id,
-            bookingCode: b.token || `BK-${b.id.slice(0, 4)}`,
-            token: b.token,
-            queueNumber: b.queueNumber,
-            qrCodeData: b.qrCodeData,
-            cropName: b.crop,
-            cropVariety: b.variety || 'A-Grade',
-            mandiName: b.mandiProfile?.mandiName || 'APMC Mandi',
-            mandiCode: b.mandiProfile?.mandiCode || 'MAN001',
-            gateNo: 'Gate 1 (E-Weighbridge)',
-            dateString: b.slot?.date || (b.createdAt ? b.createdAt.split('T')[0] : new Date().toISOString().split('T')[0]),
-            timeSlot: b.slot ? `${b.slot.startTime} - ${b.slot.endTime}` : '08:00 AM - 11:00 AM',
-            status:
-              b.status === 'COMPLETED'
-                ? 'completed'
-                : b.status === 'VERIFIED' || b.status === 'ARRIVED'
-                ? 'in_progress'
-                : b.status === 'CANCELLED' || b.status === 'REJECTED'
-                ? 'cancelled'
-                : 'confirmed',
-            statusLabel: b.status,
-            progressPercent: b.status === 'COMPLETED' ? 100 : b.status === 'VERIFIED' ? 65 : 25,
-            progressLabel: b.status === 'COMPLETED' ? 'Auction Settled' : b.status === 'VERIFIED' ? 'Assay in Progress' : 'Gate Pass Issued',
-            inspectorName: 'APMC Officer',
-            quantityQuintals: b.quantityQuintals || 10,
-            vehicleNumber: b.vehicleNumber,
-          }));
+          const mapped: BookingItem[] = res.data.bookings.map((b: any) => {
+            const rawStatus = b.status || 'PENDING';
+            const qtyKg = b.quantityKg ?? ((b.quantityQuintals || 0) * 100);
+
+            return {
+              id: b.id,
+              bookingCode: b.token || `BK-${b.id.slice(0, 6).toUpperCase()}`,
+              token: b.token,
+              queueNumber: b.queueNumber,
+              qrCodeData: b.qrCodeData,
+              cropName: b.crop || 'Produce',
+              cropVariety: b.variety || 'A-Grade',
+              cropsList: b.cropsList,
+              mandiName: b.mandiProfile?.mandiName || 'APMC Mandi',
+              mandiCode: b.mandiProfile?.mandiCode || 'MAN001',
+              gateNo: 'Gate Toll 01',
+              dateString: b.slot?.date || (b.createdAt ? b.createdAt.split('T')[0] : new Date().toISOString().split('T')[0]),
+              timeSlot: b.slot ? `${b.slot.startTime} - ${b.slot.endTime}` : '08:00 - 13:30',
+              status: rawStatus,
+              statusLabel: rawStatus,
+              progressPercent: rawStatus === 'COMPLETED' ? 100 : rawStatus === 'VERIFIED' ? 75 : rawStatus === 'ACCEPTED' ? 50 : 20,
+              progressLabel:
+                rawStatus === 'COMPLETED'
+                  ? 'Auction Settled'
+                  : rawStatus === 'VERIFIED'
+                  ? 'Weighbridge Weighed'
+                  : rawStatus === 'ACCEPTED'
+                  ? 'Gate Pass Verified'
+                  : rawStatus === 'REJECTED'
+                  ? 'Application Discarded'
+                  : 'Pending Review',
+              inspectorName: 'APMC Gate Officer',
+              quantityKg: qtyKg,
+              quantityQuintals: b.quantityQuintals || (qtyKg / 100),
+              rejectionReason: b.rejectionReason,
+              estimatedPayout: b.estimatedPayout,
+              finalPayoutAmount: b.finalPayoutAmount,
+              vehicleNumber: b.vehicleNumber,
+            };
+          });
           setLiveBookings(mapped);
         }
       } catch {
@@ -318,6 +341,10 @@ export const BookingsSectionView = memo(function BookingsSectionView() {
         ) : (
           paginatedBookings.map((b) => {
             const statusStyle = getStatusBadge(b.status);
+            const isPending = b.status === 'PENDING' || b.status === 'in_progress';
+            const isRejected = b.status === 'REJECTED';
+            const qtyKg = b.quantityKg ?? ((b.quantityQuintals || 0) * 100);
+
             return (
               <View key={b.id} style={styles.card}>
                 <View style={styles.cardTopRow}>
@@ -339,11 +366,39 @@ export const BookingsSectionView = memo(function BookingsSectionView() {
                 </View>
 
                 <Text style={styles.cardCropTitle}>
-                  {translateCropName(b.cropName, language)} ({b.cropVariety})
+                  {translateCropName(b.cropName, language)} {b.cropVariety ? `(${b.cropVariety})` : ''}
                 </Text>
                 <Text style={styles.cardMandiSubtitle}>
                   {translateMandiName(b.mandiName, language)} • {b.gateNo}
                 </Text>
+
+                {/* Multi-Crop Breakdown Badges */}
+                {b.cropsList && b.cropsList.length > 0 && (
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
+                    {b.cropsList.map((c, idx) => (
+                      <View key={idx} style={{ backgroundColor: '#F0FDF4', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, borderWidth: 1, borderColor: '#BBF7D0' }}>
+                        <Text style={{ fontSize: 10, fontWeight: '700', color: '#15803D' }}>
+                          {c.crop}: {c.quantityKg} KG
+                        </Text>
+                      </View>
+                    ))}
+                  </View>
+                )}
+
+                {/* Rejection Alert Banner */}
+                {isRejected && (
+                  <View style={{ backgroundColor: '#FEE2E2', borderWidth: 1, borderColor: '#FCA5A5', padding: 8, borderRadius: 8, marginBottom: 8, gap: 2 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                      <Ionicons name="alert-circle" size={14} color="#991B1B" />
+                      <Text style={{ fontSize: 11, fontWeight: '800', color: '#991B1B' }}>
+                        Application Discarded:
+                      </Text>
+                    </View>
+                    <Text style={{ fontSize: 11, color: '#B91C1C' }}>
+                      {b.rejectionReason || 'Rejected by APMC Admin.'} (Cannot reapply for this slot)
+                    </Text>
+                  </View>
+                )}
 
                 <View style={styles.cardInfoRow}>
                   <View style={styles.infoCol}>
@@ -356,18 +411,32 @@ export const BookingsSectionView = memo(function BookingsSectionView() {
                   </View>
                   <View style={styles.infoCol}>
                     <Ionicons name="cube-outline" size={13} color={ThemeColors.textSecondary} />
-                    <Text style={styles.infoColText}>{b.quantityQuintals} {t('dash.qtl')}</Text>
+                    <Text style={styles.infoColText}>{qtyKg.toLocaleString('en-IN')} KG</Text>
                   </View>
                 </View>
 
                 <View style={styles.cardFooterRow}>
                   <Text style={styles.inspectorText}>{language === 'mr' ? 'अधिकारी:' : language === 'hi' ? 'अधिकारी:' : 'Officer:'} {b.inspectorName}</Text>
-                  <Pressable
-                    onPress={() => handleShowQrPass(b)}
-                    style={({ pressed }) => [styles.passBtn, pressed && styles.pressed]}>
-                    <Ionicons name="qr-code-outline" size={14} color="#FFFFFF" />
-                    <Text style={styles.passBtnText}>QR Pass</Text>
-                  </Pressable>
+                  
+                  {isPending ? (
+                    <Pressable
+                      onPress={() => handleShowQrPass(b)}
+                      style={({ pressed }) => [styles.pendingPassBtn, pressed && styles.pressed]}>
+                      <Ionicons name="time-outline" size={14} color="#B45309" />
+                      <Text style={styles.pendingPassBtnText}>Review Status</Text>
+                    </Pressable>
+                  ) : isRejected ? (
+                    <View style={{ paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10, backgroundColor: '#FEE2E2' }}>
+                      <Text style={{ fontSize: 11, fontWeight: '700', color: '#991B1B' }}>Discarded</Text>
+                    </View>
+                  ) : (
+                    <Pressable
+                      onPress={() => handleShowQrPass(b)}
+                      style={({ pressed }) => [styles.passBtn, pressed && styles.pressed]}>
+                      <Ionicons name="qr-code-outline" size={14} color="#FFFFFF" />
+                      <Text style={styles.passBtnText}>QR Gate Pass</Text>
+                    </Pressable>
+                  )}
                 </View>
               </View>
             );
@@ -425,7 +494,7 @@ export const BookingsSectionView = memo(function BookingsSectionView() {
         }}
       />
 
-      {/* Digital QR Gate Pass Modal */}
+      {/* Digital QR Gate Pass / Pending Status Modal */}
       {selectedPassBooking ? (
         <Modal
           visible={Boolean(selectedPassBooking)}
@@ -451,47 +520,64 @@ export const BookingsSectionView = memo(function BookingsSectionView() {
               </View>
 
               <ScrollView style={{ paddingHorizontal: 16 }} showsVerticalScrollIndicator={false}>
-                {/* Queue & Token Box */}
-                <View style={styles.passTokenBox}>
-                  <View style={styles.passQueuePill}>
-                    <Text style={styles.passQueuePillText}>
-                      QUEUE #{String(selectedPassBooking.queueNumber ?? 1).padStart(3, '0')}
+                {selectedPassBooking.status === 'PENDING' || selectedPassBooking.status === 'in_progress' ? (
+                  /* Pending Notice */
+                  <View style={{ backgroundColor: '#FEF3C7', padding: 14, borderRadius: 14, borderWidth: 1, borderColor: '#FCD34D', gap: 6, marginVertical: 10 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                      <Ionicons name="time" size={20} color="#B45309" />
+                      <Text style={{ fontSize: 13, fontWeight: '800', color: '#92400E' }}>
+                        Application Pending Mandi Review
+                      </Text>
+                    </View>
+                    <Text style={{ fontSize: 11, color: '#78350F', lineHeight: 16 }}>
+                      Your slot arrival application is under review by the APMC Gate Admin. Once approved, your official Gate Pass Token & QR barcode will be unlocked here.
                     </Text>
                   </View>
-                  <Text style={styles.passTokenLabel}>GATE PASS TOKEN</Text>
-                  <Text style={styles.passTokenValue}>
-                    {selectedPassBooking.token || selectedPassBooking.bookingCode}
-                  </Text>
-                </View>
+                ) : (
+                  <>
+                    {/* Queue & Token Box */}
+                    <View style={styles.passTokenBox}>
+                      <View style={styles.passQueuePill}>
+                        <Text style={styles.passQueuePillText}>
+                          QUEUE #{String(selectedPassBooking.queueNumber ?? 1).padStart(3, '0')}
+                        </Text>
+                      </View>
+                      <Text style={styles.passTokenLabel}>GATE PASS TOKEN</Text>
+                      <Text style={styles.passTokenValue}>
+                        {selectedPassBooking.token || selectedPassBooking.bookingCode}
+                      </Text>
+                    </View>
 
-                {/* QR Code Image */}
-                <View style={styles.passQrBox}>
-                  <Image
-                    source={{
-                      uri: `https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(
-                        selectedPassBooking.token || selectedPassBooking.bookingCode
-                      )}`,
-                    }}
-                    style={styles.passQrImg}
-                    resizeMode="contain"
-                  />
-                  <Text style={styles.passQrHint}>
-                    Present this QR barcode to APMC operator gate scanner
-                  </Text>
-                </View>
+                    {/* QR Code Image */}
+                    <View style={styles.passQrBox}>
+                      <Image
+                        source={{
+                          uri: `https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(
+                            selectedPassBooking.token || selectedPassBooking.bookingCode
+                          )}`,
+                        }}
+                        style={styles.passQrImg}
+                        resizeMode="contain"
+                      />
+                      <Text style={styles.passQrHint}>
+                        Present this QR barcode to APMC operator gate scanner
+                      </Text>
+                    </View>
+                  </>
+                )}
 
                 {/* Meta details */}
                 <View style={styles.passDetailsCard}>
                   <View style={styles.passDetailRow}>
                     <Text style={styles.passDetailLabel}>Produce:</Text>
                     <Text style={styles.passDetailValue}>
-                      {translateCropName(selectedPassBooking.cropName, language)} ({selectedPassBooking.cropVariety})
+                      {translateCropName(selectedPassBooking.cropName, language)} {selectedPassBooking.cropVariety ? `(${selectedPassBooking.cropVariety})` : ''}
                     </Text>
                   </View>
                   <View style={styles.passDetailRow}>
                     <Text style={styles.passDetailLabel}>Quantity:</Text>
                     <Text style={styles.passDetailValue}>
-                      {selectedPassBooking.quantityQuintals} Qtl ({(selectedPassBooking.quantityQuintals * 100).toLocaleString('en-IN')} KG)
+                      {(selectedPassBooking.quantityKg ?? (selectedPassBooking.quantityQuintals * 100)).toLocaleString('en-IN')} KG
                     </Text>
                   </View>
                   <View style={styles.passDetailRow}>
@@ -500,14 +586,22 @@ export const BookingsSectionView = memo(function BookingsSectionView() {
                       {selectedPassBooking.dateString} • {selectedPassBooking.timeSlot}
                     </Text>
                   </View>
-                  {selectedPassBooking.vehicleNumber && (
+                  {selectedPassBooking.estimatedPayout ? (
                     <View style={styles.passDetailRow}>
-                      <Text style={styles.passDetailLabel}>Vehicle:</Text>
-                      <Text style={[styles.passDetailValue, { fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace', color: '#059669' }]}>
-                        {selectedPassBooking.vehicleNumber}
+                      <Text style={styles.passDetailLabel}>Estimated Payout:</Text>
+                      <Text style={[styles.passDetailValue, { color: '#15803D', fontWeight: '800' }]}>
+                        ₹{selectedPassBooking.estimatedPayout.toLocaleString('en-IN')}
                       </Text>
                     </View>
-                  )}
+                  ) : null}
+                  {selectedPassBooking.finalPayoutAmount ? (
+                    <View style={styles.passDetailRow}>
+                      <Text style={styles.passDetailLabel}>Final Settled Payout:</Text>
+                      <Text style={[styles.passDetailValue, { color: '#15803D', fontWeight: '900' }]}>
+                        ₹{selectedPassBooking.finalPayoutAmount.toLocaleString('en-IN')}
+                      </Text>
+                    </View>
+                  ) : null}
                 </View>
               </ScrollView>
 
@@ -720,6 +814,22 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '700',
     color: '#FFFFFF',
+  },
+  pendingPassBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FEF3C7',
+    borderWidth: 1,
+    borderColor: '#FCD34D',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 10,
+    gap: 4,
+  },
+  pendingPassBtnText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#B45309',
   },
   paginationRow: {
     flexDirection: 'row',

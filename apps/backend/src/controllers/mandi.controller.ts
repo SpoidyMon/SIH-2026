@@ -502,3 +502,23 @@ export async function getMandiFarmersHandler(
   }
 }
 
+export async function closeMandiDateHandler(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const userId = req.user!.userId;
+    const result = await mandiService.closeMandiDate(userId, req.body);
+
+    res.status(200).json({
+      success: true,
+      message: result.message,
+      data: result,
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+
