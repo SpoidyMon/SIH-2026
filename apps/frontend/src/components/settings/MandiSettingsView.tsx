@@ -242,10 +242,10 @@ export function MandiSettingsView() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-200 dark:border-neutral-800 pb-4">
         <div>
           <div className="flex items-center gap-2.5">
-            <h1 className="text-xl font-black text-black dark:text-[#E5E5E5] tracking-tight">
+            <h1 className="text-xl font-bold text-gray-900 dark:text-[#E5E5E5] tracking-tight">
               Mandi &amp; Yard Settings
             </h1>
-            <span className="px-2.5 py-0.5 rounded-md bg-emerald-600 text-white font-mono font-black text-xs tracking-wider shadow-xs">
+            <span className="px-2.5 py-0.5 rounded-md bg-emerald-600 text-white font-mono font-bold text-xs tracking-wider shadow-xs">
               {profile?.mandiCode || "MAN001"}
             </span>
           </div>

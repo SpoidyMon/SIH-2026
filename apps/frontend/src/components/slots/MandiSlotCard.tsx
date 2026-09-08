@@ -29,17 +29,17 @@ export const MandiSlotCard = React.memo(function MandiSlotCard({
     <div className="mandi-card p-5 space-y-4 flex flex-col justify-between">
       {/* Top Row: Slot ID + Status */}
       <div className="flex items-center justify-between">
-        <span className="text-[11px] font-mono font-bold px-2.5 py-0.5 rounded-full bg-gray-100 dark:bg-black text-gray-700 dark:text-neutral-300 border border-gray-200 dark:border-neutral-800">
+        <span className="text-[11px] font-mono font-semibold px-2.5 py-0.5 rounded-full bg-gray-100 dark:bg-black text-gray-700 dark:text-neutral-300 border border-gray-200 dark:border-neutral-800">
           {slot.id}
         </span>
-        <span className="text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full bg-[#5CE65C]/20 text-[#15803D] dark:text-[#5CE65C] border border-[#5CE65C]/40">
+        <span className="text-[10px] font-bold uppercase px-2.5 py-0.5 rounded-full bg-[#5CE65C]/20 text-[#15803D] dark:text-[#5CE65C] border border-[#5CE65C]/40">
           OPEN FOR BOOKING
         </span>
       </div>
 
       {/* Crop Title */}
       <div>
-        <h3 className="text-base font-black text-black dark:text-[#E5E5E5] line-clamp-1">
+        <h3 className="text-base font-bold text-gray-900 dark:text-[#E5E5E5] line-clamp-1">
           {slot.crop}
         </h3>
         {/* Multi-Crop Badges */}

@@ -71,7 +71,7 @@ export function MandiOperatingScheduleCard() {
             <Calendar className="w-4 h-4" />
           </div>
           <div>
-            <h3 className="text-sm font-black text-gray-900 dark:text-[#E5E5E5]">
+            <h3 className="text-sm font-bold text-gray-900 dark:text-[#E5E5E5]">
               Yard Operating Calendar &amp; Closed Rules
             </h3>
             <p className="text-[11px] text-gray-500 dark:text-neutral-400 font-medium">

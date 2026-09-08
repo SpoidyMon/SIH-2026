@@ -282,7 +282,7 @@ export function MandiWeeklyAvailability() {
       {/* ═══ TOP HEADER ═══ */}
       <div className="px-6 py-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-100 dark:border-neutral-800/80">
         <div>
-          <h2 className="text-base sm:text-lg font-black tracking-tight text-gray-900 dark:text-[#E5E5E5] uppercase">
+          <h2 className="text-base sm:text-lg font-bold tracking-tight text-gray-900 dark:text-[#E5E5E5] uppercase">
             AVAILABILITY
           </h2>
           <p className="text-xs sm:text-sm text-gray-500 dark:text-neutral-400 mt-0.5 font-medium">

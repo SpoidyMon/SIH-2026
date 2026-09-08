@@ -147,7 +147,7 @@ export function MandiInteractiveCalendar({
             <CalendarIcon className="w-5 h-5" />
           </div>
           <div>
-            <h2 className="text-base font-black text-gray-900 dark:text-[#E5E5E5] flex items-center gap-2">
+            <h2 className="text-base font-bold text-gray-900 dark:text-[#E5E5E5] flex items-center gap-2">
               <span>{monthName} {year}</span>
             </h2>
             <p className="text-[11px] text-gray-500 dark:text-neutral-400 font-medium">
@@ -160,7 +160,7 @@ export function MandiInteractiveCalendar({
           <button
             type="button"
             onClick={handleToday}
-            className="px-3 py-1.5 bg-gray-50 hover:bg-gray-100 dark:bg-neutral-900 dark:hover:bg-neutral-800 text-gray-700 dark:text-neutral-300 border border-gray-200 dark:border-neutral-700 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-2xs"
+            className="px-3 py-1.5 bg-gray-50 hover:bg-gray-100 dark:bg-neutral-900 dark:hover:bg-neutral-800 text-gray-700 dark:text-neutral-300 border border-gray-200 dark:border-neutral-700 rounded-xl text-xs font-semibold transition-all cursor-pointer shadow-2xs"
           >
             Today
           </button>
@@ -186,7 +186,7 @@ export function MandiInteractiveCalendar({
       </div>
 
       {/* Days of Week Header */}
-      <div className="grid grid-cols-7 border-b border-gray-100 dark:border-neutral-800/80 bg-gray-50/70 dark:bg-neutral-900/50 text-center py-2.5 text-[11px] font-extrabold uppercase tracking-wider text-gray-500 dark:text-neutral-400">
+      <div className="grid grid-cols-7 border-b border-gray-100 dark:border-neutral-800/80 bg-gray-50/70 dark:bg-neutral-900/50 text-center py-2.5 text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-neutral-400">
         <span>Sun</span>
         <span>Mon</span>
         <span>Tue</span>
@@ -222,7 +222,7 @@ export function MandiInteractiveCalendar({
               {/* Day Number and Status Badge */}
               <div className="flex items-center justify-between gap-1">
                 <span
-                  className={`text-xs font-black rounded-md w-6 h-6 flex items-center justify-center ${
+                  className={`text-xs font-bold rounded-md w-6 h-6 flex items-center justify-center ${
                     isSelected
                       ? "bg-emerald-600 text-white shadow-xs"
                       : cell.isCurrentMonth
@@ -238,7 +238,7 @@ export function MandiInteractiveCalendar({
                     Closed
                   </span>
                 ) : hasSlots ? (
-                  <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
                     {cell.slots.length} {cell.slots.length === 1 ? "Slot" : "Slots"}
                   </span>
                 ) : null}

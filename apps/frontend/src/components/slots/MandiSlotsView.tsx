@@ -94,7 +94,7 @@ export function MandiSlotsView() {
       {/* ═══ HEADER & VIEW SWITCHER ═══ */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-gray-200 dark:border-neutral-800">
         <div>
-          <h1 className="text-xl font-black text-black dark:text-[#E5E5E5] tracking-tight">
+          <h1 className="text-xl font-bold text-gray-900 dark:text-[#E5E5E5] tracking-tight">
             Manage Mandi Arrival Slots &amp; Availability
           </h1>
           <p className="text-xs text-gray-500 dark:text-neutral-400 mt-0.5 font-medium">
@@ -177,7 +177,7 @@ export function MandiSlotsView() {
       <section className="space-y-5 pt-2">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-2 border-b border-gray-200 dark:border-neutral-800">
           <div>
-            <h2 className="text-base sm:text-lg font-black text-black dark:text-[#E5E5E5] tracking-tight flex items-center gap-2">
+            <h2 className="text-base sm:text-lg font-bold text-gray-900 dark:text-[#E5E5E5] tracking-tight flex items-center gap-2">
               <span>Live Arrival Windows &amp; Capacity</span>
               {dateFilter && (
                 <span className="text-xs px-2.5 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 font-bold font-mono">

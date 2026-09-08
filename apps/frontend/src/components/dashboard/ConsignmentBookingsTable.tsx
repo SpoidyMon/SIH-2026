@@ -24,7 +24,7 @@ interface ConsignmentBookingsTableProps {
   onDefaultSlots: () => void;
 }
 
-export const ConsignmentBookingsTable: React.FC<ConsignmentBookingsTableProps> = ({
+export const ConsignmentBookingsTable = React.memo(function ConsignmentBookingsTable({
   currentBookings,
   previousBookings,
   isActionLoading,
@@ -36,7 +36,7 @@ export const ConsignmentBookingsTable: React.FC<ConsignmentBookingsTableProps> =
   onViewDetails,
   onOpenVerifyModal,
   onDefaultSlots,
-}) => {
+}: ConsignmentBookingsTableProps) {
   // Tab state kept close to the table so the top pipeline doesn't re-render!
   const [activeTab, setActiveTab] = useState<"current" | "previous">("current");
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
@@ -164,9 +164,9 @@ export const ConsignmentBookingsTable: React.FC<ConsignmentBookingsTableProps> =
       </div>
 
       {/* ═══ Consignment Manifest Card ═══ */}
-      <div className="bg-white dark:bg-[#121212] rounded-2xl shadow-subtle border border-slate-200/80 dark:border-neutral-800 overflow-hidden min-h-[430px] flex flex-col justify-between">
+      <div className="bg-white dark:bg-[#121212] rounded-2xl shadow-subtle border border-slate-200/80 dark:border-neutral-800 overflow-hidden min-h-[520px] flex flex-col justify-between">
         {/* Dynamic Table Header Bar: Differs between Current Bookings & Previous Logs */}
-        <div className="px-6 py-5 flex items-center justify-between border-b border-slate-100 dark:border-neutral-800">
+        <div className="px-6 py-5 flex items-center justify-between border-b border-slate-100 dark:border-neutral-800 shrink-0">
           <div>
             <h2 className="text-lg font-bold text-slate-900 dark:text-[#E5E5E5] tracking-tight">
               {activeTab === "current"
@@ -184,8 +184,8 @@ export const ConsignmentBookingsTable: React.FC<ConsignmentBookingsTableProps> =
           </div>
         </div>
 
-        {/* Table Container */}
-        <div className="overflow-x-auto flex-1">
+        {/* Table Container with fixed minimum height to prevent any layout shift on tab toggle */}
+        <div className="overflow-x-auto flex-1 flex flex-col min-h-[380px]">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="border-b border-slate-200/70 dark:border-neutral-800 bg-slate-50/50 dark:bg-neutral-900/60 text-[11px] font-semibold text-slate-500 dark:text-neutral-400 uppercase tracking-wider">
@@ -201,7 +201,7 @@ export const ConsignmentBookingsTable: React.FC<ConsignmentBookingsTableProps> =
             <tbody className="divide-y divide-slate-100 dark:divide-neutral-800 text-xs">
               {displayedBookings.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="text-center py-12 text-slate-400 dark:text-neutral-500">
+                  <td colSpan={7} className="text-center py-28 text-slate-400 dark:text-neutral-500 font-medium">
                     No bookings found matching current filters.
                   </td>
                 </tr>
@@ -312,7 +312,7 @@ export const ConsignmentBookingsTable: React.FC<ConsignmentBookingsTableProps> =
         </div>
 
         {/* Table Pagination Footer */}
-        <div className="px-6 py-4 border-t border-slate-100 dark:border-neutral-800 flex items-center justify-between text-xs text-slate-500 dark:text-neutral-400 bg-white dark:bg-[#121212]">
+        <div className="px-6 py-4 border-t border-slate-100 dark:border-neutral-800 flex items-center justify-between text-xs text-slate-500 dark:text-neutral-400 bg-white dark:bg-[#121212] shrink-0">
           <div>
             Showing {displayedBookings.length} of {displayedBookings.length}{" "}
             {activeTab === "current" ? "active" : "previous"} records
@@ -332,4 +332,4 @@ export const ConsignmentBookingsTable: React.FC<ConsignmentBookingsTableProps> =
       </div>
     </div>
   );
-};
+});

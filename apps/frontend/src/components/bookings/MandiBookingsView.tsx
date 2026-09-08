@@ -171,7 +171,7 @@ export function MandiBookingsView() {
     <div className="space-y-5 max-w-7xl mx-auto animate-fade-in font-sans pb-10">
       {/* ═══ 1. HEADER ═══ */}
       <div className="border-b border-slate-200 dark:border-neutral-800 pb-3">
-        <h1 className="text-xl font-black text-slate-900 dark:text-[#E5E5E5] tracking-tight">
+        <h1 className="text-xl font-bold text-slate-900 dark:text-[#E5E5E5] tracking-tight">
           Bookings
         </h1>
         <p className="text-xs text-slate-500 dark:text-neutral-400 mt-0.5 font-medium">
@@ -304,8 +304,8 @@ export function MandiBookingsView() {
                 {/* Left: Slot & Queue Indicator */}
                 <div className="flex items-start sm:items-center gap-4">
                   <div className="w-16 h-16 rounded-xl bg-slate-100 dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 flex flex-col items-center justify-center shrink-0">
-                    <span className="text-[10px] font-extrabold uppercase text-slate-400">SLOT</span>
-                    <span className="text-base font-black text-slate-900 dark:text-[#E5E5E5] font-mono leading-none mt-0.5">
+                    <span className="text-[10px] font-bold uppercase text-slate-400">SLOT</span>
+                    <span className="text-base font-bold text-slate-900 dark:text-[#E5E5E5] font-mono leading-none mt-0.5">
                       {queueNumStr}
                     </span>
                     {isFirstInQueue && (
@@ -318,13 +318,13 @@ export function MandiBookingsView() {
                   {/* Main Info */}
                   <div className="space-y-1.5">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="font-mono text-xs font-black bg-slate-100 dark:bg-neutral-800 px-2 py-0.5 rounded-md text-slate-900 dark:text-[#E5E5E5] border border-slate-200 dark:border-neutral-700">
+                      <span className="font-mono text-xs font-semibold bg-slate-100 dark:bg-neutral-800 px-2 py-0.5 rounded-md text-slate-900 dark:text-[#E5E5E5] border border-slate-200 dark:border-neutral-700">
                         {b.token}
                       </span>
                       <span className="font-bold text-sm text-slate-900 dark:text-[#E5E5E5]">
                         {b.crop} {b.variety ? `(${b.variety})` : ""}
                       </span>
-                      <span className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full border ${badge.bg}`}>
+                      <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border ${badge.bg}`}>
                         {badge.label}
                       </span>
                     </div>
@@ -483,7 +483,7 @@ export function MandiBookingsView() {
 
             <div className="p-6 text-center space-y-4">
               {/* Token Code */}
-              <div className="inline-block px-4 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800 font-mono font-black text-lg text-emerald-800 dark:text-emerald-300 tracking-wider">
+              <div className="inline-block px-4 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800 font-mono font-bold text-lg text-emerald-800 dark:text-emerald-300 tracking-wider">
                 {selectedPassBooking.token}
               </div>
 
