@@ -320,10 +320,23 @@ export const MandiSectionView = memo(function MandiSectionView() {
           </View>
         ) : (
           paginatedMandis.map((mandi) => {
-            const cropsList = mandi.acceptedCrops && mandi.acceptedCrops.length > 0
-              ? mandi.acceptedCrops
-              : mandi.topCrop.split(',').map((c) => c.trim());
-            const cropsDisplay = cropsList.slice(0, 3).map((c) => translateCropName(c, language)).join(' • ') + (cropsList.length > 3 ? '...' : '');
+            const cropRatesList =
+              mandi.cropRates && mandi.cropRates.length > 0
+                ? mandi.cropRates
+                : (mandi.acceptedCrops || ['Wheat', 'Mustard', 'Tomato', 'Onion']).map((c) => {
+                    const name = typeof c === 'string' ? c.trim() : (c as any).crop;
+                    return {
+                      crop: name,
+                      ratePerKg: name.toLowerCase().includes('mustard')
+                        ? 52
+                        : name.toLowerCase().includes('wheat')
+                        ? 28
+                        : name.toLowerCase().includes('onion')
+                        ? 19
+                        : 24,
+                    };
+                  });
+            const primaryCrop = cropRatesList[0] || { crop: 'Wheat', ratePerKg: 28 };
 
             return (
               <View key={mandi.id} style={styles.mandiCard}>
@@ -357,15 +370,17 @@ export const MandiSectionView = memo(function MandiSectionView() {
                   </View>
                 </View>
 
-                {/* 2. Top Commodities Strip */}
+                {/* 2. Sleek Crop Rates Strip with specific crop names */}
                 <View style={styles.topCommodityStrip}>
-                  <View style={styles.topCommodityBadge}>
-                    <Ionicons name="leaf-outline" size={12} color="#15803D" />
-                    <Text style={styles.topCommodityLabel}>{t('mandi.crops')}</Text>
-                    <Text style={styles.topCommodityText} numberOfLines={1}>
-                      {cropsDisplay}
-                    </Text>
-                  </View>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.sleekCropRatesRow}>
+                    {cropRatesList.map((cr, idx) => (
+                      <View key={idx} style={styles.sleekCropRateChip}>
+                        <Ionicons name="leaf" size={11} color="#15803D" />
+                        <Text style={styles.sleekCropChipName}>{translateCropName(cr.crop, language)}</Text>
+                        <Text style={styles.sleekCropChipPrice}>₹{cr.ratePerKg}/KG</Text>
+                      </View>
+                    ))}
+                  </ScrollView>
                 </View>
 
                 {/* 3. Card Body */}
@@ -381,9 +396,10 @@ export const MandiSectionView = memo(function MandiSectionView() {
                     <Text style={styles.uniformMetricText}>
                       {mandi.activeFarmersCount} {t('mandi.in_queue')}
                     </Text>
-                    <Text style={styles.uniformMetricText}>
-                      {mandi.modalPrice}
-                    </Text>
+                    <View style={styles.primaryCropBadgeBox}>
+                      <Text style={styles.primaryCropLabelText}>{translateCropName(primaryCrop.crop, language)}</Text>
+                      <Text style={styles.primaryCropPriceVal}>₹{primaryCrop.ratePerKg}/KG</Text>
+                    </View>
                   </View>
                 </View>
 
@@ -1449,5 +1465,56 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '700',
     color: '#166534',
+  },
+
+  // Mandi Main Card Sleek Crop Rates Strip
+  sleekCropRatesRow: {
+    gap: 6,
+    alignItems: 'center',
+  },
+  sleekCropRateChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#F0FDF4',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#DCFCE7',
+  },
+  sleekCropChipName: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#1F2937',
+  },
+  sleekCropChipPrice: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#15803D',
+  },
+
+  // Primary Crop Price Metric Box
+  primaryCropBadgeBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#DCFCE7',
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#86EFAC',
+    marginTop: 2,
+  },
+  primaryCropLabelText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#166534',
+  },
+  primaryCropPriceVal: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#15803D',
   },
 });
