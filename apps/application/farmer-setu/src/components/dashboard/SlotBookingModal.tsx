@@ -449,10 +449,10 @@ export const SlotBookingModal = memo(function SlotBookingModal({
                   <Ionicons name="people" size={18} color="#059669" />
                   <View style={styles.queueInfoTextCol}>
                     <Text style={styles.queueInfoTitle}>
-                      Expected Queue Number: <Text style={styles.queueInfoBold}>#{expectedQueueNumber}</Text>
+                      Expected Queue Position: <Text style={styles.queueInfoBold}>#{expectedQueueNumber}</Text>
                     </Text>
                     <Text style={styles.queueInfoSub}>
-                      {selectedSlot ? `${selectedSlot.currentFarmersBooked ?? selectedSlot.bookedFarmers ?? 0} farmers booked so far` : 'Open slot'}
+                      Queue Farmers: {selectedSlot?.bookedFarmers || 0} / {selectedSlot?.maxFarmers || 20} • Expected Wait: {(selectedSlot?.bookedFarmers || 0) === 0 ? 0 : Math.min((selectedSlot?.bookedFarmers || 0) * 6, 45)} mins
                     </Text>
                   </View>
                 </View>

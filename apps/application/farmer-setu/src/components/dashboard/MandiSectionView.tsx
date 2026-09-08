@@ -508,6 +508,28 @@ export const MandiSectionView = memo(function MandiSectionView() {
               </View>
 
               <ScrollView style={styles.infoScroll} showsVerticalScrollIndicator={false}>
+                {/* Mandi Operator & Contact Details Card */}
+                <View style={styles.infoSection}>
+                  <Text style={styles.infoSectionTitle}>Mandi Yard Admin &amp; Contact Info</Text>
+                  <View style={styles.operatorContactCard}>
+                    <View style={styles.operatorRow}>
+                      <Ionicons name="person-circle" size={24} color="#15803D" />
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.operatorNameText}>{infoModalMandi.operatorName || 'Rupesh Sharma (Yard Admin)'}</Text>
+                        <Text style={styles.operatorRoleText}>Authorized APMC Mandi Operator</Text>
+                      </View>
+                    </View>
+                    <View style={styles.operatorDetailRow}>
+                      <Ionicons name="call" size={14} color="#059669" />
+                      <Text style={styles.operatorDetailText}>{infoModalMandi.contactPhone || '+91 98765 43210'}</Text>
+                    </View>
+                    <View style={styles.operatorDetailRow}>
+                      <Ionicons name="mail" size={14} color="#059669" />
+                      <Text style={styles.operatorDetailText}>{infoModalMandi.contactEmail || 'operator@apmc.gov.in'}</Text>
+                    </View>
+                  </View>
+                </View>
+
                 {/* Address & Hours */}
                 <View style={styles.infoSection}>
                   <Text style={styles.infoSectionTitle}>{t('mandi.modal_title')}</Text>
@@ -515,36 +537,88 @@ export const MandiSectionView = memo(function MandiSectionView() {
                   <Text style={styles.infoTimingText}>{t('mandi.hours')} {infoModalMandi.operatingHours || '05:30 AM - 07:00 PM (Mon - Sat)'}</Text>
                 </View>
 
-                {/* Accepted Crops & Modal Rates */}
+                {/* Accepted Crops & Individual Prices per KG */}
                 <View style={styles.infoSection}>
-                  <Text style={styles.infoSectionTitle}>{t('mandi.accepted_commodities')}</Text>
-                  <View style={styles.cropTagsGrid}>
-                    {(infoModalMandi.acceptedCrops || infoModalMandi.topCrop.split(',')).map((crop, idx) => (
-                      <View key={idx} style={styles.cropTagPill}>
-                        <Ionicons name="leaf" size={11} color="#15803D" />
-                        <Text style={styles.cropTagPillText}>{translateCropName(crop.trim(), language)}</Text>
+                  <Text style={styles.infoSectionTitle}>Crops Accepted &amp; Daily Rate (per KG)</Text>
+                  <View style={styles.cropRatesGrid}>
+                    {(
+                      infoModalMandi.cropRates && infoModalMandi.cropRates.length > 0
+                        ? infoModalMandi.cropRates
+                        : (infoModalMandi.acceptedCrops || ['Wheat', 'Mustard', 'Onion', 'Tomato']).map((c) => ({
+                            crop: c.trim(),
+                            ratePerKg: c.trim() === 'Mustard' ? 52 : c.trim() === 'Wheat' ? 28 : c.trim() === 'Onion' ? 19 : 24,
+                            availableKg: 10000,
+                          }))
+                    ).map((cr, idx) => (
+                      <View key={idx} style={styles.cropRateCard}>
+                        <View style={styles.cropRateHeader}>
+                          <Ionicons name="leaf" size={14} color="#15803D" />
+                          <Text style={styles.cropRateName}>{translateCropName(cr.crop, language)}</Text>
+                        </View>
+                        <Text style={styles.cropRatePrice}>₹{cr.ratePerKg} / KG</Text>
+                        <Text style={styles.cropRateCapacity}>Requirement: {cr.availableKg.toLocaleString()} KG</Text>
                       </View>
                     ))}
                   </View>
-                  <View style={styles.rateHighlightBox}>
-                    <Text style={styles.rateHighlightLabel}>{t('mandi.daily_modal')}</Text>
-                    <Text style={styles.rateHighlightValue}>{infoModalMandi.modalPrice}</Text>
-                  </View>
                 </View>
 
-                {/* Yard Traffic & Slots */}
+                {/* Configured Slots & Queue Details */}
                 <View style={styles.infoSection}>
-                  <Text style={styles.infoSectionTitle}>{t('mandi.arrival_capacity')}</Text>
-                  <View style={styles.metricsRow}>
-                    <View style={styles.metricBox}>
-                      <Text style={styles.metricBoxNum}>{infoModalMandi.activeFarmersCount}</Text>
-                      <Text style={styles.metricBoxLabel}>{t('mandi.farmers_queue')}</Text>
+                  <Text style={styles.infoSectionTitle}>Available Intake Slots &amp; Live Queue</Text>
+                  {infoModalMandi.slots && infoModalMandi.slots.length > 0 ? (
+                    infoModalMandi.slots.map((slot, sIdx) => {
+                      const booked = slot.bookedFarmers || 0;
+                      const maxF = slot.maxFarmers || 20;
+                      const waitMins = booked === 0 ? 0 : Math.min(booked * 6, 45);
+
+                      return (
+                        <View key={sIdx} style={styles.slotDetailBox}>
+                          <View style={styles.slotHeaderRow}>
+                            <Ionicons name="time-outline" size={16} color="#059669" />
+                            <Text style={styles.slotTitleText}>
+                              Slot {sIdx + 1}: {slot.startTime} - {slot.endTime} ({slot.date})
+                            </Text>
+                          </View>
+
+                          <View style={styles.slotMetricsGrid}>
+                            <View style={styles.slotMetricItem}>
+                              <Text style={styles.slotMetricLabel}>Queue Farmers</Text>
+                              <Text style={styles.slotMetricVal}>{booked} / {maxF}</Text>
+                            </View>
+                            <View style={styles.slotMetricItem}>
+                              <Text style={styles.slotMetricLabel}>Expected Wait</Text>
+                              <Text style={styles.slotMetricVal}>{waitMins} mins</Text>
+                            </View>
+                            <View style={styles.slotMetricItem}>
+                              <Text style={styles.slotMetricLabel}>Intake Capacity</Text>
+                              <Text style={styles.slotMetricVal}>{(slot.totalCapacityKg || 10000).toLocaleString()} KG</Text>
+                            </View>
+                          </View>
+                        </View>
+                      );
+                    })
+                  ) : (
+                    <View style={styles.slotDetailBox}>
+                      <View style={styles.slotHeaderRow}>
+                        <Ionicons name="time-outline" size={16} color="#059669" />
+                        <Text style={styles.slotTitleText}>Slot 1: 09:00 AM - 01:30 PM (Tomorrow)</Text>
+                      </View>
+                      <View style={styles.slotMetricsGrid}>
+                        <View style={styles.slotMetricItem}>
+                          <Text style={styles.slotMetricLabel}>Queue Farmers</Text>
+                          <Text style={styles.slotMetricVal}>0 / 20</Text>
+                        </View>
+                        <View style={styles.slotMetricItem}>
+                          <Text style={styles.slotMetricLabel}>Expected Wait</Text>
+                          <Text style={styles.slotMetricVal}>0 mins</Text>
+                        </View>
+                        <View style={styles.slotMetricItem}>
+                          <Text style={styles.slotMetricLabel}>Intake Capacity</Text>
+                          <Text style={styles.slotMetricVal}>10,000 KG</Text>
+                        </View>
+                      </View>
                     </View>
-                    <View style={styles.metricBox}>
-                      <Text style={styles.metricBoxNum}>{infoModalMandi.estimatedQueueTime}</Text>
-                      <Text style={styles.metricBoxLabel}>{t('mandi.est_wait')}</Text>
-                    </View>
-                  </View>
+                  )}
                 </View>
               </ScrollView>
 
@@ -1132,5 +1206,122 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 13,
     fontWeight: '800',
+  },
+
+  // Operator Contact Card Styles
+  operatorContactCard: {
+    backgroundColor: '#F0FDF4',
+    borderRadius: 14,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#BBF7D0',
+    gap: 6,
+  },
+  operatorRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 4,
+  },
+  operatorNameText: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#14532D',
+  },
+  operatorRoleText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#166534',
+  },
+  operatorDetailRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  operatorDetailText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#047857',
+  },
+
+  // Per-Crop Rates Grid Styles
+  cropRatesGrid: {
+    gap: 8,
+  },
+  cropRateCard: {
+    backgroundColor: '#F9FAFB',
+    borderRadius: 12,
+    padding: 10,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  cropRateHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  cropRateName: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#1F2937',
+  },
+  cropRatePrice: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#15803D',
+  },
+  cropRateCapacity: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#6B7280',
+  },
+
+  // Slot Detail Box Styles
+  slotDetailBox: {
+    backgroundColor: '#F8FAFC',
+    borderRadius: 14,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    marginBottom: 8,
+    gap: 8,
+  },
+  slotHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  slotTitleText: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#0F172A',
+  },
+  slotMetricsGrid: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 10,
+    padding: 8,
+    borderWidth: 1,
+    borderColor: '#F1F5F9',
+  },
+  slotMetricItem: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  slotMetricLabel: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: '#64748B',
+    textTransform: 'uppercase',
+  },
+  slotMetricVal: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#059669',
+    marginTop: 2,
   },
 });

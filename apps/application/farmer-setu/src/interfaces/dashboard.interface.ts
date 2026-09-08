@@ -86,6 +86,9 @@ export interface MandiItem {
   address?: string;
   pincode?: string;
   contactPhone?: string;
+  contactEmail?: string;
+  operatorName?: string;
+  cropRates?: Array<{ crop: string; ratePerKg: number; availableKg: number }>;
   slots?: MandiSlotData[];
 }
 

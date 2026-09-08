@@ -234,6 +234,9 @@ export async function listApprovedMandis(userLat?: number, userLng?: number) {
       ],
     },
     include: {
+      user: {
+        select: { name: true, email: true, phone: true },
+      },
       slots: {
         where: { isActive: true },
         orderBy: [{ date: "asc" }, { startTime: "asc" }],
@@ -341,6 +344,9 @@ export async function listApprovedMandis(userLat?: number, userLng?: number) {
       trendDirection: m.trendDirection || "up",
       estimatedQueueTime: dynamicQueueTime,
       activeFarmersCount: totalActiveFarmers,
+      operatorName: m.user?.name || "Rupesh Sharma (Yard Admin)",
+      contactPhone: m.user?.phone || "+91 98765 43210",
+      contactEmail: m.user?.email || "operator@apmc.gov.in",
       isOpen: m.isOpen ?? true,
       operatingHours: m.operatingHours || "08:00 AM - 06:00 PM (Mon-Sat)",
       closedDays: m.closedDays || [],
