@@ -41,6 +41,18 @@ export interface AgentResponsePayload {
 /**
  * Sends text prompt to AI assistant endpoint.
  */
+export async function sendTextMessageApi(
+  token: string,
+  message: string,
+  conversationId?: string,
+  language?: string
+) {
+  return requestApi<AgentResponsePayload>('/ai/message', {
+    method: 'POST',
+    body: JSON.stringify({ message, conversationId, language }),
+  });
+}
+
 export async function sendAiTextMessage(params: {
   conversationId?: string;
   message: string;
@@ -57,21 +69,17 @@ export async function sendAiTextMessage(params: {
 /**
  * Sends audio recording blob/URI to AI voice endpoint.
  */
-export async function sendAiVoiceMessage(params: {
-  audioBlob: Blob | File;
-  conversationId?: string;
-  languageHint?: string;
-  confirmed?: boolean;
-  idempotencyKey?: string;
-}) {
-  const token = await getStorageItem(AUTH_TOKEN_KEY);
+export async function sendVoiceAudioApi(
+  token: string,
+  audioBlob: Blob | File,
+  conversationId?: string,
+  languageHint?: string
+) {
   const formData = new FormData();
 
-  formData.append('audio', params.audioBlob, 'farmer_voice.wav');
-  if (params.conversationId) formData.append('conversationId', params.conversationId);
-  if (params.languageHint) formData.append('languageHint', params.languageHint);
-  if (params.confirmed !== undefined) formData.append('confirmed', String(params.confirmed));
-  if (params.idempotencyKey) formData.append('idempotencyKey', params.idempotencyKey);
+  formData.append('audio', audioBlob, 'farmer_voice.webm');
+  if (conversationId) formData.append('conversationId', conversationId);
+  if (languageHint) formData.append('languageHint', languageHint);
 
   const url = `${API_BASE_URL}/ai/voice`;
   const response = await fetch(url, {
@@ -93,4 +101,14 @@ export async function sendAiVoiceMessage(params: {
   }
 
   return resData;
+}
+
+export async function sendAiVoiceMessage(params: {
+  audioBlob: Blob | File;
+  conversationId?: string;
+  languageHint?: string;
+  confirmed?: boolean;
+  idempotencyKey?: string;
+}) {
+  return sendVoiceAudioApi('', params.audioBlob, params.conversationId, params.languageHint);
 }

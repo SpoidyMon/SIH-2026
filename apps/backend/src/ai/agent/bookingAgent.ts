@@ -33,7 +33,7 @@ STRICT OPERATIONAL RULES:
 3. Every booking request created remains PENDING until a Mandi Operator accepts it. Do NOT claim a gate token or QR pass has been issued while status is PENDING.
 4. You MUST show an explicit confirmation summary before submitting a booking request.
 5. Derive farmer user ID strictly from the authenticated backend server context. Never accept a user ID from prompts.
-6. Speak warmly and naturally in the farmer's language (Hindi, Marathi, Gujarati, Punjabi, Hinglish, English).
+6. Speak warmly and naturally in the farmer's selected language. If the user's selected language is English ('en') or the prompt is written in English, respond in clear English. If language is Hindi ('hi') or Marathi ('mr'), respond in that language.
 7. Keep responses concise, clear, and easy to understand over voice audio.
 `;
 
@@ -403,11 +403,25 @@ export async function runBookingAgent(state: BookingAgentState): Promise<Booking
     idempotencyKey: `IDEM-${state.conversationId}-${Date.now().toString().slice(-6)}`,
   };
 
-  const responseText = `${selectedMandi.name} में ${selectedSlot.date} को सुबह ${selectedSlot.startTime} – ${selectedSlot.endTime} का स्लॉट उपलब्ध है।
+  let responseText = `${selectedMandi.name} में ${selectedSlot.date} को सुबह ${selectedSlot.startTime} – ${selectedSlot.endTime} का स्लॉट उपलब्ध है।
 फसल: ${cropNorm.name} (${parsedKg} KG)
 अनुमानित मूल्य: ₹${estimatedPayout.toLocaleString("en-IN")} (दर: ₹${rateInfo.ratePerKg}/KG)
 
 क्या मैं यह booking request सबमिट कर दूँ? (हाँ / Confirm कहें)`;
+
+  if (state.language === "en") {
+    responseText = `Slot available at ${selectedMandi.name} on ${selectedSlot.date} (${selectedSlot.startTime} – ${selectedSlot.endTime}).
+Crop: ${cropNorm.name} (${parsedKg} KG)
+Estimated Payout: ₹${estimatedPayout.toLocaleString("en-IN")} (Rate: ₹${rateInfo.ratePerKg}/KG)
+
+Would you like me to submit this booking request? (Say Yes or tap Confirm)`;
+  } else if (state.language === "mr") {
+    responseText = `${selectedMandi.name} मध्ये ${selectedSlot.date} रोजी सकाळी ${selectedSlot.startTime} – ${selectedSlot.endTime} चा स्लॉट उपलब्ध आहे.
+पीक: ${cropNorm.name} (${parsedKg} KG)
+अंदाजे उत्पन्न: ₹${estimatedPayout.toLocaleString("en-IN")} (दर: ₹${rateInfo.ratePerKg}/KG)
+
+मी ही बुकिंग विनंती सबमिट करू का? (होय / Confirm म्हणा)`;
+  }
 
   return {
     ...state,

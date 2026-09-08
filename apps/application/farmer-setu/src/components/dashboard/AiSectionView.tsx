@@ -31,7 +31,7 @@ interface ChatMessage {
 }
 
 const QUICK_PROMPTS = [
-  { label: '🌾 Book 100 KG Wheat', text: 'रुपेश की मंडी में कल 9 बजे 100 किलो गेहूं का स्लॉट बुक कर दो' },
+  { label: '🌾 Book 100 KG Wheat', text: 'Book 100 KG Wheat in Rupesh Mandi tomorrow at 9 AM' },
   { label: '🏬 Search Mandis', text: 'Show available APMC mandis in Pune' },
   { label: '💰 Check Crop Rates', text: 'What is the current rate of Wheat per KG?' },
   { label: '📅 My Bookings', text: 'List all my active mandi bookings' },
@@ -39,12 +39,23 @@ const QUICK_PROMPTS = [
 
 export const AiSectionView = memo(function AiSectionView() {
   const { token } = useAuth();
-  const { t } = useLanguage();
+  const { language } = useLanguage();
+
+  const getWelcomeMessage = useCallback(() => {
+    if (language === 'mr') {
+      return 'नमस्ते! मी मण्डी सेतू AI सहाय्यक आहे. आपण मला बोलून (Voice) किंवा लिहून मराठी, हिंदी किंवा इंग्लिशमध्ये मंडी स्लॉट बुकिंग किंवा पीक दर (Per KG) विचारू शकता.';
+    }
+    if (language === 'hi') {
+      return 'नमस्ते! मैं मण्डी सेतु AI सहायक हूँ। आप मुझसे बोलकर (Voice) या लिखकर हिंदी, मराठी या इंग्लिश में मंडी स्लॉट बुकिंग, फसल दर (Per KG), या लाइव मंडी स्थिति पूछ सकते हैं।';
+    }
+    return 'Hello! I am your Mandi Setu AI Assistant. You can speak (Voice) or type in English, Hindi, or Marathi to query APMC mandis, check slot capacity, crop rates (per KG), or book arrival slots.';
+  }, [language]);
+
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: 'msg-welcome',
       sender: 'ai',
-      text: 'नमस्ते! मैं मण्डी सेतु AI सहायक हूँ। आप मुझसे बोलकर (Voice) या लिखकर हिंदी, मराठी, गुजराती, पंजाबी या इंग्लिश में मंडी स्लॉट बुकिंग, फसल दर (Per KG), या लाइव मंडी स्थिति पूछ सकते हैं।',
+      text: getWelcomeMessage(),
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     },
   ]);
@@ -58,6 +69,23 @@ export const AiSectionView = memo(function AiSectionView() {
   const mediaRecorderRef = useRef<any>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const timerIntervalRef = useRef<any>(null);
+
+  // Update welcome message when language changes if no other messages sent yet
+  useEffect(() => {
+    setMessages((prev) => {
+      if (prev.length === 1 && prev[0]?.id === 'msg-welcome') {
+        return [
+          {
+            id: 'msg-welcome',
+            sender: 'ai',
+            text: getWelcomeMessage(),
+            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          },
+        ];
+      }
+      return prev;
+    });
+  }, [language, getWelcomeMessage]);
 
   // Auto-scroll chat stream to bottom when new message arrives
   useEffect(() => {
@@ -92,7 +120,7 @@ export const AiSectionView = memo(function AiSectionView() {
       setIsLoading(true);
 
       try {
-        const res = await sendTextMessageApi(token, prompt, conversationId);
+        const res = await sendTextMessageApi(token, prompt, conversationId, language || 'en');
         if (res.success && res.data) {
           if (res.data.conversationId) setConversationId(res.data.conversationId);
           const aiMsg: ChatMessage = {
@@ -110,7 +138,7 @@ export const AiSectionView = memo(function AiSectionView() {
             {
               id: `msg-err-${Date.now()}`,
               sender: 'ai',
-              text: 'क्षमा करें, प्रतिक्रिया प्राप्त करने में कोई समस्या हुई। कृपया पुनः प्रयास करें।',
+              text: language === 'hi' ? 'क्षमा करें, प्रतिक्रिया प्राप्त करने में समस्या हुई।' : 'Sorry, failed to process response. Please try again.',
               timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
             },
           ]);
@@ -121,7 +149,7 @@ export const AiSectionView = memo(function AiSectionView() {
           {
             id: `msg-err-${Date.now()}`,
             sender: 'ai',
-            text: 'सर्वर से कनेक्ट करने में विफल। कृपया अपना इंटरनेट कनेक्शन जाँचें।',
+            text: 'Failed to connect to backend server. Please check your network connection.',
             timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           },
         ]);
@@ -129,7 +157,7 @@ export const AiSectionView = memo(function AiSectionView() {
         setIsLoading(false);
       }
     },
-    [inputText, isLoading, token, conversationId]
+    [inputText, isLoading, token, conversationId, language]
   );
 
   // Voice recording toggle (Web & Native Audio Recording)
@@ -174,7 +202,7 @@ export const AiSectionView = memo(function AiSectionView() {
               setIsLoading(true);
 
               try {
-                const res = await sendVoiceAudioApi(token, audioBlob, conversationId);
+                const res = await sendVoiceAudioApi(token, audioBlob, conversationId, language || 'en');
                 if (res.success && res.data) {
                   if (res.data.conversationId) setConversationId(res.data.conversationId);
                   setMessages((prev) => [
