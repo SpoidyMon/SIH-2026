@@ -90,7 +90,7 @@ export function MandiSlotsView() {
   }, [slots, dateFilter]);
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto animate-fade-in pb-12 font-sans">
+    <div className="space-y-6 w-full max-w-[1700px] mx-auto animate-fade-in pb-12 font-sans px-1 sm:px-2">
       {/* ═══ HEADER & VIEW SWITCHER ═══ */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-gray-200 dark:border-neutral-800">
         <div>

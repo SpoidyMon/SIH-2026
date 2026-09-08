@@ -78,7 +78,7 @@ export function MandiDashboardView() {
   }, [dispatch]);
 
   return (
-    <div className="space-y-4 max-w-7xl mx-auto font-sans">
+    <div className="space-y-4 w-full max-w-[1700px] mx-auto font-sans px-1 sm:px-2">
       {/* Top Section: Memoized MandiOperationalPipeline with live metrics */}
       <MandiOperationalPipeline
         stats={stats}

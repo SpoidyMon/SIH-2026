@@ -182,7 +182,7 @@ export function MandiBookingsView() {
   );
 
   return (
-    <div className="space-y-4 max-w-7xl mx-auto animate-fade-in font-sans pb-10">
+    <div className="space-y-4 w-full max-w-[1700px] mx-auto animate-fade-in font-sans pb-10 px-1 sm:px-2">
       {/* ═══ 1. HEADER ═══ */}
       <div className="border-b border-slate-200 dark:border-neutral-800 pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
