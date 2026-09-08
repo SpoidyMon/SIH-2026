@@ -258,7 +258,7 @@ export async function listApprovedMandis() {
       mandiCode: m.mandiCode || "MAN001",
       apmcCode: m.apmcCode,
       district: m.district || "Pune",
-      address: m.address || m.yardAddress || "APMC Main Market Yard",
+      address: m.address || "APMC Main Market Yard",
       pincode: m.pincode || "411001",
       state: m.state || "Maharashtra",
       latitude: m.latitude !== null && m.latitude !== undefined ? m.latitude : defaultLat,
