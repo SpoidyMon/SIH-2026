@@ -321,50 +321,59 @@ export function FarmerMandiDetailView() {
           <span>1. Select Date &amp; Intake Slot</span>
         </h2>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {mandi.slots?.map((slot) => {
-            const isExpired = slot.isExpired || isSlotExpired(slot.date, slot.endTime, slot.startTime);
-            const isFull = slot.availableBookings <= 0;
-            const isDisabled = isFull || isExpired;
-            const isSelected = slot.id === selectedSlotId && !isDisabled;
+        {(() => {
+          const activeSlots = (mandi.slots || []).filter(
+            (slot) => !slot.isExpired && !isSlotExpired(slot.date, slot.endTime, slot.startTime)
+          );
 
+          if (activeSlots.length === 0) {
             return (
-              <div
-                key={slot.id}
-                onClick={() => {
-                  if (!isDisabled) setSelectedSlotId(slot.id);
-                }}
-                className={`p-4 rounded-2xl border transition-all select-none ${
-                  isDisabled
-                    ? "bg-slate-100/70 border-slate-200 opacity-60 cursor-not-allowed"
-                    : isSelected
-                    ? "bg-emerald-50 border-emerald-500 ring-2 ring-emerald-500/20 cursor-pointer"
-                    : "bg-white border-slate-200 hover:border-slate-300 cursor-pointer"
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <span className={`text-xs font-extrabold ${isExpired ? "text-slate-500 line-through" : "text-slate-900"}`}>
-                    {slot.date}
-                  </span>
-                  <span
-                    className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${
-                      isExpired
-                        ? "bg-slate-200 text-slate-600"
-                        : isFull
-                        ? "bg-red-100 text-red-700"
-                        : "bg-emerald-100 text-emerald-800"
-                    }`}
-                  >
-                    {isExpired ? "Time Passed" : isFull ? "Fully Booked" : `${slot.availableBookings} slots left`}
-                  </span>
-                </div>
-                <p className={`text-xs font-semibold mt-1 ${isExpired ? "text-slate-400" : "text-slate-600"}`}>
-                  {slot.startTime} – {slot.endTime}
-                </p>
+              <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-800 text-xs font-semibold flex items-center gap-2">
+                <Clock className="w-4 h-4 text-amber-600 shrink-0" />
+                <span>All arrival slots for today have passed. Please check back for upcoming slots.</span>
               </div>
             );
-          })}
-        </div>
+          }
+
+          return (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {activeSlots.map((slot) => {
+                const isSelected = slot.id === selectedSlotId;
+                const isFull = slot.availableBookings <= 0;
+
+                return (
+                  <div
+                    key={slot.id}
+                    onClick={() => {
+                      if (!isFull) setSelectedSlotId(slot.id);
+                    }}
+                    className={`p-4 rounded-2xl border transition-all select-none ${
+                      isFull
+                        ? "bg-slate-100/60 border-slate-200 opacity-60 cursor-not-allowed"
+                        : isSelected
+                        ? "bg-emerald-50 border-emerald-500 ring-2 ring-emerald-500/20 cursor-pointer"
+                        : "bg-white border-slate-200 hover:border-slate-300 cursor-pointer"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-extrabold text-slate-900">{slot.date}</span>
+                      <span
+                        className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${
+                          isFull ? "bg-red-100 text-red-700" : "bg-emerald-100 text-emerald-800"
+                        }`}
+                      >
+                        {isFull ? "Fully Booked" : `${slot.availableBookings} slots left`}
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-600 font-semibold mt-1">
+                      {slot.startTime} – {slot.endTime}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })()}
       </div>
 
       {/* Step 2: Multi-Crop Input (KG Only) */}

@@ -612,9 +612,23 @@ export const MandiSectionView = memo(function MandiSectionView() {
                   /* Slots & Slot-Varying Crops View */
                   <View style={styles.infoSection}>
                     <Text style={styles.infoSectionTitle}>Configured Intake Slots &amp; Specific Crops</Text>
-                    {infoModalMandi.slots && infoModalMandi.slots.length > 0 ? (
-                      infoModalMandi.slots.map((slot, sIdx) => {
-                        const isExpired = (slot as any).isExpired || isSlotExpired(slot.date, slot.endTime, slot.startTime);
+                    {(() => {
+                      const activeSlots = (infoModalMandi.slots || []).filter(
+                        (slot) => !(slot as any).isExpired && !isSlotExpired(slot.date, slot.endTime, slot.startTime)
+                      );
+
+                      if (activeSlots.length === 0) {
+                        return (
+                          <View style={styles.noSlotsBanner}>
+                            <Ionicons name="time-outline" size={18} color="#D97706" />
+                            <Text style={styles.noSlotsText}>
+                              All arrival slots for today have passed. No active slots available right now.
+                            </Text>
+                          </View>
+                        );
+                      }
+
+                      return activeSlots.map((slot, sIdx) => {
                         const booked = slot.bookedFarmers || 0;
                         const maxF = slot.maxFarmers || 20;
                         const waitMins = booked === 0 ? 0 : Math.min(booked * 6, 45);
@@ -625,17 +639,12 @@ export const MandiSectionView = memo(function MandiSectionView() {
                           : [{ crop: slot.crop || 'Wheat', ratePerKg: 28, quantityKg: 5000 }];
 
                         return (
-                          <View key={sIdx} style={[styles.slotDetailBox, isExpired && { opacity: 0.6, backgroundColor: '#F1F5F9' }]}>
+                          <View key={sIdx} style={styles.slotDetailBox}>
                             <View style={styles.slotHeaderRow}>
-                              <Ionicons name="time-outline" size={16} color={isExpired ? '#9CA3AF' : '#059669'} />
-                              <Text style={[styles.slotTitleText, isExpired && { textDecorationLine: 'line-through', color: '#64748B' }]}>
+                              <Ionicons name="time-outline" size={16} color="#059669" />
+                              <Text style={styles.slotTitleText}>
                                 Slot {sIdx + 1}: {slot.startTime} - {slot.endTime} ({slot.date})
                               </Text>
-                              {isExpired && (
-                                <View style={styles.expiredBadge}>
-                                  <Text style={styles.expiredBadgeText}>Time Passed</Text>
-                                </View>
-                              )}
                             </View>
 
                             <View style={styles.slotMetricsGrid}>
@@ -669,29 +678,8 @@ export const MandiSectionView = memo(function MandiSectionView() {
                             </View>
                           </View>
                         );
-                      })
-                    ) : (
-                      <View style={styles.slotDetailBox}>
-                        <View style={styles.slotHeaderRow}>
-                          <Ionicons name="time-outline" size={16} color="#059669" />
-                          <Text style={styles.slotTitleText}>Slot 1: 09:00 AM - 01:30 PM (Tomorrow)</Text>
-                        </View>
-                        <View style={styles.slotMetricsGrid}>
-                          <View style={styles.slotMetricItem}>
-                            <Text style={styles.slotMetricLabel}>Queue Farmers</Text>
-                            <Text style={styles.slotMetricVal}>0 / 20</Text>
-                          </View>
-                          <View style={styles.slotMetricItem}>
-                            <Text style={styles.slotMetricLabel}>Expected Wait</Text>
-                            <Text style={styles.slotMetricVal}>0 mins</Text>
-                          </View>
-                          <View style={styles.slotMetricItem}>
-                            <Text style={styles.slotMetricLabel}>Intake Capacity</Text>
-                            <Text style={styles.slotMetricVal}>10,000 KG</Text>
-                          </View>
-                        </View>
-                      </View>
-                    )}
+                      });
+                    })()}
                   </View>
                 )}
               </ScrollView>

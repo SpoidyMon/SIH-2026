@@ -451,59 +451,64 @@ export const SlotBookingModal = memo(function SlotBookingModal({
                 {/* 1. Slot Window & Date Selection */}
                 <View style={styles.formSection}>
                   <Text style={styles.sectionLabel}>1. Select Date &amp; Arrival Window</Text>
-                  {mandi.slots && mandi.slots.length > 0 ? (
-                    <View style={styles.slotsGrid}>
-                      {mandi.slots.map((s) => {
-                        const expired = (s as any).isExpired || isSlotExpired(s.date, s.endTime, s.startTime);
-                        const isSelected = selectedSlot?.id === s.id && !expired;
-                        const slotCropsText =
-                          s.allowedCrops && Array.isArray(s.allowedCrops) && s.allowedCrops.length > 0
-                            ? s.allowedCrops.map((ac: any) => ac.crop || ac).join(', ')
-                            : s.crop || 'Wheat, Mustard';
+                  {(() => {
+                    const activeSlots = (mandi.slots || []).filter(
+                      (s) => !(s as any).isExpired && !isSlotExpired(s.date, s.endTime, s.startTime)
+                    );
 
-                        return (
-                          <Pressable
-                            key={s.id}
-                            disabled={expired}
-                            onPress={() => {
-                              if (!expired) setSelectedSlot(s);
-                            }}
-                            style={[
-                              styles.slotCard,
-                              isSelected && styles.slotCardSelected,
-                              expired && styles.slotCardExpired,
-                            ]}>
-                            <View style={styles.slotCardHeader}>
-                              <Ionicons
-                                name="time-outline"
-                                size={14}
-                                color={expired ? '#9CA3AF' : isSelected ? '#15803D' : '#6B7280'}
-                              />
-                              <Text
-                                style={[
-                                  styles.slotTimeText,
-                                  isSelected && styles.slotTimeTextSelected,
-                                  expired && styles.slotTimeTextExpired,
-                                ]}>
-                                {s.startTime} - {s.endTime}
-                              </Text>
-                            </View>
-                            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 2 }}>
+                    if (activeSlots.length === 0) {
+                      return (
+                        <View style={styles.noSlotsBanner}>
+                          <Ionicons name="time-outline" size={18} color="#D97706" />
+                          <Text style={styles.noSlotsText}>
+                            All arrival slots for today have passed. Please check back for upcoming slots.
+                          </Text>
+                        </View>
+                      );
+                    }
+
+                    return (
+                      <View style={styles.slotsGrid}>
+                        {activeSlots.map((s) => {
+                          const isSelected = selectedSlot?.id === s.id;
+                          const slotCropsText =
+                            s.allowedCrops && Array.isArray(s.allowedCrops) && s.allowedCrops.length > 0
+                              ? s.allowedCrops.map((ac: any) => ac.crop || ac).join(', ')
+                              : s.crop || 'Wheat, Mustard';
+
+                          return (
+                            <Pressable
+                              key={s.id}
+                              onPress={() => setSelectedSlot(s)}
+                              style={[
+                                styles.slotCard,
+                                isSelected && styles.slotCardSelected,
+                              ]}>
+                              <View style={styles.slotCardHeader}>
+                                <Ionicons
+                                  name="time-outline"
+                                  size={14}
+                                  color={isSelected ? '#15803D' : '#6B7280'}
+                                />
+                                <Text
+                                  style={[
+                                    styles.slotTimeText,
+                                    isSelected && styles.slotTimeTextSelected,
+                                  ]}>
+                                  {s.startTime} - {s.endTime}
+                                </Text>
+                              </View>
                               <Text style={styles.slotDateText}>{s.date}</Text>
-                              {expired && (
-                                <View style={styles.expiredBadge}>
-                                  <Text style={styles.expiredBadgeText}>Time Passed</Text>
-                                </View>
-                              )}
-                            </View>
-                            <Text style={[styles.slotCapText, expired && styles.slotCapTextExpired]} numberOfLines={1}>
-                              {expired ? 'Slot Closed / Window Expired' : `Crops: ${slotCropsText}`}
-                            </Text>
-                          </Pressable>
-                        );
-                      })}
-                    </View>
-                  ) : (
+                              <Text style={styles.slotCapText} numberOfLines={1}>
+                                Crops: {slotCropsText}
+                              </Text>
+                            </Pressable>
+                          );
+                        })}
+                      </View>
+                    );
+                  })()}
+                </View>
                     /* Default Windows */
                     <View style={styles.slotsGrid}>
                       {[
@@ -1161,5 +1166,21 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: '#991B1B',
     textTransform: 'uppercase',
+  },
+  noSlotsBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#FEF3C7',
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+  },
+  noSlotsText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#92400E',
+    flex: 1,
   },
 });

@@ -408,10 +408,12 @@ export async function listApprovedMandis(userLat?: number, userLng?: number) {
       closedDays: m.closedDays || [],
       closedHours: m.closedHours,
       isLocationSet: m.isLocationSet ?? true,
-      slots: m.slots.map((s) => ({
-        ...s,
-        isExpired: isSlotExpired(s.date, s.endTime, s.startTime),
-      })),
+      slots: m.slots
+        .filter((s) => !isSlotExpired(s.date, s.endTime, s.startTime))
+        .map((s) => ({
+          ...s,
+          isExpired: false,
+        })),
     };
   });
 
