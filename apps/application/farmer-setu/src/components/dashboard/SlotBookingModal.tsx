@@ -100,6 +100,54 @@ export const SlotBookingModal = memo(function SlotBookingModal({
     }
   }, [mandi, visible, defaultRatePerKg]);
 
+  // Update crop items whenever selected slot changes
+  useEffect(() => {
+    if (!mandi) return;
+
+    let targetCrops: Array<{ crop: string; ratePerKg: number }> = [];
+
+    if (selectedSlot) {
+      if (selectedSlot.allowedCrops && Array.isArray(selectedSlot.allowedCrops)) {
+        (selectedSlot.allowedCrops as any[]).forEach((item) => {
+          if (item?.crop) {
+            targetCrops.push({
+              crop: item.crop,
+              ratePerKg: Number(item.ratePerKg) || defaultRatePerKg,
+            });
+          }
+        });
+      } else if (selectedSlot.crop) {
+        selectedSlot.crop.split(',').forEach((c) => {
+          const name = c.trim();
+          targetCrops.push({
+            crop: name,
+            ratePerKg: defaultRatePerKg,
+          });
+        });
+      }
+    }
+
+    if (targetCrops.length === 0) {
+      const sourceCrops =
+        mandi.acceptedCrops && mandi.acceptedCrops.length > 0
+          ? mandi.acceptedCrops
+          : mandi.topCrop
+          ? mandi.topCrop.split(',').map((s) => s.trim())
+          : ['Wheat', 'Mustard'];
+      targetCrops = sourceCrops.map((c) => ({ crop: c, ratePerKg: defaultRatePerKg }));
+    }
+
+    const updatedItems: CropSelectionState[] = targetCrops.map((item, index) => ({
+      crop: item.crop,
+      variety: 'Grade-A Standard',
+      quantityKg: index === 0 ? '500' : '200',
+      ratePerKg: item.ratePerKg,
+      selected: index === 0,
+    }));
+
+    setCropItems(updatedItems);
+  }, [selectedSlot, mandi, defaultRatePerKg]);
+
   // Calculate totals across selected crops
   const selectedCropsList = useMemo(() => {
     return cropItems.filter((c) => c.selected);
@@ -354,13 +402,18 @@ export const SlotBookingModal = memo(function SlotBookingModal({
                   </View>
                 )}
 
-                {/* 1. Slot Window Selection */}
+                {/* 1. Slot Window & Date Selection */}
                 <View style={styles.formSection}>
-                  <Text style={styles.sectionLabel}>1. Select Arrival Window & Date</Text>
+                  <Text style={styles.sectionLabel}>1. Select Date &amp; Arrival Window</Text>
                   {mandi.slots && mandi.slots.length > 0 ? (
                     <View style={styles.slotsGrid}>
                       {mandi.slots.map((s) => {
                         const isSelected = selectedSlot?.id === s.id;
+                        const slotCropsText =
+                          s.allowedCrops && Array.isArray(s.allowedCrops) && s.allowedCrops.length > 0
+                            ? s.allowedCrops.map((ac: any) => ac.crop || ac).join(', ')
+                            : s.crop || 'Wheat, Mustard';
+
                         return (
                           <Pressable
                             key={s.id}
@@ -384,8 +437,8 @@ export const SlotBookingModal = memo(function SlotBookingModal({
                               </Text>
                             </View>
                             <Text style={styles.slotDateText}>{s.date}</Text>
-                            <Text style={styles.slotCapText}>
-                              {s.availableBookings ?? 10} slots open
+                            <Text style={styles.slotCapText} numberOfLines={1}>
+                              Crops: {slotCropsText}
                             </Text>
                           </Pressable>
                         );
@@ -457,10 +510,10 @@ export const SlotBookingModal = memo(function SlotBookingModal({
                   </View>
                 </View>
 
-                {/* 3. Multi-Crop Selection & Quantity in KG */}
+                {/* 2. Multi-Crop Selection & Quantity in KG (Filtered by Slot) */}
                 <View style={styles.formSection}>
                   <View style={styles.inputLabelRow}>
-                    <Text style={styles.sectionLabel}>2. Select Crops & Quantity in KG</Text>
+                    <Text style={styles.sectionLabel}>2. Crops Allowed in this Slot (Rates per KG)</Text>
                     <Text style={styles.calcSubText}>
                       Total: {totalQuantityKg.toLocaleString('en-IN')} KG
                     </Text>

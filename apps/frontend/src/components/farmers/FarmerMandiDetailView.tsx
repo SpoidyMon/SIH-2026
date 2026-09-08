@@ -61,10 +61,62 @@ export function FarmerMandiDetailView() {
     Potato: 22,
   };
 
+  const selectedSlot = mandi?.slots?.find((s) => s.id === selectedSlotId);
+
+  // Compute crops strictly available for the selected slot
+  const slotAvailableCrops = useMemo(() => {
+    if (!selectedSlot) return (mandi?.acceptedCrops || ["Wheat", "Mustard"]).map((c) => ({ crop: c, ratePerKg: availableCropRates[c] || 25 }));
+
+    const list: Array<{ crop: string; ratePerKg: number }> = [];
+    if (selectedSlot.allowedCrops && Array.isArray(selectedSlot.allowedCrops)) {
+      (selectedSlot.allowedCrops as any[]).forEach((item) => {
+        if (item?.crop) {
+          list.push({
+            crop: item.crop,
+            ratePerKg: Number(item.ratePerKg) || availableCropRates[item.crop] || 25,
+          });
+        }
+      });
+    } else if (selectedSlot.crop) {
+      selectedSlot.crop.split(",").forEach((c) => {
+        const name = c.trim();
+        list.push({
+          crop: name,
+          ratePerKg: availableCropRates[name] || 25,
+        });
+      });
+    }
+
+    if (list.length === 0) {
+      return (mandi?.acceptedCrops || ["Wheat", "Mustard"]).map((c) => ({
+        crop: c,
+        ratePerKg: availableCropRates[c] || 25,
+      }));
+    }
+
+    return list;
+  }, [selectedSlot, mandi]);
+
+  // Sync selected crops when slot changes
+  useEffect(() => {
+    if (slotAvailableCrops.length > 0) {
+      const firstCrop = slotAvailableCrops[0];
+      setSelectedCrops([
+        {
+          crop: firstCrop.crop,
+          quantityKg: 100,
+          ratePerKg: firstCrop.ratePerKg,
+          estimatedAmount: 100 * firstCrop.ratePerKg,
+        },
+      ]);
+    }
+  }, [selectedSlotId]);
+
   const handleAddCropRow = () => {
+    const defaultCrop = slotAvailableCrops[0] || { crop: "Wheat", ratePerKg: 28 };
     setSelectedCrops((prev) => [
       ...prev,
-      { crop: "Wheat", quantityKg: 100, ratePerKg: 28, estimatedAmount: 2800 },
+      { crop: defaultCrop.crop, quantityKg: 100, ratePerKg: defaultCrop.ratePerKg, estimatedAmount: 100 * defaultCrop.ratePerKg },
     ]);
   };
 
@@ -79,7 +131,8 @@ export function FarmerMandiDetailView() {
       const current = { ...updated[index], [field]: value };
 
       if (field === "crop") {
-        current.ratePerKg = availableCropRates[value] || 25;
+        const found = slotAvailableCrops.find((c) => c.crop === value);
+        current.ratePerKg = found ? found.ratePerKg : availableCropRates[value] || 25;
       }
       if (field === "quantityKg" || field === "crop") {
         const qty = Number(current.quantityKg) || 0;
@@ -130,8 +183,6 @@ export function FarmerMandiDetailView() {
       </div>
     );
   }
-
-  const selectedSlot = mandi.slots?.find((s) => s.id === selectedSlotId);
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto pb-16">
@@ -294,9 +345,9 @@ export function FarmerMandiDetailView() {
                   onChange={(e) => handleUpdateCropRow(idx, "crop", e.target.value)}
                   className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 focus:outline-none focus:border-emerald-500"
                 >
-                  {mandi.acceptedCrops.map((c) => (
-                    <option key={c} value={c}>
-                      {c} (₹{availableCropRates[c] || 25}/kg)
+                  {slotAvailableCrops.map((opt) => (
+                    <option key={opt.crop} value={opt.crop}>
+                      {opt.crop} (₹{opt.ratePerKg}/kg)
                     </option>
                   ))}
                 </select>

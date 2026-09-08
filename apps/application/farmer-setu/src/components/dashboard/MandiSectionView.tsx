@@ -48,6 +48,7 @@ export const MandiSectionView = memo(function MandiSectionView() {
   const [mapModalVisible, setMapModalVisible] = useState(false);
   const [profileModalVisible, setProfileModalVisible] = useState(false);
   const [infoModalMandi, setInfoModalMandi] = useState<MandiItem | null>(null);
+  const [infoTab, setInfoTab] = useState<'overview' | 'slots'>('overview');
   const [bookingModalMandi, setBookingModalMandi] = useState<MandiItem | null>(null);
   const [isBookingModalVisible, setIsBookingModalVisible] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
@@ -507,119 +508,170 @@ export const MandiSectionView = memo(function MandiSectionView() {
                 </Pressable>
               </View>
 
+              {/* Segmented Control Header to minimize scrolling */}
+              <View style={styles.infoTabContainer}>
+                <Pressable
+                  onPress={() => setInfoTab('overview')}
+                  style={[styles.infoTabBtn, infoTab === 'overview' && styles.infoTabBtnActive]}>
+                  <Ionicons
+                    name="information-circle"
+                    size={15}
+                    color={infoTab === 'overview' ? '#15803D' : '#6B7280'}
+                  />
+                  <Text style={[styles.infoTabText, infoTab === 'overview' && styles.infoTabTextActive]}>
+                    Yard &amp; Contact
+                  </Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => setInfoTab('slots')}
+                  style={[styles.infoTabBtn, infoTab === 'slots' && styles.infoTabBtnActive]}>
+                  <Ionicons
+                    name="time"
+                    size={15}
+                    color={infoTab === 'slots' ? '#15803D' : '#6B7280'}
+                  />
+                  <Text style={[styles.infoTabText, infoTab === 'slots' && styles.infoTabTextActive]}>
+                    Slots &amp; Allowed Crops
+                  </Text>
+                </Pressable>
+              </View>
+
               <ScrollView style={styles.infoScroll} showsVerticalScrollIndicator={false}>
-                {/* Mandi Operator & Contact Details Card */}
-                <View style={styles.infoSection}>
-                  <Text style={styles.infoSectionTitle}>Mandi Yard Admin &amp; Contact Info</Text>
-                  <View style={styles.operatorContactCard}>
-                    <View style={styles.operatorRow}>
-                      <Ionicons name="person-circle" size={24} color="#15803D" />
-                      <View style={{ flex: 1 }}>
-                        <Text style={styles.operatorNameText}>{infoModalMandi.operatorName || 'Rupesh Sharma (Yard Admin)'}</Text>
-                        <Text style={styles.operatorRoleText}>Authorized APMC Mandi Operator</Text>
-                      </View>
-                    </View>
-                    <View style={styles.operatorDetailRow}>
-                      <Ionicons name="call" size={14} color="#059669" />
-                      <Text style={styles.operatorDetailText}>{infoModalMandi.contactPhone || '+91 98765 43210'}</Text>
-                    </View>
-                    <View style={styles.operatorDetailRow}>
-                      <Ionicons name="mail" size={14} color="#059669" />
-                      <Text style={styles.operatorDetailText}>{infoModalMandi.contactEmail || 'operator@apmc.gov.in'}</Text>
-                    </View>
-                  </View>
-                </View>
-
-                {/* Address & Hours */}
-                <View style={styles.infoSection}>
-                  <Text style={styles.infoSectionTitle}>{t('mandi.modal_title')}</Text>
-                  <Text style={styles.infoAddressText}>{infoModalMandi.address || infoModalMandi.district}</Text>
-                  <Text style={styles.infoTimingText}>{t('mandi.hours')} {infoModalMandi.operatingHours || '05:30 AM - 07:00 PM (Mon - Sat)'}</Text>
-                </View>
-
-                {/* Accepted Crops & Individual Prices per KG */}
-                <View style={styles.infoSection}>
-                  <Text style={styles.infoSectionTitle}>Crops Accepted &amp; Daily Rate (per KG)</Text>
-                  <View style={styles.cropRatesGrid}>
-                    {(
-                      infoModalMandi.cropRates && infoModalMandi.cropRates.length > 0
-                        ? infoModalMandi.cropRates
-                        : (infoModalMandi.acceptedCrops || ['Wheat', 'Mustard', 'Onion', 'Tomato']).map((c) => ({
-                            crop: c.trim(),
-                            ratePerKg: c.trim() === 'Mustard' ? 52 : c.trim() === 'Wheat' ? 28 : c.trim() === 'Onion' ? 19 : 24,
-                            availableKg: 10000,
-                          }))
-                    ).map((cr, idx) => (
-                      <View key={idx} style={styles.cropRateCard}>
-                        <View style={styles.cropRateHeader}>
-                          <Ionicons name="leaf" size={14} color="#15803D" />
-                          <Text style={styles.cropRateName}>{translateCropName(cr.crop, language)}</Text>
-                        </View>
-                        <Text style={styles.cropRatePrice}>₹{cr.ratePerKg} / KG</Text>
-                        <Text style={styles.cropRateCapacity}>Requirement: {cr.availableKg.toLocaleString()} KG</Text>
-                      </View>
-                    ))}
-                  </View>
-                </View>
-
-                {/* Configured Slots & Queue Details */}
-                <View style={styles.infoSection}>
-                  <Text style={styles.infoSectionTitle}>Available Intake Slots &amp; Live Queue</Text>
-                  {infoModalMandi.slots && infoModalMandi.slots.length > 0 ? (
-                    infoModalMandi.slots.map((slot, sIdx) => {
-                      const booked = slot.bookedFarmers || 0;
-                      const maxF = slot.maxFarmers || 20;
-                      const waitMins = booked === 0 ? 0 : Math.min(booked * 6, 45);
-
-                      return (
-                        <View key={sIdx} style={styles.slotDetailBox}>
-                          <View style={styles.slotHeaderRow}>
-                            <Ionicons name="time-outline" size={16} color="#059669" />
-                            <Text style={styles.slotTitleText}>
-                              Slot {sIdx + 1}: {slot.startTime} - {slot.endTime} ({slot.date})
-                            </Text>
-                          </View>
-
-                          <View style={styles.slotMetricsGrid}>
-                            <View style={styles.slotMetricItem}>
-                              <Text style={styles.slotMetricLabel}>Queue Farmers</Text>
-                              <Text style={styles.slotMetricVal}>{booked} / {maxF}</Text>
-                            </View>
-                            <View style={styles.slotMetricItem}>
-                              <Text style={styles.slotMetricLabel}>Expected Wait</Text>
-                              <Text style={styles.slotMetricVal}>{waitMins} mins</Text>
-                            </View>
-                            <View style={styles.slotMetricItem}>
-                              <Text style={styles.slotMetricLabel}>Intake Capacity</Text>
-                              <Text style={styles.slotMetricVal}>{(slot.totalCapacityKg || 10000).toLocaleString()} KG</Text>
-                            </View>
+                {infoTab === 'overview' ? (
+                  <>
+                    {/* Mandi Operator & Contact Details Card */}
+                    <View style={styles.infoSection}>
+                      <Text style={styles.infoSectionTitle}>Yard Admin &amp; Contact Details</Text>
+                      <View style={styles.operatorContactCard}>
+                        <View style={styles.operatorRow}>
+                          <Ionicons name="person-circle" size={24} color="#15803D" />
+                          <View style={{ flex: 1 }}>
+                            <Text style={styles.operatorNameText}>{infoModalMandi.operatorName || 'Rupesh Sharma (Yard Admin)'}</Text>
+                            <Text style={styles.operatorRoleText}>Authorized APMC Mandi Operator</Text>
                           </View>
                         </View>
-                      );
-                    })
-                  ) : (
-                    <View style={styles.slotDetailBox}>
-                      <View style={styles.slotHeaderRow}>
-                        <Ionicons name="time-outline" size={16} color="#059669" />
-                        <Text style={styles.slotTitleText}>Slot 1: 09:00 AM - 01:30 PM (Tomorrow)</Text>
-                      </View>
-                      <View style={styles.slotMetricsGrid}>
-                        <View style={styles.slotMetricItem}>
-                          <Text style={styles.slotMetricLabel}>Queue Farmers</Text>
-                          <Text style={styles.slotMetricVal}>0 / 20</Text>
+                        <View style={styles.operatorDetailRow}>
+                          <Ionicons name="call" size={14} color="#059669" />
+                          <Text style={styles.operatorDetailText}>{infoModalMandi.contactPhone || '+91 98765 43210'}</Text>
                         </View>
-                        <View style={styles.slotMetricItem}>
-                          <Text style={styles.slotMetricLabel}>Expected Wait</Text>
-                          <Text style={styles.slotMetricVal}>0 mins</Text>
-                        </View>
-                        <View style={styles.slotMetricItem}>
-                          <Text style={styles.slotMetricLabel}>Intake Capacity</Text>
-                          <Text style={styles.slotMetricVal}>10,000 KG</Text>
+                        <View style={styles.operatorDetailRow}>
+                          <Ionicons name="mail" size={14} color="#059669" />
+                          <Text style={styles.operatorDetailText}>{infoModalMandi.contactEmail || 'operator@apmc.gov.in'}</Text>
                         </View>
                       </View>
                     </View>
-                  )}
-                </View>
+
+                    {/* Address & Hours */}
+                    <View style={styles.infoSection}>
+                      <Text style={styles.infoSectionTitle}>{t('mandi.modal_title')}</Text>
+                      <Text style={styles.infoAddressText}>{infoModalMandi.address || infoModalMandi.district}</Text>
+                      <Text style={styles.infoTimingText}>{t('mandi.hours')} {infoModalMandi.operatingHours || '05:30 AM - 07:00 PM (Mon - Sat)'}</Text>
+                    </View>
+
+                    {/* Accepted Crops Overview */}
+                    <View style={styles.infoSection}>
+                      <Text style={styles.infoSectionTitle}>All Accepted Crops (per KG)</Text>
+                      <View style={styles.cropRatesGrid}>
+                        {(
+                          infoModalMandi.cropRates && infoModalMandi.cropRates.length > 0
+                            ? infoModalMandi.cropRates
+                            : (infoModalMandi.acceptedCrops || ['Wheat', 'Mustard', 'Onion', 'Tomato']).map((c) => ({
+                                crop: c.trim(),
+                                ratePerKg: c.trim() === 'Mustard' ? 52 : c.trim() === 'Wheat' ? 28 : c.trim() === 'Onion' ? 19 : 24,
+                                availableKg: 10000,
+                              }))
+                        ).map((cr, idx) => (
+                          <View key={idx} style={styles.cropRateCard}>
+                            <View style={styles.cropRateHeader}>
+                              <Ionicons name="leaf" size={14} color="#15803D" />
+                              <Text style={styles.cropRateName}>{translateCropName(cr.crop, language)}</Text>
+                            </View>
+                            <Text style={styles.cropRatePrice}>₹{cr.ratePerKg} / KG</Text>
+                          </View>
+                        ))}
+                      </View>
+                    </View>
+                  </>
+                ) : (
+                  /* Slots & Slot-Varying Crops View */
+                  <View style={styles.infoSection}>
+                    <Text style={styles.infoSectionTitle}>Configured Intake Slots &amp; Specific Crops</Text>
+                    {infoModalMandi.slots && infoModalMandi.slots.length > 0 ? (
+                      infoModalMandi.slots.map((slot, sIdx) => {
+                        const booked = slot.bookedFarmers || 0;
+                        const maxF = slot.maxFarmers || 20;
+                        const waitMins = booked === 0 ? 0 : Math.min(booked * 6, 45);
+
+                        // Crops specific to this slot
+                        const allowedList = slot.allowedCrops && Array.isArray(slot.allowedCrops) && slot.allowedCrops.length > 0
+                          ? slot.allowedCrops
+                          : [{ crop: slot.crop || 'Wheat', ratePerKg: 28, quantityKg: 5000 }];
+
+                        return (
+                          <View key={sIdx} style={styles.slotDetailBox}>
+                            <View style={styles.slotHeaderRow}>
+                              <Ionicons name="time-outline" size={16} color="#059669" />
+                              <Text style={styles.slotTitleText}>
+                                Slot {sIdx + 1}: {slot.startTime} - {slot.endTime} ({slot.date})
+                              </Text>
+                            </View>
+
+                            <View style={styles.slotMetricsGrid}>
+                              <View style={styles.slotMetricItem}>
+                                <Text style={styles.slotMetricLabel}>Queue Farmers</Text>
+                                <Text style={styles.slotMetricVal}>{booked} / {maxF}</Text>
+                              </View>
+                              <View style={styles.slotMetricItem}>
+                                <Text style={styles.slotMetricLabel}>Expected Wait</Text>
+                                <Text style={styles.slotMetricVal}>{waitMins} mins</Text>
+                              </View>
+                              <View style={styles.slotMetricItem}>
+                                <Text style={styles.slotMetricLabel}>Intake Capacity</Text>
+                                <Text style={styles.slotMetricVal}>{(slot.totalCapacityKg || 10000).toLocaleString()} KG</Text>
+                              </View>
+                            </View>
+
+                            {/* Crops available for this slot */}
+                            <View style={styles.slotCropsSection}>
+                              <Text style={styles.slotCropsLabel}>Allowed Crops for this Slot:</Text>
+                              <View style={styles.slotCropsPillsRow}>
+                                {allowedList.map((ac: any, idx: number) => (
+                                  <View key={idx} style={styles.slotCropBadge}>
+                                    <Ionicons name="leaf" size={11} color="#15803D" />
+                                    <Text style={styles.slotCropBadgeText}>
+                                      {translateCropName(ac.crop || ac, language)} @ ₹{ac.ratePerKg || 25}/KG
+                                    </Text>
+                                  </View>
+                                ))}
+                              </View>
+                            </View>
+                          </View>
+                        );
+                      })
+                    ) : (
+                      <View style={styles.slotDetailBox}>
+                        <View style={styles.slotHeaderRow}>
+                          <Ionicons name="time-outline" size={16} color="#059669" />
+                          <Text style={styles.slotTitleText}>Slot 1: 09:00 AM - 01:30 PM (Tomorrow)</Text>
+                        </View>
+                        <View style={styles.slotMetricsGrid}>
+                          <View style={styles.slotMetricItem}>
+                            <Text style={styles.slotMetricLabel}>Queue Farmers</Text>
+                            <Text style={styles.slotMetricVal}>0 / 20</Text>
+                          </View>
+                          <View style={styles.slotMetricItem}>
+                            <Text style={styles.slotMetricLabel}>Expected Wait</Text>
+                            <Text style={styles.slotMetricVal}>0 mins</Text>
+                          </View>
+                          <View style={styles.slotMetricItem}>
+                            <Text style={styles.slotMetricLabel}>Intake Capacity</Text>
+                            <Text style={styles.slotMetricVal}>10,000 KG</Text>
+                          </View>
+                        </View>
+                      </View>
+                    )}
+                  </View>
+                )}
               </ScrollView>
 
               <View style={styles.infoModalFooter}>
@@ -1323,5 +1375,79 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: '#059669',
     marginTop: 2,
+  },
+
+  // Segmented Info Tab Styles
+  infoTabContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#F1F5F9',
+    borderRadius: 12,
+    padding: 3,
+    marginHorizontal: 20,
+    marginTop: 10,
+    marginBottom: 6,
+    gap: 4,
+  },
+  infoTabBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
+    borderRadius: 9,
+    gap: 6,
+  },
+  infoTabBtnActive: {
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  infoTabText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#64748B',
+  },
+  infoTabTextActive: {
+    color: '#15803D',
+    fontWeight: '800',
+  },
+
+  // Slot Crops Section Styles
+  slotCropsSection: {
+    marginTop: 6,
+    paddingTop: 6,
+    borderTopWidth: 1,
+    borderTopColor: '#F1F5F9',
+    gap: 4,
+  },
+  slotCropsLabel: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#475569',
+    textTransform: 'uppercase',
+  },
+  slotCropsPillsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+  },
+  slotCropBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#F0FDF4',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#DCFCE7',
+  },
+  slotCropBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#166534',
   },
 });
