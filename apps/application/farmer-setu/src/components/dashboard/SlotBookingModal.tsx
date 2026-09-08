@@ -100,26 +100,6 @@ export const SlotBookingModal = memo(function SlotBookingModal({
     }
   }, [mandi, visible, defaultRatePerKg]);
 
-  if (!mandi) return null;
-
-  // Toggle crop selection
-  const handleToggleCrop = (index: number) => {
-    setCropItems((prev) => {
-      const updated = [...prev];
-      updated[index] = { ...updated[index], selected: !updated[index].selected };
-      return updated;
-    });
-  };
-
-  // Update crop quantity in KG
-  const handleUpdateQuantityKg = (index: number, text: string) => {
-    setCropItems((prev) => {
-      const updated = [...prev];
-      updated[index] = { ...updated[index], quantityKg: text };
-      return updated;
-    });
-  };
-
   // Calculate totals across selected crops
   const selectedCropsList = useMemo(() => {
     return cropItems.filter((c) => c.selected);
@@ -143,9 +123,31 @@ export const SlotBookingModal = memo(function SlotBookingModal({
   // Expected queue position
   const expectedQueueNumber = useMemo(() => {
     const currentCount =
-      selectedSlot?.currentFarmersBooked ?? selectedSlot?.bookedFarmers ?? 0;
+      selectedSlot && typeof selectedSlot.bookedFarmers === 'number'
+        ? selectedSlot.bookedFarmers
+        : mandi?.activeFarmersCount || 0;
     return currentCount + 1;
-  }, [selectedSlot]);
+  }, [selectedSlot, mandi]);
+
+  if (!mandi) return null;
+
+  // Toggle crop selection
+  const handleToggleCrop = (index: number) => {
+    setCropItems((prev) => {
+      const updated = [...prev];
+      updated[index] = { ...updated[index], selected: !updated[index].selected };
+      return updated;
+    });
+  };
+
+  // Update crop quantity in KG
+  const handleUpdateQuantityKg = (index: number, text: string) => {
+    setCropItems((prev) => {
+      const updated = [...prev];
+      updated[index] = { ...updated[index], quantityKg: text };
+      return updated;
+    });
+  };
 
   // Confirm and create booking
   const handleConfirmBooking = async () => {
