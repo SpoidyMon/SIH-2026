@@ -1,8 +1,10 @@
 import React, { memo, useState, useEffect, useMemo } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View, Pressable, Text } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { StatCardsList } from './StatCardsList';
 import { CommodityTickerSection } from './CommodityTickerSection';
 import { RecentBookingsList } from './RecentBookingsList';
+import { AIAssistantModal } from './AIAssistantModal';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { translateMandiName, translateCropName } from '@/constants/translations';
@@ -22,6 +24,7 @@ export const DashboardMainView = memo(function DashboardMainView({
   const { language, t } = useLanguage();
   const [dbBookings, setDbBookings] = useState<any[]>([]);
   const [totalMandisCount, setTotalMandisCount] = useState<number>(0);
+  const [isAiModalVisible, setIsAiModalVisible] = useState<boolean>(false);
 
   // Fetch real bookings and mandi count from backend
   useEffect(() => {
@@ -129,35 +132,82 @@ export const DashboardMainView = memo(function DashboardMainView({
   };
 
   return (
-    <ScrollView
-      showsVerticalScrollIndicator={false}
-      contentContainerStyle={styles.container}>
-      
-      {/* 2x2 Grid of pastel stat cards renamed as requested */}
-      <View style={styles.statsSection}>
-        <StatCardsList stats={dynamicStats} onCardPress={handleStatPress} />
-      </View>
+    <View style={styles.outerWrapper}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.container}>
+        
+        {/* 2x2 Grid of pastel stat cards renamed as requested */}
+        <View style={styles.statsSection}>
+          <StatCardsList stats={dynamicStats} onCardPress={handleStatPress} />
+        </View>
 
-      {/* Live APMC Commodity Price Ticker */}
-      <CommodityTickerSection onSelectCrop={() => onNavigateToMandi()} />
+        {/* Live APMC Commodity Price Ticker */}
+        <CommodityTickerSection onSelectCrop={() => onNavigateToMandi()} />
 
-      {/* Recent Bookings Section (Empty state if 0 bookings) */}
-      <RecentBookingsList
-        bookings={recentBookings}
-        onViewAllPress={onNavigateToBookings}
-        onBookingPress={onNavigateToBookings}
-        onExploreMandis={onNavigateToMandi}
+        {/* Recent Bookings Section (Empty state if 0 bookings) */}
+        <RecentBookingsList
+          bookings={recentBookings}
+          onViewAllPress={onNavigateToBookings}
+          onBookingPress={onNavigateToBookings}
+          onExploreMandis={onNavigateToMandi}
+        />
+      </ScrollView>
+
+      {/* Floating AI Voice Booking Button */}
+      <Pressable
+        style={styles.floatingAiBtn}
+        onPress={() => setIsAiModalVisible(true)}
+      >
+        <Ionicons name="mic" size={22} color="#C8F52F" />
+        <Text style={styles.floatingAiText}>AI Voice Booking</Text>
+      </Pressable>
+
+      {/* AI Voice Assistant Modal */}
+      <AIAssistantModal
+        visible={isAiModalVisible}
+        onClose={() => setIsAiModalVisible(false)}
+        onBookingCreated={() => onNavigateToBookings()}
       />
-    </ScrollView>
+    </View>
   );
 });
 
 const styles = StyleSheet.create({
+  outerWrapper: {
+    flex: 1,
+    position: 'relative',
+  },
   container: {
-    paddingBottom: 20,
+    paddingBottom: 80,
   },
   statsSection: {
     marginTop: 4,
     marginBottom: 6,
   },
+  floatingAiBtn: {
+    position: 'absolute',
+    bottom: 20,
+    right: 20,
+    backgroundColor: '#0B2D1B',
+    paddingHorizontal: 18,
+    paddingVertical: 12,
+    borderRadius: 28,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    elevation: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+    borderWidth: 1,
+    borderColor: 'rgba(200, 245, 47, 0.4)',
+  },
+  floatingAiText: {
+    color: '#FFF',
+    fontWeight: 'bold',
+    fontSize: 13,
+  },
 });
+

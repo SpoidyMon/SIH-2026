@@ -21,6 +21,7 @@
         "dotenv": "^16.4.7",
         "express": "^4.21.2",
         "express-rate-limit": "^7.5.0",
+        "groq-sdk": "^1.6.0",
         "helmet": "^8.0.0",
         "imagekit": "^6.0.0",
         "jsonwebtoken": "^9.0.2",
@@ -1034,6 +1035,8 @@
     "gopd": ["gopd@1.2.0", "", {}, "sha512-ZUKRh6/kUFoAiTAtTYPZJ3hw9wNxx+BIBOijnlG9PnrJsCcSjs1wyyD6vJpaYtgnzDrKYRSqf3OO6Rfa93xsRg=="],
 
     "graceful-fs": ["graceful-fs@4.2.11", "", {}, "sha512-RbJ5/jmFcNNCcDV5o9eTnBLJ/HszWV0P73bc+Ff4nS/rJj+YaS6IGyiOL0VoBYX+l1Wrl3k63h/KrH+nhJ0XvQ=="],
+
+    "groq-sdk": ["groq-sdk@1.6.0", "", { "bin": { "groq-sdk": "bin/cli" } }, "sha512-ggMgo6n84aZdNObgkSbSxWrdAq4wABsViIRb5e4N15bMUtDLZVhqlgZOI7X4TeqdBMdaVUOuUdZxAZIp06u0vw=="],
 
     "hamming-distance": ["hamming-distance@1.0.0", "", {}, "sha512-hYz2IIKtyuZGfOqCs7skNiFEATf+v9IUNSOaQSr6Ll4JOxxWhOvXvc3mIdCW82Z3xW+zUoto7N/ssD4bDxAWoA=="],
 

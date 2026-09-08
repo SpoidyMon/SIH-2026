@@ -17,6 +17,9 @@ const envSchema = z.object({
   IMAGEKIT_PUBLIC_KEY: z.string().default("public_DiSN/3jBr6w41xXQPGp2LHdAcxI="),
   IMAGEKIT_PRIVATE_KEY: z.string().default("private_UqO8ObeEL9BH77qUnJNEXyx9f4U="),
   IMAGEKIT_URL_ENDPOINT: z.string().default("https://ik.imagekit.io/frbjdpcvl"),
+  GROQ_API_KEY: z.string().optional().default(""),
+  GROQ_MODEL: z.string().default("llama-3.3-70b-versatile"),
+  GROQ_TRANSCRIPTION_MODEL: z.string().default("whisper-large-v3-turbo"),
 });
 
 const parsedEnv = envSchema.safeParse(process.env);
@@ -45,4 +48,7 @@ export const env = parsedEnv.success
       IMAGEKIT_PUBLIC_KEY: process.env.IMAGEKIT_PUBLIC_KEY || "public_DiSN/3jBr6w41xXQPGp2LHdAcxI=",
       IMAGEKIT_PRIVATE_KEY: process.env.IMAGEKIT_PRIVATE_KEY || "private_UqO8ObeEL9BH77qUnJNEXyx9f4U=",
       IMAGEKIT_URL_ENDPOINT: process.env.IMAGEKIT_URL_ENDPOINT || "https://ik.imagekit.io/frbjdpcvl",
+      GROQ_API_KEY: process.env.GROQ_API_KEY || "",
+      GROQ_MODEL: process.env.GROQ_MODEL || "llama-3.3-70b-versatile",
+      GROQ_TRANSCRIPTION_MODEL: process.env.GROQ_TRANSCRIPTION_MODEL || "whisper-large-v3-turbo",
     };
