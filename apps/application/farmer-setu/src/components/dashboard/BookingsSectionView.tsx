@@ -89,7 +89,7 @@ export const BookingsSectionView = memo(function BookingsSectionView() {
       setIsLoading(true);
       try {
         const res = await getFarmerBookingsApi(token);
-        if (isMounted && res.success && res.data && res.data.bookings && res.data.bookings.length > 0) {
+        if (isMounted && res.success && res.data && res.data.bookings) {
           const mapped: BookingItem[] = res.data.bookings.map((b: any) => {
             const rawStatus = b.status || 'PENDING';
             const qtyKg = b.quantityKg ?? ((b.quantityQuintals || 0) * 100);
@@ -185,7 +185,7 @@ export const BookingsSectionView = memo(function BookingsSectionView() {
 
       return true;
     });
-  }, [criteria]);
+  }, [allBookings, criteria]);
 
   // Pagination calculation
   const totalPages = Math.max(1, Math.ceil(filteredBookings.length / ITEMS_PER_PAGE));
@@ -343,6 +343,7 @@ export const BookingsSectionView = memo(function BookingsSectionView() {
             const statusStyle = getStatusBadge(b.status);
             const isPending = b.status === 'PENDING' || b.status === 'in_progress';
             const isRejected = b.status === 'REJECTED';
+            const isCompleted = b.status === 'COMPLETED' || b.status === 'completed';
             const qtyKg = b.quantityKg ?? ((b.quantityQuintals || 0) * 100);
 
             return (
@@ -444,6 +445,13 @@ export const BookingsSectionView = memo(function BookingsSectionView() {
                     <View style={{ paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10, backgroundColor: '#FEE2E2' }}>
                       <Text style={{ fontSize: 11, fontWeight: '700', color: '#991B1B' }}>Discarded</Text>
                     </View>
+                  ) : isCompleted ? (
+                    <Pressable
+                      onPress={() => handleShowQrPass(b)}
+                      style={({ pressed }) => [{ flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 12, backgroundColor: '#7C3AED' }, pressed && styles.pressed]}>
+                      <Ionicons name="receipt-outline" size={14} color="#FFFFFF" />
+                      <Text style={{ fontSize: 11, fontWeight: '700', color: '#FFFFFF' }}>View Slip</Text>
+                    </Pressable>
                   ) : (
                     <Pressable
                       onPress={() => handleShowQrPass(b)}
@@ -547,6 +555,120 @@ export const BookingsSectionView = memo(function BookingsSectionView() {
                     <Text style={{ fontSize: 11, color: '#78350F', lineHeight: 16 }}>
                       Your slot arrival application is under review by the APMC Gate Admin. Once approved, your official Gate Pass Token & QR barcode will be unlocked here.
                     </Text>
+                  </View>
+                ) : selectedPassBooking.status === 'COMPLETED' || selectedPassBooking.status === 'completed' ? (
+                  /* Settlement Slip for Completed Bookings */
+                  <View style={{ marginVertical: 10, gap: 10 }}>
+                    {/* Success Banner */}
+                    <View style={{ backgroundColor: '#F0FDF4', padding: 14, borderRadius: 14, borderWidth: 1, borderColor: '#BBF7D0', gap: 6, alignItems: 'center' }}>
+                      <Ionicons name="checkmark-circle" size={36} color="#15803D" />
+                      <Text style={{ fontSize: 15, fontWeight: '900', color: '#15803D', textAlign: 'center' }}>
+                        Auction Settled Successfully
+                      </Text>
+                      <Text style={{ fontSize: 11, color: '#166534', textAlign: 'center', lineHeight: 16 }}>
+                        Your consignment has been weighed, graded, and the transaction has been completed at the APMC yard.
+                      </Text>
+                    </View>
+
+                    {/* Settlement Receipt Card */}
+                    <View style={{ backgroundColor: '#FAFAFA', borderRadius: 14, borderWidth: 1, borderColor: '#E5E7EB', overflow: 'hidden' }}>
+                      {/* Receipt Header */}
+                      <View style={{ backgroundColor: '#7C3AED', paddingVertical: 10, paddingHorizontal: 14 }}>
+                        <Text style={{ fontSize: 10, fontWeight: '800', color: '#E9D5FF', textTransform: 'uppercase', letterSpacing: 1.5 }}>
+                          SETTLEMENT RECEIPT
+                        </Text>
+                        <Text style={{ fontSize: 13, fontWeight: '800', color: '#FFFFFF', marginTop: 2 }}>
+                          Token: {selectedPassBooking.token || selectedPassBooking.bookingCode}
+                        </Text>
+                      </View>
+
+                      {/* Receipt Details */}
+                      <View style={{ padding: 14, gap: 8 }}>
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <Text style={{ fontSize: 11, color: '#6B7280', fontWeight: '600' }}>Produce</Text>
+                          <Text style={{ fontSize: 12, color: '#111827', fontWeight: '700' }}>
+                            {selectedPassBooking.cropName} {selectedPassBooking.cropVariety ? `(${selectedPassBooking.cropVariety})` : ''}
+                          </Text>
+                        </View>
+                        <View style={{ height: 1, backgroundColor: '#F3F4F6' }} />
+
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <Text style={{ fontSize: 11, color: '#6B7280', fontWeight: '600' }}>Consignment Weight</Text>
+                          <Text style={{ fontSize: 12, color: '#111827', fontWeight: '700' }}>
+                            {(selectedPassBooking.quantityKg ?? (selectedPassBooking.quantityQuintals * 100)).toLocaleString('en-IN')} KG
+                          </Text>
+                        </View>
+                        <View style={{ height: 1, backgroundColor: '#F3F4F6' }} />
+
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <Text style={{ fontSize: 11, color: '#6B7280', fontWeight: '600' }}>Mandi</Text>
+                          <Text style={{ fontSize: 12, color: '#111827', fontWeight: '700' }}>
+                            {selectedPassBooking.mandiName}
+                          </Text>
+                        </View>
+                        <View style={{ height: 1, backgroundColor: '#F3F4F6' }} />
+
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <Text style={{ fontSize: 11, color: '#6B7280', fontWeight: '600' }}>Arrival Date & Time</Text>
+                          <Text style={{ fontSize: 12, color: '#111827', fontWeight: '700' }}>
+                            {selectedPassBooking.dateString} • {selectedPassBooking.timeSlot}
+                          </Text>
+                        </View>
+                        <View style={{ height: 1, backgroundColor: '#F3F4F6' }} />
+
+                        {selectedPassBooking.vehicleNumber ? (
+                          <>
+                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <Text style={{ fontSize: 11, color: '#6B7280', fontWeight: '600' }}>Vehicle No.</Text>
+                              <Text style={{ fontSize: 12, color: '#111827', fontWeight: '700' }}>
+                                {selectedPassBooking.vehicleNumber}
+                              </Text>
+                            </View>
+                            <View style={{ height: 1, backgroundColor: '#F3F4F6' }} />
+                          </>
+                        ) : null}
+
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <Text style={{ fontSize: 11, color: '#6B7280', fontWeight: '600' }}>Queue Number</Text>
+                          <Text style={{ fontSize: 12, color: '#111827', fontWeight: '700' }}>
+                            #{String(selectedPassBooking.queueNumber ?? 1).padStart(3, '0')}
+                          </Text>
+                        </View>
+                      </View>
+
+                      {/* Payout Section */}
+                      {selectedPassBooking.finalPayoutAmount ? (
+                        <View style={{ backgroundColor: '#F0FDF4', padding: 14, borderTopWidth: 1, borderTopColor: '#BBF7D0' }}>
+                          <Text style={{ fontSize: 10, color: '#166534', fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1 }}>
+                            FINAL PAYOUT (DBT)
+                          </Text>
+                          <Text style={{ fontSize: 20, color: '#15803D', fontWeight: '900', marginTop: 2 }}>
+                            ₹{selectedPassBooking.finalPayoutAmount.toLocaleString('en-IN')}
+                          </Text>
+                        </View>
+                      ) : selectedPassBooking.estimatedPayout ? (
+                        <View style={{ backgroundColor: '#FFFBEB', padding: 14, borderTopWidth: 1, borderTopColor: '#FDE68A' }}>
+                          <Text style={{ fontSize: 10, color: '#92400E', fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1 }}>
+                            ESTIMATED PAYOUT
+                          </Text>
+                          <Text style={{ fontSize: 20, color: '#B45309', fontWeight: '900', marginTop: 2 }}>
+                            ₹{selectedPassBooking.estimatedPayout.toLocaleString('en-IN')}
+                          </Text>
+                        </View>
+                      ) : null}
+                    </View>
+
+                    {/* Status Progress Complete Bar */}
+                    <View style={{ backgroundColor: '#F0FDF4', padding: 12, borderRadius: 12, borderWidth: 1, borderColor: '#BBF7D0', gap: 6 }}>
+                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Text style={{ fontSize: 10, fontWeight: '800', color: '#166534', textTransform: 'uppercase' }}>Progress</Text>
+                        <Text style={{ fontSize: 10, fontWeight: '800', color: '#15803D' }}>100%</Text>
+                      </View>
+                      <View style={{ height: 6, backgroundColor: '#DCFCE7', borderRadius: 3, overflow: 'hidden' }}>
+                        <View style={{ width: '100%', height: 6, backgroundColor: '#15803D', borderRadius: 3 }} />
+                      </View>
+                      <Text style={{ fontSize: 10, color: '#166534', fontWeight: '600' }}>✅ Auction Settled • Weighbridge Complete • DBT Processed</Text>
+                    </View>
                   </View>
                 ) : (
                   <>

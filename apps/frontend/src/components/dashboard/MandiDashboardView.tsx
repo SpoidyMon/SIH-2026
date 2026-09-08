@@ -42,10 +42,12 @@ export function MandiDashboardView() {
     dispatch(updateBookingStatusThunk({ id: bookingId, status: "ACCEPTED" }));
   }, [dispatch]);
 
-  const handleReject = useCallback((bookingId: string) => {
-    const reason = prompt("Enter rejection reason (e.g. Yard intake capacity reached for this grade):");
-    if (reason !== null) {
-      dispatch(updateBookingStatusThunk({ id: bookingId, status: "REJECTED" }));
+  const handleReject = useCallback((bookingId: string, reason?: string) => {
+    const finalReason = reason !== undefined
+      ? reason
+      : prompt("Enter rejection reason (e.g. Yard intake capacity reached for this grade):");
+    if (finalReason !== null) {
+      dispatch(updateBookingStatusThunk({ id: bookingId, status: "REJECTED", rejectionReason: finalReason || undefined }));
     }
   }, [dispatch]);
 
@@ -113,6 +115,8 @@ export function MandiDashboardView() {
       <BookingDetailsModal
         booking={selectedBookingForDetails}
         onClose={() => setSelectedBookingForDetails(null)}
+        onAccept={handleAccept}
+        onReject={handleReject}
       />
 
       <WeighbridgeSettlementModal
