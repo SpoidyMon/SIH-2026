@@ -11,7 +11,6 @@ import {
   Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { ThemeColors } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { sendTextMessageApi, sendVoiceAudioApi } from '@/services/ai.service';
@@ -31,31 +30,31 @@ interface ChatMessage {
 }
 
 const QUICK_PROMPTS = [
-  { label: '🌾 Book 100 KG Wheat', text: 'Book 100 KG Wheat in Rupesh Mandi tomorrow at 9 AM' },
-  { label: '🏬 Search Mandis', text: 'Show available APMC mandis in Pune' },
-  { label: '💰 Check Crop Rates', text: 'What is the current rate of Wheat per KG?' },
-  { label: '📅 My Bookings', text: 'List all my active mandi bookings' },
+  { icon: '🌾', label: 'Book 100 KG Wheat', text: 'Book 100 KG Wheat in Rupesh Mandi tomorrow at 9 AM' },
+  { icon: '🏬', label: 'Search Mandis', text: 'Show available APMC mandis near Pune' },
+  { icon: '💰', label: 'Crop Rates per KG', text: 'What is the current rate of Wheat per KG?' },
+  { icon: '📅', label: 'My Bookings', text: 'List all my active mandi bookings' },
 ];
 
 export const AiSectionView = memo(function AiSectionView() {
   const { token } = useAuth();
-  const { language } = useLanguage();
+  const { language, setLanguage } = useLanguage();
 
-  const getWelcomeMessage = useCallback(() => {
-    if (language === 'mr') {
-      return 'नमस्ते! मी मण्डी सेतू AI सहाय्यक आहे. आपण मला बोलून (Voice) किंवा लिहून मराठी, हिंदी किंवा इंग्लिशमध्ये मंडी स्लॉट बुकिंग किंवा पीक दर (Per KG) विचारू शकता.';
+  const getWelcomeMessage = useCallback((lang: string) => {
+    if (lang === 'mr') {
+      return 'नमस्ते! मी मण्डी सेतू AI सहाय्यक आहे. मी थेट PostgreSQL डेटाबेसशी जोडलेला आहे. तुम्ही बोलून किंवा लिहून मंडी स्लॉट बुकिंग, पीक दर किंवा तुमची बुकिंग स्थिती विचारू शकता.';
     }
-    if (language === 'hi') {
-      return 'नमस्ते! मैं मण्डी सेतु AI सहायक हूँ। आप मुझसे बोलकर (Voice) या लिखकर हिंदी, मराठी या इंग्लिश में मंडी स्लॉट बुकिंग, फसल दर (Per KG), या लाइव मंडी स्थिति पूछ सकते हैं।';
+    if (lang === 'hi') {
+      return 'नमस्ते! मैं मण्डी सेतु AI सहायक हूँ। मैं सीधे PostgreSQL डेटाबेस से जुड़ा हूँ। आप बोलकर या लिखकर मंडी स्लॉट बुकिंग, फसल दर (प्रति KG), या अपनी बुकिंग्स पूछ सकते हैं।';
     }
-    return 'Hello! I am your Mandi Setu AI Assistant. You can speak (Voice) or type in English, Hindi, or Marathi to query APMC mandis, check slot capacity, crop rates (per KG), or book arrival slots.';
-  }, [language]);
+    return 'Hello! I am your Mandi Setu AI Assistant, connected live to PostgreSQL database & Groq AI. You can speak or type to check APMC mandis, slot availability, crop rates (per KG), or submit booking requests.';
+  }, []);
 
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: 'msg-welcome',
       sender: 'ai',
-      text: getWelcomeMessage(),
+      text: getWelcomeMessage(language || 'en'),
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     },
   ]);
@@ -70,28 +69,11 @@ export const AiSectionView = memo(function AiSectionView() {
   const audioChunksRef = useRef<Blob[]>([]);
   const timerIntervalRef = useRef<any>(null);
 
-  // Update welcome message when language changes if no other messages sent yet
-  useEffect(() => {
-    setMessages((prev) => {
-      if (prev.length === 1 && prev[0]?.id === 'msg-welcome') {
-        return [
-          {
-            id: 'msg-welcome',
-            sender: 'ai',
-            text: getWelcomeMessage(),
-            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          },
-        ];
-      }
-      return prev;
-    });
-  }, [language, getWelcomeMessage]);
-
   // Auto-scroll chat stream to bottom when new message arrives
   useEffect(() => {
     const timeout = setTimeout(() => {
       scrollViewRef.current?.scrollToEnd({ animated: true });
-    }, 150);
+    }, 120);
     return () => clearTimeout(timeout);
   }, [messages, isLoading]);
 
@@ -138,7 +120,7 @@ export const AiSectionView = memo(function AiSectionView() {
             {
               id: `msg-err-${Date.now()}`,
               sender: 'ai',
-              text: language === 'hi' ? 'क्षमा करें, प्रतिक्रिया प्राप्त करने में समस्या हुई।' : 'Sorry, failed to process response. Please try again.',
+              text: language === 'hi' ? 'क्षमा करें, प्रतिक्रिया प्राप्त करने में समस्या हुई।' : 'Sorry, failed to process request. Please try again.',
               timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
             },
           ]);
@@ -165,14 +147,12 @@ export const AiSectionView = memo(function AiSectionView() {
     if (isLoading) return;
 
     if (isRecording) {
-      // Stop Recording
       if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
         mediaRecorderRef.current.stop();
       }
       setIsRecording(false);
       if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
     } else {
-      // Start Recording
       try {
         if (typeof window !== 'undefined' && navigator.mediaDevices?.getUserMedia) {
           const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -194,7 +174,7 @@ export const AiSectionView = memo(function AiSectionView() {
                 {
                   id: voiceMsgId,
                   sender: 'user',
-                  text: '🎙️ Voice Message Audio Recording...',
+                  text: '🎙️ Voice Audio Message...',
                   timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
                   isVoice: true,
                 },
@@ -210,7 +190,7 @@ export const AiSectionView = memo(function AiSectionView() {
                     {
                       id: `msg-ai-vresp-${Date.now()}`,
                       sender: 'ai',
-                      text: `${res.data.transcript ? `(Transcribed: "${res.data.transcript}")\n\n` : ''}${res.data.responseText}`,
+                      text: `${res.data.transcript ? `🗣️ Transcribed: "${res.data.transcript}"\n\n` : ''}${res.data.responseText}`,
                       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
                       confirmationRequired: res.data.confirmationRequired,
                       confirmationPayload: res.data.confirmationPayload,
@@ -223,7 +203,7 @@ export const AiSectionView = memo(function AiSectionView() {
                   {
                     id: `msg-err-v-${Date.now()}`,
                     sender: 'ai',
-                    text: 'वॉइस प्रोसेसिंग में त्रुटि हुई। कृपया दोबारा बोलें।',
+                    text: 'Voice processing failed. Please try speaking again.',
                     timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
                   },
                 ]);
@@ -240,16 +220,15 @@ export const AiSectionView = memo(function AiSectionView() {
             setRecordingSeconds((prev) => prev + 1);
           }, 1000);
         } else {
-          // Fallback demo prompt for environments without audio permissions
-          handleSend('रुपेश की मंडी में कल 9 बजे 100 किलो गेहूं का स्लॉट बुक कर दो');
+          handleSend('Book 100 KG Wheat in Rupesh Mandi tomorrow');
         }
       } catch {
-        handleSend('रुपेश की मंडी में कल 9 बजे 100 किलो गेहूं का स्लॉट बुक कर दो');
+        handleSend('Book 100 KG Wheat in Rupesh Mandi tomorrow');
       }
     }
   }, [isRecording, isLoading, token, conversationId, handleSend]);
 
-  // Execute real PENDING booking creation on PostgreSQL when confirmation is tapped
+  // Execute real PENDING booking creation on PostgreSQL DB
   const handleConfirmBooking = useCallback(
     async (msgId: string, payload: BookingConfirmationPayload) => {
       if (!token) return;
@@ -275,7 +254,7 @@ export const AiSectionView = memo(function AiSectionView() {
                     ...m,
                     bookingStatus: 'confirmed',
                     bookingSuccessData: booking,
-                    responseText: `${m.text}\n\n✅ आपकी Booking Request सफलता के साथ Submitted हो गई है!\nStatus: PENDING Approval\nBooking ID: ${booking.id.slice(0, 8)}`,
+                    responseText: `${m.text}\n\n✅ Booking Request Successfully Submitted to Database!\n• Status: PENDING Mandi Approval\n• Booking ID: ${booking.id}`,
                   }
                 : m
             )
@@ -306,20 +285,31 @@ export const AiSectionView = memo(function AiSectionView() {
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}>
-      {/* Sleek Dedicated AI Header Status Banner */}
+      {/* Header Bar */}
       <View style={styles.aiHeaderBanner}>
         <View style={styles.bannerLeft}>
           <View style={styles.sparkleCircle}>
-            <Ionicons name="sparkles" size={20} color="#FFFFFF" />
+            <Ionicons name="sparkles" size={20} color="#166534" />
           </View>
           <View>
-            <Text style={styles.bannerTitle}>Mandi Setu Real AI Assistant</Text>
-            <Text style={styles.bannerSub}>Groq LLM • Multilingual Voice • Real Data</Text>
+            <Text style={styles.bannerTitle}>✨ Mandi Setu AI Agent</Text>
+            <Text style={styles.bannerSub}>Groq LLM • Live Database • Multilingual Voice</Text>
           </View>
         </View>
-        <View style={styles.liveBadge}>
-          <View style={styles.greenDot} />
-          <Text style={styles.liveBadgeText}>Live</Text>
+
+        <View style={styles.bannerRight}>
+          <View style={styles.langPillsRow}>
+            {(['en', 'hi', 'mr'] as const).map((l) => (
+              <Pressable
+                key={l}
+                onPress={() => setLanguage(l)}
+                style={[styles.langPill, (language || 'en') === l && styles.langPillActive]}>
+                <Text style={[(language || 'en') === l ? styles.langTextActive : styles.langText]}>
+                  {l === 'en' ? 'EN' : l === 'hi' ? 'हिन्दी' : 'मराठी'}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
         </View>
       </View>
 
@@ -332,13 +322,14 @@ export const AiSectionView = memo(function AiSectionView() {
               onPress={() => handleSend(p.text)}
               disabled={isLoading}
               style={({ pressed }) => [styles.chipPill, pressed && styles.chipPressed]}>
+              <Text style={styles.chipIcon}>{p.icon}</Text>
               <Text style={styles.chipText}>{p.label}</Text>
             </Pressable>
           ))}
         </ScrollView>
       </View>
 
-      {/* Main Chat Stream Container */}
+      {/* Main Chat Stream */}
       <ScrollView
         ref={scrollViewRef}
         style={styles.chatScroll}
@@ -352,7 +343,7 @@ export const AiSectionView = memo(function AiSectionView() {
               style={[styles.msgRow, isAi ? styles.msgRowAi : styles.msgRowUser]}>
               {isAi ? (
                 <View style={styles.aiAvatar}>
-                  <Ionicons name="hardware-chip" size={16} color="#FFFFFF" />
+                  <Ionicons name="leaf" size={16} color="#FFFFFF" />
                 </View>
               ) : null}
 
@@ -365,29 +356,29 @@ export const AiSectionView = memo(function AiSectionView() {
                 {msg.confirmationRequired && msg.confirmationPayload ? (
                   <View style={styles.confirmCard}>
                     <View style={styles.confirmCardHeader}>
-                      <Ionicons name="clipboard-outline" size={16} color="#B45309" />
+                      <Ionicons name="shield-checkmark" size={18} color="#92400E" />
                       <Text style={styles.confirmCardTitle}>Booking Confirmation Required</Text>
                     </View>
 
                     <View style={styles.confirmCardRows}>
                       <View style={styles.confirmRow}>
-                        <Text style={styles.confirmLabel}>Mandi:</Text>
+                        <Text style={styles.confirmLabel}>🏬 Mandi Name:</Text>
                         <Text style={styles.confirmValue}>{msg.confirmationPayload.mandiName}</Text>
                       </View>
                       <View style={styles.confirmRow}>
-                        <Text style={styles.confirmLabel}>Date & Time:</Text>
+                        <Text style={styles.confirmLabel}>📅 Arrival Date:</Text>
                         <Text style={styles.confirmValue}>
                           {msg.confirmationPayload.date} ({msg.confirmationPayload.startTime} - {msg.confirmationPayload.endTime})
                         </Text>
                       </View>
                       <View style={styles.confirmRow}>
-                        <Text style={styles.confirmLabel}>Crop & Quantity:</Text>
+                        <Text style={styles.confirmLabel}>🌾 Crop & Quantity:</Text>
                         <Text style={styles.confirmValue}>
                           {msg.confirmationPayload.crop} ({msg.confirmationPayload.quantityKg} KG)
                         </Text>
                       </View>
                       <View style={styles.confirmRow}>
-                        <Text style={styles.confirmLabel}>Estimated Payout:</Text>
+                        <Text style={styles.confirmLabel}>💰 Estimated Payout:</Text>
                         <Text style={styles.confirmValueHighlight}>
                           ₹{msg.confirmationPayload.estimatedPayout.toLocaleString('en-IN')} (₹{msg.confirmationPayload.ratePerKg}/KG)
                         </Text>
@@ -396,7 +387,7 @@ export const AiSectionView = memo(function AiSectionView() {
 
                     {msg.bookingStatus === 'confirmed' ? (
                       <View style={styles.confirmedBanner}>
-                        <Ionicons name="checkmark-circle" size={18} color="#15803D" />
+                        <Ionicons name="checkmark-circle-sharp" size={20} color="#15803D" />
                         <Text style={styles.confirmedBannerText}>Booking Request Submitted (Status: PENDING)</Text>
                       </View>
                     ) : (
@@ -408,7 +399,7 @@ export const AiSectionView = memo(function AiSectionView() {
                           <ActivityIndicator size="small" color="#FFFFFF" />
                         ) : (
                           <>
-                            <Ionicons name="checkmark-done-circle" size={18} color="#FFFFFF" />
+                            <Ionicons name="checkmark-done" size={18} color="#FFFFFF" />
                             <Text style={styles.confirmBtnText}>Confirm Booking Request</Text>
                           </>
                         )}
@@ -428,29 +419,35 @@ export const AiSectionView = memo(function AiSectionView() {
         {isLoading ? (
           <View style={styles.loadingIndicatorRow}>
             <ActivityIndicator size="small" color="#166534" />
-            <Text style={styles.loadingText}>Groq AI is processing your request...</Text>
+            <Text style={styles.loadingText}>Groq AI is querying database...</Text>
           </View>
         ) : null}
       </ScrollView>
 
-      {/* Recording Status Bar */}
+      {/* Voice Recording HUD */}
       {isRecording ? (
         <View style={styles.recordingBanner}>
           <View style={styles.recordingDotPulse} />
-          <Text style={styles.recordingText}>Listening... ({recordingSeconds}s)</Text>
+          <Text style={styles.recordingText}>Listening audio... ({recordingSeconds}s)</Text>
           <Pressable onPress={toggleRecording} style={styles.stopVoiceBtn}>
-            <Ionicons name="square" size={14} color="#FFFFFF" />
+            <Ionicons name="square" size={12} color="#FFFFFF" />
             <Text style={styles.stopVoiceText}>Stop</Text>
           </Pressable>
         </View>
       ) : null}
 
-      {/* Input Bar & Floating Mic Controller */}
+      {/* Input Bar */}
       <View style={styles.inputContainer}>
         <TextInput
           style={styles.textInput}
-          placeholder="बोलें या टाइप करें (उदा. 100 किलो गेहूं)..."
-          placeholderTextColor="#9CA3AF"
+          placeholder={
+            language === 'hi'
+              ? 'बोलें या लिखें (उदा. 100 किलो गेहूं)...'
+              : language === 'mr'
+              ? 'बोला किंवा लिहा (उदा. 100 किलो गहू)...'
+              : 'Speak or type (e.g. 100 KG Wheat)...'
+          }
+          placeholderTextColor="#94A3B8"
           value={inputText}
           onChangeText={setInputText}
           onSubmitEditing={() => handleSend()}
@@ -485,15 +482,17 @@ export const AiSectionView = memo(function AiSectionView() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#F1F5F9',
   },
   aiHeaderBanner: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#166534',
+    backgroundColor: '#064E3B',
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: '#047857',
   },
   bannerLeft: {
     flexDirection: 'row',
@@ -501,68 +500,83 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   sparkleCircle: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: '#DCFCE7',
     alignItems: 'center',
     justifyContent: 'center',
   },
   bannerTitle: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '800',
     color: '#FFFFFF',
   },
   bannerSub: {
     fontSize: 11,
-    color: '#DCFCE7',
-    marginTop: 1,
+    color: '#A7F3D0',
+    marginTop: 2,
   },
-  liveBadge: {
+  bannerRight: {
     flexDirection: 'row',
     alignItems: 'center',
+  },
+  langPillsRow: {
+    flexDirection: 'row',
     backgroundColor: 'rgba(255, 255, 255, 0.15)',
-    paddingHorizontal: 10,
+    borderRadius: 16,
+    padding: 3,
+    gap: 2,
+  },
+  langPill: {
+    paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 12,
-    gap: 6,
   },
-  greenDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#4ADE80',
+  langPillActive: {
+    backgroundColor: '#FFFFFF',
   },
-  liveBadgeText: {
+  langText: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: '#DCFCE7',
+  },
+  langTextActive: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#064E3B',
   },
   promptsContainer: {
     backgroundColor: '#FFFFFF',
-    paddingVertical: 8,
+    paddingVertical: 10,
     borderBottomWidth: 1,
     borderBottomColor: '#E2E8F0',
   },
   chipsScroll: {
-    paddingHorizontal: 12,
-    gap: 8,
+    paddingHorizontal: 16,
+    gap: 10,
   },
   chipPill: {
-    backgroundColor: '#F1F5F9',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F8FAFC',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
     borderWidth: 1,
     borderColor: '#CBD5E1',
+    gap: 6,
   },
   chipPressed: {
     backgroundColor: '#E2E8F0',
   },
+  chipIcon: {
+    fontSize: 13,
+  },
   chipText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#334155',
+    color: '#1E293B',
   },
   chatScroll: {
     flex: 1,
@@ -570,12 +584,12 @@ const styles = StyleSheet.create({
   chatScrollContent: {
     padding: 16,
     gap: 12,
-    paddingBottom: 24,
+    paddingBottom: 28,
   },
   msgRow: {
     flexDirection: 'row',
     alignItems: 'flex-end',
-    gap: 8,
+    gap: 10,
     marginVertical: 4,
   },
   msgRowAi: {
@@ -585,24 +599,35 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   aiAvatar: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     backgroundColor: '#166534',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 4,
+    shadowColor: '#166534',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
   },
   bubble: {
-    maxWidth: '82%',
+    maxWidth: '84%',
     borderRadius: 18,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 1,
   },
   bubbleAi: {
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#E2E8F0',
+    borderLeftWidth: 4,
+    borderLeftColor: '#166534',
     borderBottomLeftRadius: 4,
   },
   bubbleUser: {
@@ -611,17 +636,18 @@ const styles = StyleSheet.create({
   },
   bubbleText: {
     fontSize: 14,
-    lineHeight: 20,
+    lineHeight: 21,
   },
   bubbleTextAi: {
-    color: '#1E293B',
+    color: '#0F172A',
   },
   bubbleTextUser: {
     color: '#FFFFFF',
+    fontWeight: '500',
   },
   timestamp: {
     fontSize: 10,
-    marginTop: 4,
+    marginTop: 6,
     alignSelf: 'flex-end',
   },
   timestampAi: {
@@ -631,35 +657,40 @@ const styles = StyleSheet.create({
     color: '#BBF7D0',
   },
   confirmCard: {
-    backgroundColor: '#FEF3C7',
-    borderRadius: 12,
-    padding: 12,
-    marginTop: 10,
+    backgroundColor: '#FFFBEB',
+    borderRadius: 14,
+    padding: 14,
+    marginTop: 12,
     borderWidth: 1,
     borderColor: '#FDE68A',
   },
   confirmCardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    marginBottom: 8,
+    gap: 8,
+    marginBottom: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#FEF3C7',
+    paddingBottom: 8,
   },
   confirmCardTitle: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '800',
     color: '#92400E',
   },
   confirmCardRows: {
-    gap: 4,
-    marginBottom: 10,
+    gap: 6,
+    marginBottom: 12,
   },
   confirmRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'center',
   },
   confirmLabel: {
     fontSize: 12,
     color: '#78350F',
+    fontWeight: '500',
   },
   confirmValue: {
     fontSize: 12,
@@ -667,7 +698,7 @@ const styles = StyleSheet.create({
     color: '#451A03',
   },
   confirmValueHighlight: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '800',
     color: '#166534',
   },
@@ -676,46 +707,60 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#166534',
-    paddingVertical: 10,
-    borderRadius: 10,
-    gap: 6,
+    paddingVertical: 12,
+    borderRadius: 12,
+    gap: 8,
+    shadowColor: '#166534',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 2,
   },
   confirmBtnText: {
     color: '#FFFFFF',
     fontWeight: '800',
-    fontSize: 13,
+    fontSize: 14,
   },
   confirmedBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 8,
     backgroundColor: '#DCFCE7',
-    padding: 8,
-    borderRadius: 8,
+    padding: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#86EFAC',
   },
   confirmedBannerText: {
     fontSize: 12,
     fontWeight: '700',
     color: '#15803D',
+    flex: 1,
   },
   loadingIndicatorRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 10,
+    backgroundColor: '#FFFFFF',
     paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingVertical: 10,
+    borderRadius: 20,
+    alignSelf: 'flex-start',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
   },
   loadingText: {
     fontSize: 12,
-    color: '#64748B',
+    color: '#475569',
+    fontWeight: '600',
   },
   recordingBanner: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#EF4444',
+    backgroundColor: '#DC2626',
     paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingVertical: 10,
   },
   recordingDotPulse: {
     width: 10,
@@ -731,11 +776,11 @@ const styles = StyleSheet.create({
   stopVoiceBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 6,
     backgroundColor: 'rgba(0,0,0,0.3)',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
   },
   stopVoiceText: {
     fontSize: 12,
@@ -746,43 +791,55 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
     borderTopWidth: 1,
     borderTopColor: '#E2E8F0',
-    gap: 8,
-    marginBottom: Platform.OS === 'ios' ? 70 : 60, // Give space for floating nav bar
+    gap: 10,
+    marginBottom: Platform.OS === 'ios' ? 70 : 60,
   },
   textInput: {
     flex: 1,
-    backgroundColor: '#F1F5F9',
-    borderRadius: 20,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
+    backgroundColor: '#F8FAFC',
+    borderRadius: 24,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
     fontSize: 14,
     color: '#0F172A',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
   },
   micBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: '#2563EB',
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: '#2563EB',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
   },
   micBtnActive: {
     backgroundColor: '#DC2626',
+    shadowColor: '#DC2626',
   },
   sendBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: '#166534',
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: '#166534',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
   },
   sendBtnDisabled: {
-    backgroundColor: '#94A3B8',
+    backgroundColor: '#CBD5E1',
+    shadowOpacity: 0,
   },
   pressed: {
     opacity: 0.8,

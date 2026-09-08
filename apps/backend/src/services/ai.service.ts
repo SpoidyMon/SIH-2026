@@ -31,7 +31,7 @@ export async function processAiTextMessage(
     const newConv = await prisma.aIConversation.create({
       data: {
         userId,
-        language: input.language || "hi",
+        language: input.language || "en",
         idempotencyKey: input.idempotencyKey || `CONV-${Date.now()}`,
       },
     });
@@ -51,7 +51,7 @@ export async function processAiTextMessage(
   const initialState: BookingAgentState = {
     userId,
     conversationId,
-    language: input.language || "hi",
+    language: input.language || "en",
     userMessage: input.message,
     confirmed: Boolean(input.confirmed),
     confirmationRequired: false,
@@ -65,7 +65,7 @@ export async function processAiTextMessage(
     data: {
       conversationId,
       sender: "assistant",
-      content: finalState.responseText || "क्षमा करें, मैं आपकी सहायता नहीं कर पाया।",
+      content: finalState.responseText || "Sorry, I could not process your request.",
       toolResults: finalState.confirmationPayload ? (finalState.confirmationPayload as any) : undefined,
     },
   });
@@ -96,7 +96,7 @@ export async function processAiTextMessage(
   return {
     conversationId,
     responseText: finalState.responseText || "",
-    language: input.language || "hi",
+    language: input.language || "en",
     requiresConfirmation: finalState.confirmationRequired,
     confirmationPayload: finalState.confirmationPayload || null,
     bookingResult,
@@ -117,13 +117,13 @@ export async function processAiVoiceMessage(
   const transcript = await transcribeAudio(
     audioBuffer,
     "farmer_voice.webm",
-    input.languageHint
+    input.languageHint || "en"
   );
 
   const textPayload = await processAiTextMessage(userId, {
     conversationId: input.conversationId,
     message: transcript,
-    language: input.languageHint || "hi",
+    language: input.languageHint || "en",
     confirmed: input.confirmed,
     idempotencyKey: input.idempotencyKey,
   });

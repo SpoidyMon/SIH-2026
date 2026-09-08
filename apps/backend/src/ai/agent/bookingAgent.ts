@@ -245,6 +245,14 @@ export async function runBookingAgent(state: BookingAgentState): Promise<Booking
           quantityKg: state.confirmationPayload.quantityKg,
         });
 
+        const lang = state.language || "en";
+        let resp = `Your booking request has been successfully submitted! Booking Token: ${result.token}. Status: PENDING (awaiting mandi operator approval).`;
+        if (lang === "hi") {
+          resp = `आपकी बुकिंग रिक्वेस्ट सफलतापूर्वक दर्ज कर ली गई है! टोकन: ${result.token}। स्थिति: PENDING (मंडी ऑपरेटर द्वारा स्वीकार का इंतज़ार)।`;
+        } else if (lang === "mr") {
+          resp = `आपली बुकिंग विनंती यशस्वीरित्या सबमिट केली आहे! टोकन: ${result.token}. स्थिती: PENDING.`;
+        }
+
         return {
           ...state,
           bookingId: result.id,
@@ -252,91 +260,69 @@ export async function runBookingAgent(state: BookingAgentState): Promise<Booking
           bookingStatus: result.status,
           confirmationRequired: false,
           confirmed: true,
-          responseText: `आपकी booking request सफलतापूर्वक दर्ज कर ली गई है! Booking ID: ${result.token}। मंडी operator के स्वीकार करने के बाद आपका Gate Token जारी किया जाएगा।`,
+          responseText: resp,
         };
       } catch (err: any) {
         return {
           ...state,
           confirmationRequired: false,
           error: err.message || "Booking creation failed.",
-          responseText: `माफ़ कीजिए, बुकिंग दर्ज नहीं हो पाई: ${err.message || "कृपया थोड़ी देर बाद फिर कोशिश करें।"}`,
+          responseText: `Failed to create booking: ${err.message || "Please try again later."}`,
         };
       }
     }
   }
 
-  // 2. Invoke Real Groq API LLM with Tool Calling Schema
-  try {
-    const messages = [
-      { role: "system", content: SYSTEM_PROMPT },
-      { role: "user", content: userText },
-    ];
+  // 2. If user asks about their existing bookings
+  if (
+    lower.includes("my booking") ||
+    lower.includes("मेरी बुकिंग") ||
+    lower.includes("माझी बुकिंग") ||
+    lower.includes("list booking")
+  ) {
+    const dbBookings = await toolGetMyBookings(state.userId);
+    const lang = state.language || "en";
+    let resp = dbBookings.length > 0
+      ? `You have ${dbBookings.length} active booking(s) in PostgreSQL database:\n` + dbBookings.map(b => `• ${b.mandiName} - ${b.crop} (${b.quantityKg} KG) on ${b.date} [Status: ${b.status}]`).join("\n")
+      : "You currently have no active slot bookings in the database.";
 
-    const aiRes = await chatCompletion(messages, GROQ_TOOLS);
-
-    // If Groq requested tool calls, execute them against Prisma/PostgreSQL
-    if (aiRes.toolCalls && aiRes.toolCalls.length > 0) {
-      for (const tc of aiRes.toolCalls) {
-        if (tc.name === "searchMandis") {
-          const res = await toolSearchMandis({ query: tc.arguments?.query || userText });
-          if (res.length > 0 && res[0]) {
-            state.mandiId = res[0].id;
-            state.mandiInfo = res[0];
-          }
-        } else if (tc.name === "getAvailableSlots") {
-          const res = await toolGetAvailableSlots({ mandiId: tc.arguments?.mandiId || state.mandiId || "", date: tc.arguments?.date || resolveTargetDate(userText) });
-          if (res.length > 0 && res[0]) {
-            state.slotId = res[0].slotId;
-            state.slotInfo = res[0];
-          }
-        } else if (tc.name === "checkSlotCapacity") {
-          await toolCheckSlotCapacity({ slotId: tc.arguments?.slotId || state.slotId || "", quantityKg: tc.arguments?.quantityKg || 100 });
-        } else if (tc.name === "getCropRate") {
-          await toolGetCropRate({ crop: tc.arguments?.crop || "Wheat" });
-        } else if (tc.name === "getMyBookings") {
-          const res = await toolGetMyBookings(state.userId);
-          return {
-            ...state,
-            intent: "VIEW_BOOKINGS",
-            responseText: res.length > 0
-              ? `आपके पास ${res.length} एक्टिव बुकिंग्स हैं:\n` + res.map(b => `• ${b.crop} (${b.quantityKg} KG) - ${b.status}`).join("\n")
-              : "आपके पास वर्तमान में कोई एक्टिव बुकिंग नहीं है।",
-          };
-        } else if (tc.name === "cancelBooking") {
-          const res = await toolCancelBooking({ userId: state.userId, bookingId: tc.arguments?.bookingId });
-          return {
-            ...state,
-            intent: "CANCEL_BOOKING",
-            responseText: `बुकिंग (ID: ${res.bookingId}) की स्थिति: ${res.status}।`,
-          };
-        }
-      }
+    if (lang === "hi") {
+      resp = dbBookings.length > 0
+        ? `आपके पास डेटाबेस में ${dbBookings.length} एक्टिव बुकिंग्स हैं:\n` + dbBookings.map(b => `• ${b.mandiName} - ${b.crop} (${b.quantityKg} KG) तारीख ${b.date} [स्थिति: ${b.status}]`).join("\n")
+        : "आपके पास वर्तमान में कोई एक्टिव बुकिंग नहीं है।";
+    } else if (lang === "mr") {
+      resp = dbBookings.length > 0
+        ? `आपल्याकडे डेटाबेसमध्ये ${dbBookings.length} बुकिंग्स आहेत:\n` + dbBookings.map(b => `• ${b.mandiName} - ${b.crop} (${b.quantityKg} KG) तारीख ${b.date} [स्थिती: ${b.status}]`).join("\n")
+        : "आपल्याकडे सध्या कोणतीही बुकिंग नाही.";
     }
 
-    if (aiRes.content && !userText.toLowerCase().includes("book") && !userText.toLowerCase().includes("बुक")) {
-      return {
-        ...state,
-        responseText: aiRes.content,
-      };
-    }
-  } catch (err: any) {
-    console.warn("Groq LLM call error in runBookingAgent, continuing with database resolution:", err?.message);
+    return {
+      ...state,
+      intent: "VIEW_BOOKINGS",
+      responseText: resp,
+    };
   }
 
-  // 3. Perform Mandi resolution & Slot Check
+  // 3. Perform Real Database Resolutions from PostgreSQL
   const targetDate = state.date || resolveTargetDate(userText);
   const parsedKg = parseQuantityKg(userText) || (state.crops?.[0]?.quantityKg ?? 100);
   const cropNorm = normalizeCropName(userText);
 
+  // Search mandis in PostgreSQL
   let mandis: AgentMandiInfo[] = state.mandiMatches || [];
   if (!state.mandiId) {
-    mandis = await toolSearchMandis({ query: state.mandiQuery || userText || "Rupesh" });
+    mandis = await toolSearchMandis({ query: state.mandiQuery || userText || "" });
   }
 
   if (mandis.length === 0 && !state.mandiId) {
+    const lang = state.language || "en";
     return {
       ...state,
-      responseText: "मुझे कोई मंडी नहीं मिली। कृपया मंडी का नाम बताएँ (जैसे 'Rupesh Mandi')।",
+      responseText: lang === "hi"
+        ? "मुझे डेटाबेस में कोई मंडी नहीं मिली। कृपया मंडी का नाम बताएँ (जैसे 'Rupesh Mandi')।"
+        : lang === "mr"
+        ? "मला डेटाबेसमध्ये कोणतीही मंडी सापडली नाही. कृपया मंडीचे नाव सांगा."
+        : "No APMC mandi matching your request was found in the database. Please specify a valid mandi name.",
     };
   }
 
@@ -347,28 +333,31 @@ export async function runBookingAgent(state: BookingAgentState): Promise<Booking
     return {
       ...state,
       mandiMatches: mandis,
-      responseText: mandis.length > 0
-        ? `मुझे ${mandis.length} मंडियां मिली हैं। आप कौनसी मंडी में बुक करना चाहते हैं?`
-        : "मुझे कोई मंडी नहीं मिली। कृपया मंडी का नाम बताएँ (जैसे 'Rupesh Mandi')।",
+      responseText: `Found ${mandis.length} mandis in database. Please specify which mandi you want to select: ` + mandis.map(m => m.name).join(", "),
     };
   }
 
-  // 4. Fetch available slots
+  // Fetch real available slots from PostgreSQL DB
   const availableSlots = await toolGetAvailableSlots({ mandiId, date: targetDate });
 
   if (!availableSlots || availableSlots.length === 0 || !availableSlots[0]) {
+    const lang = state.language || "en";
     return {
       ...state,
       mandiId,
       mandiInfo: selectedMandi,
       date: targetDate,
-      responseText: `${selectedMandi.name} में ${targetDate} के लिए कोई एक्टिव स्लॉट उपलब्ध नहीं है। कृपया कोई अन्य तारीख चुनें।`,
+      responseText: lang === "hi"
+        ? `${selectedMandi.name} में ${targetDate} के लिए कोई एक्टिव स्लॉट उपलब्ध नहीं है।`
+        : lang === "mr"
+        ? `${selectedMandi.name} मध्ये ${targetDate} साठी कोणतीही वेळ उपलब्ध नाही.`
+        : `${selectedMandi.name} has no active arrival slots available on ${targetDate}. Please select another date.`,
     };
   }
 
   const selectedSlot = availableSlots[0];
 
-  // 5. Capacity & Rate Validation
+  // Validate slot capacity against PostgreSQL DB
   const capacityCheck = await toolCheckSlotCapacity({
     slotId: selectedSlot.slotId,
     quantityKg: parsedKg,
@@ -380,14 +369,68 @@ export async function runBookingAgent(state: BookingAgentState): Promise<Booking
       mandiId,
       mandiInfo: selectedMandi,
       slotId: selectedSlot.slotId,
-      responseText: `क्षमा करें! ${capacityCheck.reason || "इस स्लॉट में पर्याप्त capacity उपलब्ध नहीं है।"}`,
+      responseText: capacityCheck.reason || "This slot does not have sufficient remaining capacity.",
     };
   }
 
+  // Fetch benchmark price rate from PostgreSQL DB
   const rateInfo = await toolGetCropRate({ crop: cropNorm.name });
   const estimatedPayout = Math.round(parsedKg * rateInfo.ratePerKg);
 
-  // 6. Build Confirmation Payload
+  // Invoke Groq LLM grounded with real PostgreSQL data
+  try {
+    const promptWithContext = `User Prompt: "${userText}"
+Ground Truth from PostgreSQL DB:
+- Mandi Name: ${selectedMandi.name}
+- Slot Date: ${selectedSlot.date} (${selectedSlot.startTime} to ${selectedSlot.endTime})
+- Crop: ${cropNorm.name}
+- Requested Quantity: ${parsedKg} KG
+- Rate per KG: ₹${rateInfo.ratePerKg}
+- Total Payout: ₹${estimatedPayout}
+- Requested Language: ${state.language || "en"}
+
+Generate a warm, polite response strictly in language "${state.language || "en"}". Include details: Mandi name, Date, Slot time, Crop name, Quantity in KG, Estimated payout amount (₹), and ask if they would like to submit/confirm the booking request.`;
+
+    const aiRes = await chatCompletion([
+      { role: "system", content: SYSTEM_PROMPT },
+      { role: "user", content: promptWithContext },
+    ]);
+
+    if (aiRes.content && aiRes.content.trim()) {
+      const confirmationPayload: BookingConfirmationPayload = {
+        mandiId,
+        mandiName: selectedMandi.name,
+        slotId: selectedSlot.slotId,
+        date: selectedSlot.date,
+        startTime: selectedSlot.startTime,
+        endTime: selectedSlot.endTime,
+        crop: cropNorm.name,
+        quantityKg: parsedKg,
+        ratePerKg: rateInfo.ratePerKg,
+        estimatedPayout,
+        remainingCapacity: selectedSlot.availableBookings,
+        idempotencyKey: `IDEM-${state.conversationId}-${Date.now().toString().slice(-6)}`,
+      };
+
+      return {
+        ...state,
+        intent: "BOOK_SLOT",
+        mandiId,
+        mandiInfo: selectedMandi,
+        date: selectedSlot.date,
+        slotId: selectedSlot.slotId,
+        slotInfo: selectedSlot,
+        crops: [{ cropId: cropNorm.cropId, name: cropNorm.name, quantityKg: parsedKg, ratePerKg: rateInfo.ratePerKg, estimatedAmount: estimatedPayout }],
+        confirmationRequired: true,
+        confirmationPayload,
+        responseText: aiRes.content,
+      };
+    }
+  } catch (err: any) {
+    console.warn("Groq LLM call error, falling back to database formatter:", err?.message);
+  }
+
+  // Fallback DB Formatted Response if Groq fails or API key unavailable
   const confirmationPayload: BookingConfirmationPayload = {
     mandiId,
     mandiName: selectedMandi.name,
@@ -403,24 +446,13 @@ export async function runBookingAgent(state: BookingAgentState): Promise<Booking
     idempotencyKey: `IDEM-${state.conversationId}-${Date.now().toString().slice(-6)}`,
   };
 
-  let responseText = `${selectedMandi.name} में ${selectedSlot.date} को सुबह ${selectedSlot.startTime} – ${selectedSlot.endTime} का स्लॉट उपलब्ध है।
-फसल: ${cropNorm.name} (${parsedKg} KG)
-अनुमानित मूल्य: ₹${estimatedPayout.toLocaleString("en-IN")} (दर: ₹${rateInfo.ratePerKg}/KG)
+  const lang = state.language || "en";
+  let responseText = `Slot available at ${selectedMandi.name} on ${selectedSlot.date} (${selectedSlot.startTime} – ${selectedSlot.endTime}).\nCrop: ${cropNorm.name} (${parsedKg} KG)\nEstimated Payout: ₹${estimatedPayout.toLocaleString("en-IN")} (Rate: ₹${rateInfo.ratePerKg}/KG)\n\nWould you like me to submit this booking request? (Say Yes or tap Confirm)`;
 
-क्या मैं यह booking request सबमिट कर दूँ? (हाँ / Confirm कहें)`;
-
-  if (state.language === "en") {
-    responseText = `Slot available at ${selectedMandi.name} on ${selectedSlot.date} (${selectedSlot.startTime} – ${selectedSlot.endTime}).
-Crop: ${cropNorm.name} (${parsedKg} KG)
-Estimated Payout: ₹${estimatedPayout.toLocaleString("en-IN")} (Rate: ₹${rateInfo.ratePerKg}/KG)
-
-Would you like me to submit this booking request? (Say Yes or tap Confirm)`;
-  } else if (state.language === "mr") {
-    responseText = `${selectedMandi.name} मध्ये ${selectedSlot.date} रोजी सकाळी ${selectedSlot.startTime} – ${selectedSlot.endTime} चा स्लॉट उपलब्ध आहे.
-पीक: ${cropNorm.name} (${parsedKg} KG)
-अंदाजे उत्पन्न: ₹${estimatedPayout.toLocaleString("en-IN")} (दर: ₹${rateInfo.ratePerKg}/KG)
-
-मी ही बुकिंग विनंती सबमिट करू का? (होय / Confirm म्हणा)`;
+  if (lang === "hi") {
+    responseText = `${selectedMandi.name} में ${selectedSlot.date} को सुबह ${selectedSlot.startTime} – ${selectedSlot.endTime} का स्लॉट उपलब्ध है।\nफसल: ${cropNorm.name} (${parsedKg} KG)\nअनुमानित मूल्य: ₹${estimatedPayout.toLocaleString("en-IN")} (दर: ₹${rateInfo.ratePerKg}/KG)\n\nक्या मैं यह booking request सबमिट कर दूँ? (हाँ / Confirm कहें)`;
+  } else if (lang === "mr") {
+    responseText = `${selectedMandi.name} मध्ये ${selectedSlot.date} रोजी सकाळी ${selectedSlot.startTime} – ${selectedSlot.endTime} चा स्लॉट उपलब्ध आहे.\nपीक: ${cropNorm.name} (${parsedKg} KG)\nअंदाजे उत्पन्न: ₹${estimatedPayout.toLocaleString("en-IN")} (दर: ₹${rateInfo.ratePerKg}/KG)\n\nमी ही बुकिंग विनंती सबमिट करू का? (होय / Confirm म्हणा)`;
   }
 
   return {
@@ -437,3 +469,4 @@ Would you like me to submit this booking request? (Say Yes or tap Confirm)`;
     responseText,
   };
 }
+
