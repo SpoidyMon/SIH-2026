@@ -1,5 +1,10 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+export const AUTH_TOKEN_KEY = '@kisan_setu_auth_token';
+export const REFRESH_TOKEN_KEY = '@kisan_setu_refresh_token';
+export const USER_STORAGE_KEY = '@kisan_setu_user_profile';
+export const PROFILE_STORAGE_KEY = '@kisan_setu_farmer_profile';
+
 // In-memory fallback cache in case native storage is unavailable (e.g. headless/test/SSR)
 const memoryStorage = new Map<string, string>();
 

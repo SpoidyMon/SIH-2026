@@ -32,14 +32,9 @@ export const BookingDetailsModal: React.FC<BookingDetailsModalProps> = ({
     onClose();
   };
 
-  const qrImageUrl = booking.token && !booking.token.startsWith("REQ-")
-    ? `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(
-        booking.qrCodeData || booking.token
-      )}`
-    : null;
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-[9999] animate-fade-in">
       <div className="bg-white dark:bg-[#121212] border border-neutral-300 dark:border-neutral-800 rounded-2xl w-full max-w-xl shadow-xl overflow-hidden animate-slide-up flex flex-col max-h-[90vh]">
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 bg-neutral-50 dark:bg-black border-b border-neutral-200 dark:border-neutral-800">
@@ -153,7 +148,7 @@ export const BookingDetailsModal: React.FC<BookingDetailsModalProps> = ({
             </div>
           </div>
 
-          {/* QR Code & Token Section if Accepted */}
+          {/* Gate Token Section if Accepted */}
           {(booking.status === "ACCEPTED" || booking.status === "VERIFIED" || booking.status === "COMPLETED") && (
             <div className="p-4 bg-emerald-50/60 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800/60 rounded-xl flex items-center justify-between gap-4">
               <div>
@@ -167,11 +162,10 @@ export const BookingDetailsModal: React.FC<BookingDetailsModalProps> = ({
                   Verified Gate Pass • Authorized for Weighbridge Check-in
                 </span>
               </div>
-              {qrImageUrl && (
-                <div className="p-1.5 bg-white rounded-lg border border-slate-200 shadow-xs shrink-0">
-                  <img src={qrImageUrl} alt="Gate Pass QR" className="w-20 h-20" />
-                </div>
-              )}
+              <div className="px-3 py-2 bg-emerald-100/70 dark:bg-emerald-900/40 border border-emerald-300 dark:border-emerald-700/60 rounded-lg text-right shrink-0">
+                <span className="text-[10px] font-bold text-emerald-800 dark:text-emerald-300 block">Gate Verification</span>
+                <span className="text-[11px] text-emerald-700 dark:text-emerald-400 block font-medium">Scan farmer's QR code</span>
+              </div>
             </div>
           )}
 

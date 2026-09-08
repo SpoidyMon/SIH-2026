@@ -13,6 +13,7 @@ import {
   MandiSectionView,
   BookingsSectionView,
   SettingsSectionView,
+  AiSectionView,
 } from '@/components/dashboard';
 import type { NavTabType } from '@/interfaces';
 
@@ -59,6 +60,11 @@ export default function FarmerDashboardScreen() {
         return {
           title: t('nav.mandi'),
           subtitle: t('nav.sub.mandi'),
+        };
+      case 'ai':
+        return {
+          title: t('nav.ai'),
+          subtitle: t('nav.sub.ai'),
         };
       case 'bookings':
         return {
@@ -134,10 +140,13 @@ export default function FarmerDashboardScreen() {
             <DashboardMainView
               onNavigateToBookings={() => setActiveTab('bookings')}
               onNavigateToMandi={() => setActiveTab('mandi')}
+              onNavigateToAi={() => setActiveTab('ai')}
             />
           ) : null}
 
           {activeTab === 'mandi' ? <MandiSectionView /> : null}
+
+          {activeTab === 'ai' ? <AiSectionView /> : null}
 
           {activeTab === 'bookings' ? <BookingsSectionView /> : null}
 

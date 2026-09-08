@@ -364,3 +364,18 @@ export interface CompleteBookingPayload {
   finalPayoutAmount: number;
 }
 
+export interface VerifyTokenModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onVerify: (token: string) => void;
+  initialToken?: string;
+  targetBooking?: Booking | null;
+}
+
+export interface WeighbridgeSettlementModalProps {
+  booking: Booking | null;
+  onClose: () => void;
+  onComplete: (bookingId: string, actualWeightQuintals: number, finalPayoutAmount: number) => void;
+  isPreVerified?: boolean;
+}
+

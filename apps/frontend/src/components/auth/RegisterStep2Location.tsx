@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { MapPin, Navigation, ArrowRight, CheckCircle2, AlertCircle, Sparkles } from "lucide-react";
+import { MapPin, Navigation, ArrowRight, CheckCircle2, AlertCircle, Sparkles, Map } from "lucide-react";
 
 export interface LocationData {
   address: string;
@@ -134,15 +134,39 @@ export function RegisterStep2Location({ initialData, onLocationSaved }: Register
 
   return (
     <div className="space-y-4 animate-fade-in">
-      <div className="flex items-center justify-between">
+      {/* Top Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3.5">
         <div>
-          <h2 className="text-xl font-bold text-slate-900 tracking-tight">Mandi Location &amp; Map</h2>
+          <h2 className="text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
+            <Map className="w-5 h-5 text-emerald-600" />
+            <span>Mandi Location &amp; Geo-Coordinates</span>
+          </h2>
           <p className="text-xs text-slate-500 mt-0.5 font-medium">
-            Step 2 of 3: Set physical yard coordinates for farmer app discovery
+            Step 2 of 3: Mark your APMC yard location on the interactive map for farmer app discovery
           </p>
         </div>
-        <div className="w-9 h-9 rounded-xl bg-emerald-50 border border-emerald-300/40 flex items-center justify-center text-emerald-800">
-          <MapPin className="w-5 h-5" />
+
+        {/* Action Buttons */}
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            type="button"
+            onClick={() => reverseGeocodeCoordinates(latitude, longitude)}
+            disabled={isLocating}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 rounded-xl transition-colors cursor-pointer disabled:opacity-50"
+            title="Auto-fill address, district, state and PIN code from current coordinates"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+            <span>Auto-Fill Address</span>
+          </button>
+          <button
+            type="button"
+            onClick={handleFetchCurrentLocation}
+            disabled={isLocating}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold transition cursor-pointer shadow-xs disabled:opacity-50"
+          >
+            <Navigation className={`w-3.5 h-3.5 ${isLocating ? "animate-spin" : ""}`} />
+            <span>{isLocating ? "Locating..." : "Fetch GPS Location"}</span>
+          </button>
         </div>
       </div>
 
@@ -160,111 +184,70 @@ export function RegisterStep2Location({ initialData, onLocationSaved }: Register
         </div>
       )}
 
-      <form onSubmit={handleSubmitLocation} className="space-y-3.5">
-        {/* Physical Address */}
-        <div>
-          <label className="block text-xs font-semibold text-slate-700 mb-1">
-            Physical Yard Address <span className="text-emerald-600">*</span>
-          </label>
-          <input
-            type="text"
-            value={address}
-            onChange={(e) => setAddress(e.target.value)}
-            placeholder="e.g. Sector 4, APMC Market Yard, Sanwer Road"
-            className="w-full px-3.5 py-2 text-xs bg-slate-50/70 border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 focus:bg-white placeholder:text-slate-400 placeholder:transition-opacity placeholder:duration-200 focus:placeholder:opacity-20 shadow-2xs transition"
-            required
-          />
-        </div>
-
-        {/* Pincode & District */}
-        <div className="grid grid-cols-2 gap-3">
+      <form onSubmit={handleSubmitLocation} className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+        {/* Left Column: Location Details Form */}
+        <div className="lg:col-span-5 space-y-3.5 bg-slate-50/60 p-4 rounded-2xl border border-slate-200/80">
+          {/* Physical Address */}
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1">
-              Postal PIN Code <span className="text-emerald-600">*</span>
+              Physical Yard Address <span className="text-emerald-600">*</span>
             </label>
-            <input
-              type="text"
-              maxLength={6}
-              value={pincode}
-              onChange={(e) => setPincode(e.target.value.replace(/\D/g, ""))}
-              placeholder="452001"
-              className="w-full px-3.5 py-2 text-xs bg-slate-50/70 border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 focus:bg-white placeholder:text-slate-400 placeholder:transition-opacity placeholder:duration-200 focus:placeholder:opacity-20 shadow-2xs transition"
+            <textarea
+              rows={2}
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+              placeholder="e.g. Sector 4, APMC Market Yard, Sanwer Road"
+              className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 placeholder:text-slate-400 shadow-2xs transition"
               required
             />
           </div>
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">District</label>
-            <input
-              type="text"
-              value={district}
-              onChange={(e) => setDistrict(e.target.value)}
-              placeholder="e.g. Indore"
-              className="w-full px-3.5 py-2 text-xs bg-slate-50/70 border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 focus:bg-white placeholder:text-slate-400 placeholder:transition-opacity placeholder:duration-200 focus:placeholder:opacity-20 shadow-2xs transition"
-              required
-            />
-          </div>
-        </div>
 
-        {/* State */}
-        <div>
-          <label className="block text-xs font-semibold text-slate-700 mb-1">State</label>
-          <input
-            type="text"
-            value={state}
-            onChange={(e) => setState(e.target.value)}
-            placeholder="e.g. Madhya Pradesh"
-            className="w-full px-3.5 py-2 text-xs bg-slate-50/70 border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 focus:bg-white placeholder:text-slate-400 placeholder:transition-opacity placeholder:duration-200 focus:placeholder:opacity-20 shadow-2xs transition"
-            required
-          />
-        </div>
-
-        {/* GPS Coordinates & Interactive Map Embed */}
-        <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-3">
-          <div className="flex items-center justify-between flex-wrap gap-2">
-            <span className="text-xs font-semibold text-slate-800 flex items-center gap-1.5">
-              <MapPin className="w-3.5 h-3.5 text-emerald-600" />
-              Mandi Yard Map &amp; Geo-Coordinates
-            </span>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => reverseGeocodeCoordinates(latitude, longitude)}
-                disabled={isLocating}
-                className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 rounded-lg transition-colors cursor-pointer disabled:opacity-50"
-                title="Auto-fill address, district, state and PIN code from current coordinates"
-              >
-                <Sparkles className="w-3 h-3 text-emerald-600" />
-                <span>Auto-Fill Address</span>
-              </button>
-              <button
-                type="button"
-                onClick={handleFetchCurrentLocation}
-                disabled={isLocating}
-                className="flex items-center gap-1.5 px-3 py-1 bg-white hover:bg-emerald-50 text-emerald-800 border border-emerald-300 rounded-lg text-xs font-semibold transition cursor-pointer shadow-2xs disabled:opacity-50"
-              >
-                <Navigation className={`w-3.5 h-3.5 ${isLocating ? "animate-spin" : ""}`} />
-                <span>{isLocating ? "Locating..." : "Fetch GPS Location"}</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Interactive OpenStreetMap Embed Preview */}
-          <div className="relative rounded-xl overflow-hidden border border-slate-200 h-44 bg-slate-100 shadow-inner">
-            <iframe
-              title="Mandi Yard Map"
-              src={`https://www.openstreetmap.org/export/embed.html?bbox=${longitude - 0.01}%2C${latitude - 0.008}%2C${longitude + 0.01}%2C${latitude + 0.008}&layer=mapnik&marker=${latitude}%2C${longitude}`}
-              className="w-full h-full border-0"
-              loading="lazy"
-            />
-            <div className="absolute bottom-2 right-2 bg-white/95 backdrop-blur-xs px-2.5 py-1 rounded-lg border border-slate-200 text-[10px] font-bold text-slate-700 flex items-center gap-1 shadow-2xs">
-              <MapPin className="w-3 h-3 text-red-500" />
-              <span>Marked APMC Yard Entrance ({latitude.toFixed(4)}° N, {longitude.toFixed(4)}° E)</span>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-2 text-xs">
+          {/* Pincode & District */}
+          <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-[11px] font-medium text-slate-500 mb-0.5">Latitude</label>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">
+                Postal PIN Code <span className="text-emerald-600">*</span>
+              </label>
+              <input
+                type="text"
+                maxLength={6}
+                value={pincode}
+                onChange={(e) => setPincode(e.target.value.replace(/\D/g, ""))}
+                placeholder="452001"
+                className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 shadow-2xs transition"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">District</label>
+              <input
+                type="text"
+                value={district}
+                onChange={(e) => setDistrict(e.target.value)}
+                placeholder="e.g. Indore"
+                className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 shadow-2xs transition"
+                required
+              />
+            </div>
+          </div>
+
+          {/* State */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 mb-1">State</label>
+            <input
+              type="text"
+              value={state}
+              onChange={(e) => setState(e.target.value)}
+              placeholder="e.g. Madhya Pradesh"
+              className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 shadow-2xs transition"
+              required
+            />
+          </div>
+
+          {/* Coordinates */}
+          <div className="grid grid-cols-2 gap-3 pt-1 border-t border-slate-200">
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-600 mb-1">Latitude (°N)</label>
               <input
                 type="number"
                 step="0.000001"
@@ -274,7 +257,7 @@ export function RegisterStep2Location({ initialData, onLocationSaved }: Register
               />
             </div>
             <div>
-              <label className="block text-[11px] font-medium text-slate-500 mb-0.5">Longitude</label>
+              <label className="block text-[11px] font-semibold text-slate-600 mb-1">Longitude (°E)</label>
               <input
                 type="number"
                 step="0.000001"
@@ -284,17 +267,57 @@ export function RegisterStep2Location({ initialData, onLocationSaved }: Register
               />
             </div>
           </div>
+
+          <button
+            type="submit"
+            className="w-full mt-2 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl flex items-center justify-center gap-2 transition-all shadow-xs cursor-pointer text-xs"
+          >
+            <span>Save Location &amp; Set Operating Slots</span>
+            <ArrowRight className="w-4 h-4" />
+          </button>
         </div>
 
-        <button
-          type="submit"
-          className="w-full mt-2 py-3 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold rounded-xl flex items-center justify-center gap-2 transition-all shadow-xs cursor-pointer"
-        >
-          <span>Save Location &amp; Set Operating Slots</span>
-          <ArrowRight className="w-4 h-4" />
-        </button>
+        {/* Right Column: BIG Interactive OpenStreetMap */}
+        <div className="lg:col-span-7 space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+              <MapPin className="w-4 h-4 text-emerald-600" />
+              <span>Interactive APMC Yard Map Preview</span>
+            </span>
+            <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
+              Live OpenStreetMap
+            </span>
+          </div>
+
+          {/* Large Map Container */}
+          <div className="relative rounded-2xl overflow-hidden border border-slate-300 h-[380px] bg-slate-100 shadow-md group">
+            <iframe
+              title="Mandi Yard Map"
+              src={`https://www.openstreetmap.org/export/embed.html?bbox=${longitude - 0.012}%2C${latitude - 0.009}%2C${longitude + 0.012}%2C${latitude + 0.009}&layer=mapnik&marker=${latitude}%2C${longitude}`}
+              className="w-full h-full border-0"
+              loading="lazy"
+            />
+
+            {/* Coordinates Floating Badge */}
+            <div className="absolute bottom-3 left-3 right-3 bg-white/95 backdrop-blur-md p-3 rounded-xl border border-slate-200 text-xs font-semibold text-slate-800 flex items-center justify-between shadow-md">
+              <div className="flex items-center gap-2 min-w-0">
+                <div className="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center shrink-0">
+                  <MapPin className="w-4 h-4 text-emerald-700" />
+                </div>
+                <div className="min-w-0">
+                  <p className="font-bold text-slate-900 truncate">APMC Yard Main Entrance</p>
+                  <p className="text-[11px] text-slate-500 truncate font-mono">
+                    {latitude.toFixed(5)}° N, {longitude.toFixed(5)}° E
+                  </p>
+                </div>
+              </div>
+              <span className="text-[10px] font-bold px-2 py-1 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0">
+                Active Pin
+              </span>
+            </div>
+          </div>
+        </div>
       </form>
     </div>
   );
 }
-

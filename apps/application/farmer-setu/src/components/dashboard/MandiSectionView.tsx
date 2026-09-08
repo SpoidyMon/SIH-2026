@@ -16,7 +16,7 @@ import { ThemeColors } from '@/constants/theme';
 import { MandiFilterModal } from './MandiFilterModal';
 import { MandiMapViewModal } from './MandiMapViewModal';
 import { ProfileCompletionModal } from './ProfileCompletionModal';
-import { SlotBookingModal } from './SlotBookingModal';
+import { SlotBookingModal, isSlotExpired } from './SlotBookingModal';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { translateMandiName, translateCropName } from '@/constants/translations';
@@ -48,6 +48,7 @@ export const MandiSectionView = memo(function MandiSectionView() {
   const [mapModalVisible, setMapModalVisible] = useState(false);
   const [profileModalVisible, setProfileModalVisible] = useState(false);
   const [infoModalMandi, setInfoModalMandi] = useState<MandiItem | null>(null);
+  const [infoTab, setInfoTab] = useState<'overview' | 'slots'>('overview');
   const [bookingModalMandi, setBookingModalMandi] = useState<MandiItem | null>(null);
   const [isBookingModalVisible, setIsBookingModalVisible] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
@@ -173,17 +174,21 @@ export const MandiSectionView = memo(function MandiSectionView() {
     async (mandi: MandiItem) => {
       // 1. KYC Profile Completion Check (Strict Requirement)
       if (!isProfileComplete) {
-        Alert.alert(
-          t('mandi.booking_kyc_required_title'),
-          t('mandi.booking_kyc_required_msg'),
-          [
-            { text: t('general.cancel'), style: 'cancel' },
-            {
-              text: t('mandi.complete_kyc_now'),
-              onPress: () => setProfileModalVisible(true),
-            },
-          ]
-        );
+        if (Platform.OS === 'web') {
+          setProfileModalVisible(true);
+        } else {
+          Alert.alert(
+            t('mandi.booking_kyc_required_title'),
+            t('mandi.booking_kyc_required_msg'),
+            [
+              { text: t('general.cancel'), style: 'cancel' },
+              {
+                text: t('mandi.complete_kyc_now'),
+                onPress: () => setProfileModalVisible(true),
+              },
+            ]
+          );
+        }
         return;
       }
 
@@ -319,10 +324,23 @@ export const MandiSectionView = memo(function MandiSectionView() {
           </View>
         ) : (
           paginatedMandis.map((mandi) => {
-            const cropsList = mandi.acceptedCrops && mandi.acceptedCrops.length > 0
-              ? mandi.acceptedCrops
-              : mandi.topCrop.split(',').map((c) => c.trim());
-            const cropsDisplay = cropsList.slice(0, 3).map((c) => translateCropName(c, language)).join(' • ') + (cropsList.length > 3 ? '...' : '');
+            const cropRatesList =
+              mandi.cropRates && mandi.cropRates.length > 0
+                ? mandi.cropRates
+                : (mandi.acceptedCrops || ['Wheat', 'Mustard', 'Tomato', 'Onion']).map((c) => {
+                    const name = typeof c === 'string' ? c.trim() : (c as any).crop;
+                    return {
+                      crop: name,
+                      ratePerKg: name.toLowerCase().includes('mustard')
+                        ? 52
+                        : name.toLowerCase().includes('wheat')
+                        ? 28
+                        : name.toLowerCase().includes('onion')
+                        ? 19
+                        : 24,
+                    };
+                  });
+            const primaryCrop = cropRatesList[0] || { crop: 'Wheat', ratePerKg: 28 };
 
             return (
               <View key={mandi.id} style={styles.mandiCard}>
@@ -356,15 +374,17 @@ export const MandiSectionView = memo(function MandiSectionView() {
                   </View>
                 </View>
 
-                {/* 2. Top Commodities Strip */}
+                {/* 2. Sleek Crop Rates Strip with specific crop names */}
                 <View style={styles.topCommodityStrip}>
-                  <View style={styles.topCommodityBadge}>
-                    <Ionicons name="leaf-outline" size={12} color="#15803D" />
-                    <Text style={styles.topCommodityLabel}>{t('mandi.crops')}</Text>
-                    <Text style={styles.topCommodityText} numberOfLines={1}>
-                      {cropsDisplay}
-                    </Text>
-                  </View>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.sleekCropRatesRow}>
+                    {cropRatesList.map((cr, idx) => (
+                      <View key={idx} style={styles.sleekCropRateChip}>
+                        <Ionicons name="leaf" size={11} color="#15803D" />
+                        <Text style={styles.sleekCropChipName}>{translateCropName(cr.crop, language)}</Text>
+                        <Text style={styles.sleekCropChipPrice}>₹{cr.ratePerKg}/KG</Text>
+                      </View>
+                    ))}
+                  </ScrollView>
                 </View>
 
                 {/* 3. Card Body */}
@@ -380,9 +400,10 @@ export const MandiSectionView = memo(function MandiSectionView() {
                     <Text style={styles.uniformMetricText}>
                       {mandi.activeFarmersCount} {t('mandi.in_queue')}
                     </Text>
-                    <Text style={styles.uniformMetricText}>
-                      {mandi.modalPrice}
-                    </Text>
+                    <View style={styles.primaryCropBadgeBox}>
+                      <Text style={styles.primaryCropLabelText}>{translateCropName(primaryCrop.crop, language)}</Text>
+                      <Text style={styles.primaryCropPriceVal}>₹{primaryCrop.ratePerKg}/KG</Text>
+                    </View>
                   </View>
                 </View>
 
@@ -507,45 +528,164 @@ export const MandiSectionView = memo(function MandiSectionView() {
                 </Pressable>
               </View>
 
+              {/* Segmented Control Header to minimize scrolling */}
+              <View style={styles.infoTabContainer}>
+                <Pressable
+                  onPress={() => setInfoTab('overview')}
+                  style={[styles.infoTabBtn, infoTab === 'overview' && styles.infoTabBtnActive]}>
+                  <Ionicons
+                    name="information-circle"
+                    size={15}
+                    color={infoTab === 'overview' ? '#15803D' : '#6B7280'}
+                  />
+                  <Text style={[styles.infoTabText, infoTab === 'overview' && styles.infoTabTextActive]}>
+                    Yard &amp; Contact
+                  </Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => setInfoTab('slots')}
+                  style={[styles.infoTabBtn, infoTab === 'slots' && styles.infoTabBtnActive]}>
+                  <Ionicons
+                    name="time"
+                    size={15}
+                    color={infoTab === 'slots' ? '#15803D' : '#6B7280'}
+                  />
+                  <Text style={[styles.infoTabText, infoTab === 'slots' && styles.infoTabTextActive]}>
+                    Slots &amp; Allowed Crops
+                  </Text>
+                </Pressable>
+              </View>
+
               <ScrollView style={styles.infoScroll} showsVerticalScrollIndicator={false}>
-                {/* Address & Hours */}
-                <View style={styles.infoSection}>
-                  <Text style={styles.infoSectionTitle}>{t('mandi.modal_title')}</Text>
-                  <Text style={styles.infoAddressText}>{infoModalMandi.address || infoModalMandi.district}</Text>
-                  <Text style={styles.infoTimingText}>{t('mandi.hours')} {infoModalMandi.operatingHours || '05:30 AM - 07:00 PM (Mon - Sat)'}</Text>
-                </View>
-
-                {/* Accepted Crops & Modal Rates */}
-                <View style={styles.infoSection}>
-                  <Text style={styles.infoSectionTitle}>{t('mandi.accepted_commodities')}</Text>
-                  <View style={styles.cropTagsGrid}>
-                    {(infoModalMandi.acceptedCrops || infoModalMandi.topCrop.split(',')).map((crop, idx) => (
-                      <View key={idx} style={styles.cropTagPill}>
-                        <Ionicons name="leaf" size={11} color="#15803D" />
-                        <Text style={styles.cropTagPillText}>{translateCropName(crop.trim(), language)}</Text>
+                {infoTab === 'overview' ? (
+                  <>
+                    {/* Mandi Operator & Contact Details Card */}
+                    <View style={styles.infoSection}>
+                      <Text style={styles.infoSectionTitle}>Yard Admin &amp; Contact Details</Text>
+                      <View style={styles.operatorContactCard}>
+                        <View style={styles.operatorRow}>
+                          <Ionicons name="person-circle" size={24} color="#15803D" />
+                          <View style={{ flex: 1 }}>
+                            <Text style={styles.operatorNameText}>{infoModalMandi.operatorName || 'Rupesh Sharma (Yard Admin)'}</Text>
+                            <Text style={styles.operatorRoleText}>Authorized APMC Mandi Operator</Text>
+                          </View>
+                        </View>
+                        <View style={styles.operatorDetailRow}>
+                          <Ionicons name="call" size={14} color="#059669" />
+                          <Text style={styles.operatorDetailText}>{infoModalMandi.contactPhone || '+91 98765 43210'}</Text>
+                        </View>
+                        <View style={styles.operatorDetailRow}>
+                          <Ionicons name="mail" size={14} color="#059669" />
+                          <Text style={styles.operatorDetailText}>{infoModalMandi.contactEmail || 'operator@apmc.gov.in'}</Text>
+                        </View>
                       </View>
-                    ))}
-                  </View>
-                  <View style={styles.rateHighlightBox}>
-                    <Text style={styles.rateHighlightLabel}>{t('mandi.daily_modal')}</Text>
-                    <Text style={styles.rateHighlightValue}>{infoModalMandi.modalPrice}</Text>
-                  </View>
-                </View>
+                    </View>
 
-                {/* Yard Traffic & Slots */}
-                <View style={styles.infoSection}>
-                  <Text style={styles.infoSectionTitle}>{t('mandi.arrival_capacity')}</Text>
-                  <View style={styles.metricsRow}>
-                    <View style={styles.metricBox}>
-                      <Text style={styles.metricBoxNum}>{infoModalMandi.activeFarmersCount}</Text>
-                      <Text style={styles.metricBoxLabel}>{t('mandi.farmers_queue')}</Text>
+                    {/* Address & Hours */}
+                    <View style={styles.infoSection}>
+                      <Text style={styles.infoSectionTitle}>{t('mandi.modal_title')}</Text>
+                      <Text style={styles.infoAddressText}>{infoModalMandi.address || infoModalMandi.district}</Text>
+                      <Text style={styles.infoTimingText}>{t('mandi.hours')} {infoModalMandi.operatingHours || '05:30 AM - 07:00 PM (Mon - Sat)'}</Text>
                     </View>
-                    <View style={styles.metricBox}>
-                      <Text style={styles.metricBoxNum}>{infoModalMandi.estimatedQueueTime}</Text>
-                      <Text style={styles.metricBoxLabel}>{t('mandi.est_wait')}</Text>
+
+                    {/* Accepted Crops Overview */}
+                    <View style={styles.infoSection}>
+                      <Text style={styles.infoSectionTitle}>All Accepted Crops (per KG)</Text>
+                      <View style={styles.cropRatesGrid}>
+                        {(
+                          infoModalMandi.cropRates && infoModalMandi.cropRates.length > 0
+                            ? infoModalMandi.cropRates
+                            : (infoModalMandi.acceptedCrops || ['Wheat', 'Mustard', 'Onion', 'Tomato']).map((c) => ({
+                                crop: c.trim(),
+                                ratePerKg: c.trim() === 'Mustard' ? 52 : c.trim() === 'Wheat' ? 28 : c.trim() === 'Onion' ? 19 : 24,
+                                availableKg: 10000,
+                              }))
+                        ).map((cr, idx) => (
+                          <View key={idx} style={styles.cropRateCard}>
+                            <View style={styles.cropRateHeader}>
+                              <Ionicons name="leaf" size={14} color="#15803D" />
+                              <Text style={styles.cropRateName}>{translateCropName(cr.crop, language)}</Text>
+                            </View>
+                            <Text style={styles.cropRatePrice}>₹{cr.ratePerKg} / KG</Text>
+                          </View>
+                        ))}
+                      </View>
                     </View>
+                  </>
+                ) : (
+                  /* Slots & Slot-Varying Crops View */
+                  <View style={styles.infoSection}>
+                    <Text style={styles.infoSectionTitle}>Configured Intake Slots &amp; Specific Crops</Text>
+                    {(() => {
+                      const activeSlots = (infoModalMandi.slots || []).filter(
+                        (slot) => !(slot as any).isExpired && !isSlotExpired(slot.date, slot.endTime, slot.startTime)
+                      );
+
+                      if (activeSlots.length === 0) {
+                        return (
+                          <View style={styles.noSlotsBanner}>
+                            <Ionicons name="time-outline" size={18} color="#D97706" />
+                            <Text style={styles.noSlotsText}>
+                              All arrival slots for today have passed. No active slots available right now.
+                            </Text>
+                          </View>
+                        );
+                      }
+
+                      return activeSlots.map((slot, sIdx) => {
+                        const booked = slot.bookedFarmers || 0;
+                        const maxF = slot.maxFarmers || 20;
+                        const waitMins = booked === 0 ? 0 : Math.min(booked * 6, 45);
+
+                        // Crops specific to this slot
+                        const allowedList = slot.allowedCrops && Array.isArray(slot.allowedCrops) && slot.allowedCrops.length > 0
+                          ? slot.allowedCrops
+                          : [{ crop: slot.crop || 'Wheat', ratePerKg: 28, quantityKg: 5000 }];
+
+                        return (
+                          <View key={sIdx} style={styles.slotDetailBox}>
+                            <View style={styles.slotHeaderRow}>
+                              <Ionicons name="time-outline" size={16} color="#059669" />
+                              <Text style={styles.slotTitleText}>
+                                Slot {sIdx + 1}: {slot.startTime} - {slot.endTime} ({slot.date})
+                              </Text>
+                            </View>
+
+                            <View style={styles.slotMetricsGrid}>
+                              <View style={styles.slotMetricItem}>
+                                <Text style={styles.slotMetricLabel}>Queue Farmers</Text>
+                                <Text style={styles.slotMetricVal}>{booked} / {maxF}</Text>
+                              </View>
+                              <View style={styles.slotMetricItem}>
+                                <Text style={styles.slotMetricLabel}>Expected Wait</Text>
+                                <Text style={styles.slotMetricVal}>{waitMins} mins</Text>
+                              </View>
+                              <View style={styles.slotMetricItem}>
+                                <Text style={styles.slotMetricLabel}>Intake Capacity</Text>
+                                <Text style={styles.slotMetricVal}>{(slot.totalCapacityKg || 10000).toLocaleString()} KG</Text>
+                              </View>
+                            </View>
+
+                            {/* Crops available for this slot */}
+                            <View style={styles.slotCropsSection}>
+                              <Text style={styles.slotCropsLabel}>Allowed Crops for this Slot:</Text>
+                              <View style={styles.slotCropsPillsRow}>
+                                {allowedList.map((ac: any, idx: number) => (
+                                  <View key={idx} style={styles.slotCropBadge}>
+                                    <Ionicons name="leaf" size={11} color="#15803D" />
+                                    <Text style={styles.slotCropBadgeText}>
+                                      {translateCropName(ac.crop || ac, language)} @ ₹{ac.ratePerKg || 25}/KG
+                                    </Text>
+                                  </View>
+                                ))}
+                              </View>
+                            </View>
+                          </View>
+                        );
+                      });
+                    })()}
                   </View>
-                </View>
+                )}
               </ScrollView>
 
               <View style={styles.infoModalFooter}>
@@ -1132,5 +1272,265 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 13,
     fontWeight: '800',
+  },
+
+  // Operator Contact Card Styles
+  operatorContactCard: {
+    backgroundColor: '#F0FDF4',
+    borderRadius: 14,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#BBF7D0',
+    gap: 6,
+  },
+  operatorRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 4,
+  },
+  operatorNameText: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#14532D',
+  },
+  operatorRoleText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#166534',
+  },
+  operatorDetailRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  operatorDetailText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#047857',
+  },
+
+  // Per-Crop Rates Grid Styles
+  cropRatesGrid: {
+    gap: 8,
+  },
+  cropRateCard: {
+    backgroundColor: '#F9FAFB',
+    borderRadius: 12,
+    padding: 10,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  cropRateHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  cropRateName: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#1F2937',
+  },
+  cropRatePrice: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#15803D',
+  },
+  cropRateCapacity: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#6B7280',
+  },
+
+  // Slot Detail Box Styles
+  slotDetailBox: {
+    backgroundColor: '#F8FAFC',
+    borderRadius: 14,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    marginBottom: 8,
+    gap: 8,
+  },
+  slotHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  slotTitleText: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#0F172A',
+  },
+  slotMetricsGrid: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 10,
+    padding: 8,
+    borderWidth: 1,
+    borderColor: '#F1F5F9',
+  },
+  slotMetricItem: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  slotMetricLabel: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: '#64748B',
+    textTransform: 'uppercase',
+  },
+  slotMetricVal: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#059669',
+    marginTop: 2,
+  },
+
+  // Segmented Info Tab Styles
+  infoTabContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#F1F5F9',
+    borderRadius: 12,
+    padding: 3,
+    marginHorizontal: 20,
+    marginTop: 10,
+    marginBottom: 6,
+    gap: 4,
+  },
+  infoTabBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
+    borderRadius: 9,
+    gap: 6,
+  },
+  infoTabBtnActive: {
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  infoTabText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#64748B',
+  },
+  infoTabTextActive: {
+    color: '#15803D',
+    fontWeight: '800',
+  },
+
+  // Slot Crops Section Styles
+  slotCropsSection: {
+    marginTop: 6,
+    paddingTop: 6,
+    borderTopWidth: 1,
+    borderTopColor: '#F1F5F9',
+    gap: 4,
+  },
+  slotCropsLabel: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#475569',
+    textTransform: 'uppercase',
+  },
+  slotCropsPillsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+  },
+  slotCropBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#F0FDF4',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#DCFCE7',
+  },
+  slotCropBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#166534',
+  },
+
+  // Mandi Main Card Sleek Crop Rates Strip
+  sleekCropRatesRow: {
+    gap: 6,
+    alignItems: 'center',
+  },
+  sleekCropRateChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#F0FDF4',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#DCFCE7',
+  },
+  sleekCropChipName: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#1F2937',
+  },
+  sleekCropChipPrice: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#15803D',
+  },
+
+  // Primary Crop Price Metric Box
+  primaryCropBadgeBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#DCFCE7',
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#86EFAC',
+    marginTop: 2,
+  },
+  primaryCropLabelText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#166534',
+  },
+  primaryCropPriceVal: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#15803D',
+  },
+  noSlotsBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#FFFBEB',
+    padding: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+    marginTop: 6,
+  },
+  noSlotsText: {
+    flex: 1,
+    fontSize: 12,
+    color: '#92400E',
+    fontWeight: '500',
+    lineHeight: 16,
   },
 });

@@ -30,6 +30,12 @@ const NAV_ITEMS: NavItem[] = [
     inactiveIcon: 'storefront-outline',
   },
   {
+    id: 'ai',
+    label: 'AI Setu',
+    activeIcon: 'sparkles',
+    inactiveIcon: 'sparkles-outline',
+  },
+  {
     id: 'bookings',
     label: 'Bookings',
     activeIcon: 'calendar',

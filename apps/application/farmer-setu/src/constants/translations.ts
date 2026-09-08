@@ -179,10 +179,12 @@ export const TRANSLATIONS: Record<SupportedLanguage, Record<string, string>> = {
     // Navigation
     'nav.dashboard': 'Dashboard',
     'nav.mandi': 'Mandis',
+    'nav.ai': 'AI Setu',
     'nav.bookings': 'Bookings',
     'nav.settings': 'Profile',
     'nav.sub.dashboard': 'Namaste, {name} 🌾',
     'nav.sub.mandi': 'Live APMC Rates & Auctions',
+    'nav.sub.ai': 'Voice & Multilingual AI Booking',
     'nav.sub.bookings': 'Gate Passes & Arrival Slots',
     'nav.sub.settings': 'Kisan KYC & App Settings',
 
@@ -377,10 +379,12 @@ export const TRANSLATIONS: Record<SupportedLanguage, Record<string, string>> = {
     // Navigation
     'nav.dashboard': 'डॅशबोर्ड',
     'nav.mandi': 'बाजार समित्या',
+    'nav.ai': 'एआय सेतू',
     'nav.bookings': 'माझे बुकिंग्स',
     'nav.settings': 'माझे प्रोफाईल',
     'nav.sub.dashboard': 'नमस्ते, {name} 🌾',
     'nav.sub.mandi': 'थेट कृषी उत्पन्न बाजार दर व लिलाव',
+    'nav.sub.ai': 'आवाज आणि बहुभाषिक एआय बुकिंग',
     'nav.sub.bookings': 'गेट पासेस व आवक स्लॉट्स',
     'nav.sub.settings': 'शेतकरी केवायसी व ॲप सेटिंग्ज',
 
@@ -580,10 +584,12 @@ export const TRANSLATIONS: Record<SupportedLanguage, Record<string, string>> = {
     // Navigation
     'nav.dashboard': 'डैशबोर्ड',
     'nav.mandi': 'मंडी बाजार',
+    'nav.ai': 'एआई सेतु',
     'nav.bookings': 'मेरी बुकिंग',
     'nav.settings': 'मेरी प्रोफ़ाइल',
     'nav.sub.dashboard': 'नमस्ते, {name} 🌾',
     'nav.sub.mandi': 'लाइव एपीएमसी मंडी भाव और नीलामी',
+    'nav.sub.ai': 'वॉइस व बहुभाषी एआई बुकिंग',
     'nav.sub.bookings': 'गेट पास और आगमन स्लॉट',
     'nav.sub.settings': 'किसान केवाईसी और ऐप सेटिंग्स',
 

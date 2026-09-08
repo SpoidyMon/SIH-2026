@@ -105,9 +105,9 @@ export function MandiLayout() {
   const [showBayModal, setShowBayModal] = useState<boolean>(false);
 
   return (
-    <div className={`h-screen w-full flex flex-col p-3 sm:p-4 md:p-5 gap-3 ${isDarkTheme ? "bg-[#0a0a0a] text-neutral-100" : "bg-[#edeef2] text-slate-800"} font-sans antialiased overflow-hidden`}>
+    <div className={`h-screen w-full flex flex-col ${isDarkTheme ? "bg-[#0a0a0a] text-neutral-100" : "bg-[#edeef2] text-slate-800"} font-sans antialiased overflow-hidden`}>
       {/* ═══ TOP NAVBAR ═══ */}
-      <header className="w-full bg-white dark:bg-[#121212] rounded-2xl shadow-subtle border border-slate-200/80 dark:border-neutral-800 px-4 py-2.5 flex items-center justify-between gap-4 z-20 shrink-0">
+      <header className="w-full bg-white dark:bg-[#121212] border-b border-slate-200/80 dark:border-neutral-800 px-6 py-3 flex items-center justify-between gap-4 z-10 shrink-0 shadow-2xs">
         {/* Left: Brand / Title */}
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-full flex items-center justify-center text-white shrink-0 shadow-sm bg-emerald-600">
@@ -226,7 +226,7 @@ export function MandiLayout() {
       </header>
 
       {/* ═══ BODY LAYOUT ═══ */}
-      <div className="flex-1 flex gap-4 min-h-0 overflow-hidden">
+      <div className="flex-1 flex gap-4 min-h-0 overflow-hidden p-4 sm:p-5">
         {/* ═══ LEFT SIDEBAR ═══ */}
         <aside className="w-64 bg-white dark:bg-[#121212] rounded-2xl shadow-subtle border border-slate-200/80 dark:border-neutral-800 flex flex-col justify-between p-3.5 shrink-0 select-none">
           {/* Top Section */}

@@ -18,11 +18,12 @@ interface ConsignmentBookingsTableProps {
   isActionLoading: boolean;
   onAccept: (bookingId: string) => void;
   onReject: (bookingId: string, reason?: string) => void;
-  onVerifyEntry: (token: string) => void;
-  onOpenWeighbridge: (booking: Booking) => void;
+  onVerifyEntry?: (token: string) => void;
+  onOpenWeighbridge: (booking: Booking, isPreVerified?: boolean) => void;
   onViewSlip: (booking: Booking) => void;
   onViewDetails: (booking: Booking) => void;
-  onOpenVerifyModal: () => void;
+  onOpenVerifyModal: (booking?: Booking | null) => void;
+  onDefaultSlots?: () => void;
 }
 
 export const ConsignmentBookingsTable = React.memo(function ConsignmentBookingsTable({
@@ -36,6 +37,7 @@ export const ConsignmentBookingsTable = React.memo(function ConsignmentBookingsT
   onViewSlip,
   onViewDetails,
   onOpenVerifyModal,
+  onDefaultSlots,
 }: ConsignmentBookingsTableProps) {
   const [activeTab, setActiveTab] = useState<MandiTableTab>("pending");
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
@@ -389,21 +391,24 @@ export const ConsignmentBookingsTable = React.memo(function ConsignmentBookingsT
                           )}
                           {b.status === "ACCEPTED" && (
                             <button
-                              onClick={() => onVerifyEntry(b.token)}
+                              onClick={() => onOpenVerifyModal(b)}
                               disabled={isActionLoading}
-                              className="px-4 py-1 text-xs font-semibold rounded-full border border-neutral-400 dark:border-neutral-600 text-neutral-800 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-900 transition cursor-pointer"
+                              className="px-3.5 py-1 text-xs font-semibold rounded-full bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 flex items-center gap-1.5 transition cursor-pointer"
+                              title="Scan farmer QR code to verify gate arrival"
                             >
-                              Verify Entry
+                              <QrCode className="w-3.5 h-3.5" />
+                              <span>Verify Gate Pass</span>
                             </button>
                           )}
                           {b.status === "VERIFIED" && (
                             <button
-                              onClick={() => onOpenWeighbridge(b)}
+                              onClick={() => onOpenWeighbridge(b, false)}
                               disabled={isActionLoading}
-                              className="px-3.5 py-1 text-xs font-semibold rounded-full bg-emerald-500 hover:bg-emerald-600 text-white flex items-center gap-1.5 shadow-xs transition cursor-pointer"
+                              className="px-3.5 py-1 text-xs font-semibold rounded-full bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-1.5 shadow-xs transition cursor-pointer"
+                              title="Scan farmer QR code to settle consignment"
                             >
                               <Scale className="w-3.5 h-3.5" />
-                              <span>Mark Complete</span>
+                              <span>Scan QR to Settle</span>
                             </button>
                           )}
                           {b.status === "COMPLETED" && (
@@ -453,7 +458,7 @@ export const ConsignmentBookingsTable = React.memo(function ConsignmentBookingsT
 
       {/* ═══ Rejection Reason Mandatory Modal ═══ */}
       {rejectingBooking && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-[9999] animate-fade-in">
           <div className="bg-white dark:bg-[#121212] border border-slate-200 dark:border-neutral-800 rounded-2xl w-full max-w-md p-5 shadow-xl space-y-4">
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-neutral-800 pb-3">
               <h3 className="text-sm font-bold text-slate-900 dark:text-[#E5E5E5]">

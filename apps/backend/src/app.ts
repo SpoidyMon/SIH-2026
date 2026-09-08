@@ -6,6 +6,7 @@ import userRoutes from "./routes/user.routes.js";
 import farmerRoutes from "./routes/farmer.routes.js";
 import mandiRoutes from "./routes/mandi.routes.js";
 import adminRoutes from "./routes/admin.routes.js";
+import aiRoutes from "./routes/ai.routes.js";
 import { uploadRouter } from "./routes/upload.routes.js";
 import { errorHandler } from "./middlewares/errorHandler.middleware.js";
 import { env } from "./config/env.js";
@@ -51,6 +52,7 @@ export function createApp(): Express {
   app.use("/api/v1/farmer", farmerRoutes);
   app.use("/api/v1/mandi", mandiRoutes);
   app.use("/api/v1/admin", adminRoutes);
+  app.use("/api/v1/ai", aiRoutes);
   app.use("/api/v1/upload", uploadRouter);
 
   // 404 handler

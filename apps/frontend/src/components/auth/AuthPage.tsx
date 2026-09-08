@@ -4,7 +4,7 @@ import { ShieldCheck, Mail, KeyRound, CheckCircle2, Sprout } from "lucide-react"
 import { LoginForm } from "./LoginForm";
 import { MandiRegisterWizard } from "./MandiRegisterWizard";
 import { authApi } from "../../services/auth.api";
-import { useAppDispatch } from "../../store";
+import { useAppDispatch, useAppSelector } from "../../store";
 import { completeOnboarding, cancelOnboarding } from "../../store/slices/authSlice";
 
 interface AuthPageProps {
@@ -22,6 +22,8 @@ export function AuthPage({ initialMode }: AuthPageProps) {
     return "LOGIN";
   });
 
+  const { otpRequiredForEmail, error } = useAppSelector((state) => state.auth);
+
   useEffect(() => {
     if (location.pathname === "/register") {
       setMode("REGISTER");
@@ -29,6 +31,14 @@ export function AuthPage({ initialMode }: AuthPageProps) {
       setMode("LOGIN");
     }
   }, [location.pathname]);
+
+  // Auto-navigate to incomplete registration wizard if login rejected due to incomplete onboarding or missing verification
+  useEffect(() => {
+    if (otpRequiredForEmail && (error?.includes("incomplete") || error?.includes("verified"))) {
+      setMode("REGISTER");
+      navigate(`/register?step=location&email=${encodeURIComponent(otpRequiredForEmail)}`);
+    }
+  }, [otpRequiredForEmail, error, navigate]);
 
   const [forgotEmail, setForgotEmail] = useState("");
   const [forgotMsg, setForgotMsg] = useState<string | null>(null);
@@ -84,7 +94,7 @@ export function AuthPage({ initialMode }: AuthPageProps) {
 
       {/* Center Auth / Onboarding Card */}
       <main className="flex-1 flex items-center justify-center p-4 sm:p-6 my-4">
-        <div className="w-full max-w-lg bg-white border border-slate-200/90 p-6 sm:p-8 rounded-3xl shadow-sm">
+        <div className={`w-full ${mode === "REGISTER" ? "max-w-4xl" : "max-w-lg"} bg-white border border-slate-200/90 p-6 sm:p-8 rounded-3xl shadow-sm transition-all duration-300`}>
           {mode === "FORGOT_PASSWORD" ? (
             /* Forgot Password Screen */
             <div className="space-y-4 animate-fade-in">

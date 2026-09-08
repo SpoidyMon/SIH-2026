@@ -1,4 +1,4 @@
-import React, { memo, useState, useEffect, useMemo } from 'react';
+import React, { memo, useState, useEffect, useMemo, useRef } from 'react';
 import {
   Modal,
   View,
@@ -34,6 +34,49 @@ interface CropSelectionState {
   selected: boolean;
 }
 
+export function isSlotExpired(dateStr?: string, endTimeStr?: string, startTimeStr?: string): boolean {
+  if (!dateStr) return false;
+
+  const now = new Date();
+  let targetDate = new Date();
+  const dLower = dateStr.trim().toLowerCase();
+  if (dLower === 'today') {
+    // keep current date
+  } else if (dLower === 'tomorrow') {
+    targetDate.setDate(targetDate.getDate() + 1);
+  } else {
+    const parsed = new Date(dateStr);
+    if (!isNaN(parsed.getTime())) {
+      targetDate = parsed;
+    }
+  }
+
+  const todayOnly = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const slotDateOnly = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate());
+
+  if (slotDateOnly < todayOnly) return true;
+  if (slotDateOnly > todayOnly) return false;
+
+  const timeToCheck = endTimeStr || startTimeStr;
+  if (!timeToCheck) return false;
+
+  let hours = 0;
+  let minutes = 0;
+  const match = timeToCheck.match(/(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
+  if (match) {
+    let h = parseInt(match[1], 10);
+    const m = parseInt(match[2], 10);
+    const meridiem = match[3] ? match[3].toUpperCase() : null;
+    if (meridiem === 'PM' && h < 12) h += 12;
+    if (meridiem === 'AM' && h === 12) h = 0;
+    hours = h;
+    minutes = m;
+  }
+
+  const slotEndTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hours, minutes);
+  return now.getTime() > slotEndTime.getTime();
+}
+
 export const SlotBookingModal = memo(function SlotBookingModal({
   visible,
   mandi,
@@ -42,9 +85,17 @@ export const SlotBookingModal = memo(function SlotBookingModal({
   onBookingSuccess,
 }: SlotBookingModalProps) {
   const { language } = useLanguage();
+  const scrollRef = useRef<ScrollView>(null);
 
   // Selected arrival slot
   const [selectedSlot, setSelectedSlot] = useState<MandiSlotData | null>(null);
+
+  const handleSelectSlot = (s: MandiSlotData) => {
+    setSelectedSlot(s);
+    setTimeout(() => {
+      scrollRef.current?.scrollTo({ y: 320, animated: true });
+    }, 100);
+  };
 
   // Multi-crop states
   const [cropItems, setCropItems] = useState<CropSelectionState[]>([]);
@@ -73,9 +124,12 @@ export const SlotBookingModal = memo(function SlotBookingModal({
       setGeneratedBooking(null);
       setErrorMessage(null);
 
-      // Default slot selection
+      // Default slot selection: pick first non-expired active slot
       if (mandi.slots && mandi.slots.length > 0) {
-        setSelectedSlot(mandi.slots[0]);
+        const validSlot = mandi.slots.find(
+          (s) => !(s as any).isExpired && !isSlotExpired(s.date, s.endTime, s.startTime)
+        );
+        setSelectedSlot(validSlot || mandi.slots[0]);
       } else {
         setSelectedSlot(null);
       }
@@ -100,25 +154,53 @@ export const SlotBookingModal = memo(function SlotBookingModal({
     }
   }, [mandi, visible, defaultRatePerKg]);
 
-  if (!mandi) return null;
+  // Update crop items whenever selected slot changes
+  useEffect(() => {
+    if (!mandi) return;
 
-  // Toggle crop selection
-  const handleToggleCrop = (index: number) => {
-    setCropItems((prev) => {
-      const updated = [...prev];
-      updated[index] = { ...updated[index], selected: !updated[index].selected };
-      return updated;
-    });
-  };
+    let targetCrops: Array<{ crop: string; ratePerKg: number }> = [];
 
-  // Update crop quantity in KG
-  const handleUpdateQuantityKg = (index: number, text: string) => {
-    setCropItems((prev) => {
-      const updated = [...prev];
-      updated[index] = { ...updated[index], quantityKg: text };
-      return updated;
-    });
-  };
+    if (selectedSlot) {
+      if (selectedSlot.allowedCrops && Array.isArray(selectedSlot.allowedCrops)) {
+        (selectedSlot.allowedCrops as any[]).forEach((item) => {
+          if (item?.crop) {
+            targetCrops.push({
+              crop: item.crop,
+              ratePerKg: Number(item.ratePerKg) || defaultRatePerKg,
+            });
+          }
+        });
+      } else if (selectedSlot.crop) {
+        selectedSlot.crop.split(',').forEach((c) => {
+          const name = c.trim();
+          targetCrops.push({
+            crop: name,
+            ratePerKg: defaultRatePerKg,
+          });
+        });
+      }
+    }
+
+    if (targetCrops.length === 0) {
+      const sourceCrops =
+        mandi.acceptedCrops && mandi.acceptedCrops.length > 0
+          ? mandi.acceptedCrops
+          : mandi.topCrop
+          ? mandi.topCrop.split(',').map((s) => s.trim())
+          : ['Wheat', 'Mustard'];
+      targetCrops = sourceCrops.map((c) => ({ crop: c, ratePerKg: defaultRatePerKg }));
+    }
+
+    const updatedItems: CropSelectionState[] = targetCrops.map((item, index) => ({
+      crop: item.crop,
+      variety: 'Grade-A Standard',
+      quantityKg: index === 0 ? '500' : '200',
+      ratePerKg: item.ratePerKg,
+      selected: index === 0,
+    }));
+
+    setCropItems(updatedItems);
+  }, [selectedSlot, mandi, defaultRatePerKg]);
 
   // Calculate totals across selected crops
   const selectedCropsList = useMemo(() => {
@@ -143,9 +225,31 @@ export const SlotBookingModal = memo(function SlotBookingModal({
   // Expected queue position
   const expectedQueueNumber = useMemo(() => {
     const currentCount =
-      selectedSlot?.currentFarmersBooked ?? selectedSlot?.bookedFarmers ?? 0;
+      selectedSlot && typeof selectedSlot.bookedFarmers === 'number'
+        ? selectedSlot.bookedFarmers
+        : mandi?.activeFarmersCount || 0;
     return currentCount + 1;
-  }, [selectedSlot]);
+  }, [selectedSlot, mandi]);
+
+  if (!mandi) return null;
+
+  // Toggle crop selection
+  const handleToggleCrop = (index: number) => {
+    setCropItems((prev) => {
+      const updated = [...prev];
+      updated[index] = { ...updated[index], selected: !updated[index].selected };
+      return updated;
+    });
+  };
+
+  // Update crop quantity in KG
+  const handleUpdateQuantityKg = (index: number, text: string) => {
+    setCropItems((prev) => {
+      const updated = [...prev];
+      updated[index] = { ...updated[index], quantityKg: text };
+      return updated;
+    });
+  };
 
   // Confirm and create booking
   const handleConfirmBooking = async () => {
@@ -248,6 +352,7 @@ export const SlotBookingModal = memo(function SlotBookingModal({
 
           {/* Body Content */}
           <ScrollView
+            ref={scrollRef}
             style={styles.scrollContent}
             keyboardShouldPersistTaps="handled"
             automaticallyAdjustKeyboardInsets={true}
@@ -352,94 +457,66 @@ export const SlotBookingModal = memo(function SlotBookingModal({
                   </View>
                 )}
 
-                {/* 1. Slot Window Selection */}
+                {/* 1. Slot Window & Date Selection */}
                 <View style={styles.formSection}>
-                  <Text style={styles.sectionLabel}>1. Select Arrival Window & Date</Text>
-                  {mandi.slots && mandi.slots.length > 0 ? (
-                    <View style={styles.slotsGrid}>
-                      {mandi.slots.map((s) => {
-                        const isSelected = selectedSlot?.id === s.id;
-                        return (
-                          <Pressable
-                            key={s.id}
-                            onPress={() => setSelectedSlot(s)}
-                            style={[
-                              styles.slotCard,
-                              isSelected && styles.slotCardSelected,
-                            ]}>
-                            <View style={styles.slotCardHeader}>
-                              <Ionicons
-                                name="time-outline"
-                                size={14}
-                                color={isSelected ? '#15803D' : '#6B7280'}
-                              />
-                              <Text
-                                style={[
-                                  styles.slotTimeText,
-                                  isSelected && styles.slotTimeTextSelected,
-                                ]}>
-                                {s.startTime} - {s.endTime}
+                  <Text style={styles.sectionLabel}>1. Select Date &amp; Arrival Window</Text>
+                  {(() => {
+                    const activeSlots = (mandi.slots || []).filter(
+                      (s) => !(s as any).isExpired && !isSlotExpired(s.date, s.endTime, s.startTime)
+                    );
+
+                    if (activeSlots.length === 0) {
+                      return (
+                        <View style={styles.noSlotsBanner}>
+                          <Ionicons name="time-outline" size={18} color="#D97706" />
+                          <Text style={styles.noSlotsText}>
+                            All arrival slots for today have passed. Please check back for upcoming slots.
+                          </Text>
+                        </View>
+                      );
+                    }
+
+                    return (
+                      <View style={styles.slotsGrid}>
+                        {activeSlots.map((s) => {
+                          const isSelected = selectedSlot?.id === s.id;
+                          const slotCropsText =
+                            s.allowedCrops && Array.isArray(s.allowedCrops) && s.allowedCrops.length > 0
+                              ? s.allowedCrops.map((ac: any) => ac.crop || ac).join(', ')
+                              : s.crop || 'Wheat, Mustard';
+
+                          return (
+                            <Pressable
+                              key={s.id}
+                              onPress={() => handleSelectSlot(s)}
+                              style={[
+                                styles.slotCard,
+                                isSelected && styles.slotCardSelected,
+                              ]}>
+                              <View style={styles.slotCardHeader}>
+                                <Ionicons
+                                  name="time-outline"
+                                  size={14}
+                                  color={isSelected ? '#15803D' : '#6B7280'}
+                                />
+                                <Text
+                                  style={[
+                                    styles.slotTimeText,
+                                    isSelected && styles.slotTimeTextSelected,
+                                  ]}>
+                                  {s.startTime} - {s.endTime}
+                                </Text>
+                              </View>
+                              <Text style={styles.slotDateText}>{s.date}</Text>
+                              <Text style={styles.slotCapText} numberOfLines={1}>
+                                Crops: {slotCropsText}
                               </Text>
-                            </View>
-                            <Text style={styles.slotDateText}>{s.date}</Text>
-                            <Text style={styles.slotCapText}>
-                              {s.availableBookings ?? 10} slots open
-                            </Text>
-                          </Pressable>
-                        );
-                      })}
-                    </View>
-                  ) : (
-                    /* Default Windows */
-                    <View style={styles.slotsGrid}>
-                      {[
-                        { id: 'def-1', time: '08:00 - 13:30', label: 'Morning Slot' },
-                        { id: 'def-2', time: '14:00 - 18:00', label: 'Afternoon Slot' },
-                      ].map((def) => {
-                        const isSelected = selectedSlot?.id === def.id;
-                        return (
-                          <Pressable
-                            key={def.id}
-                            onPress={() =>
-                              setSelectedSlot({
-                                id: def.id,
-                                mandiProfileId: mandi.id,
-                                crop: cropItems[0]?.crop || 'Wheat',
-                                date: new Date().toISOString().split('T')[0],
-                                startTime: def.time.split(' - ')[0],
-                                endTime: def.time.split(' - ')[1],
-                                totalCapacityQuintals: 500,
-                                bookedCapacityQuintals: 0,
-                                maxFarmers: 15,
-                                bookedFarmers: 0,
-                                availableBookings: 15,
-                                isActive: true,
-                              })
-                            }
-                            style={[
-                              styles.slotCard,
-                              isSelected && styles.slotCardSelected,
-                            ]}>
-                            <View style={styles.slotCardHeader}>
-                              <Ionicons
-                                name="time-outline"
-                                size={14}
-                                color={isSelected ? '#15803D' : '#6B7280'}
-                              />
-                              <Text
-                                style={[
-                                  styles.slotTimeText,
-                                  isSelected && styles.slotTimeTextSelected,
-                                ]}>
-                                {def.time}
-                              </Text>
-                            </View>
-                            <Text style={styles.slotDateText}>{def.label}</Text>
-                          </Pressable>
-                        );
-                      })}
-                    </View>
-                  )}
+                            </Pressable>
+                          );
+                        })}
+                      </View>
+                    );
+                  })()}
                 </View>
 
                 {/* 2. Expected Queue Position */}
@@ -447,18 +524,18 @@ export const SlotBookingModal = memo(function SlotBookingModal({
                   <Ionicons name="people" size={18} color="#059669" />
                   <View style={styles.queueInfoTextCol}>
                     <Text style={styles.queueInfoTitle}>
-                      Expected Queue Number: <Text style={styles.queueInfoBold}>#{expectedQueueNumber}</Text>
+                      Expected Queue Position: <Text style={styles.queueInfoBold}>#{expectedQueueNumber}</Text>
                     </Text>
                     <Text style={styles.queueInfoSub}>
-                      {selectedSlot ? `${selectedSlot.currentFarmersBooked ?? selectedSlot.bookedFarmers ?? 0} farmers booked so far` : 'Open slot'}
+                      Queue Farmers: {selectedSlot?.bookedFarmers || 0} / {selectedSlot?.maxFarmers || 20} • Expected Wait: {(selectedSlot?.bookedFarmers || 0) === 0 ? 0 : Math.min((selectedSlot?.bookedFarmers || 0) * 6, 45)} mins
                     </Text>
                   </View>
                 </View>
 
-                {/* 3. Multi-Crop Selection & Quantity in KG */}
+                {/* 2. Multi-Crop Selection & Quantity in KG (Filtered by Slot) */}
                 <View style={styles.formSection}>
                   <View style={styles.inputLabelRow}>
-                    <Text style={styles.sectionLabel}>2. Select Crops & Quantity in KG</Text>
+                    <Text style={styles.sectionLabel}>2. Crops Allowed in this Slot (Rates per KG)</Text>
                     <Text style={styles.calcSubText}>
                       Total: {totalQuantityKg.toLocaleString('en-IN')} KG
                     </Text>
@@ -1019,5 +1096,49 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#059669',
     fontWeight: '700',
+  },
+
+  // Expired Slot Card Styles
+  slotCardExpired: {
+    backgroundColor: '#F3F4F6',
+    borderColor: '#E5E7EB',
+    opacity: 0.65,
+  },
+  slotTimeTextExpired: {
+    color: '#9CA3AF',
+    textDecorationLine: 'line-through',
+  },
+  slotCapTextExpired: {
+    color: '#9CA3AF',
+  },
+  expiredBadge: {
+    backgroundColor: '#FEE2E2',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#FCA5A5',
+  },
+  expiredBadgeText: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: '#991B1B',
+    textTransform: 'uppercase',
+  },
+  noSlotsBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#FEF3C7',
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+  },
+  noSlotsText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#92400E',
+    flex: 1,
   },
 });

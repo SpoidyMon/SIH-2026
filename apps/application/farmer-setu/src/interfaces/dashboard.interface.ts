@@ -1,6 +1,6 @@
 import type { MandiSlotData } from './farmer.interface';
 
-export type NavTabType = 'dashboard' | 'mandi' | 'bookings' | 'settings';
+export type NavTabType = 'dashboard' | 'mandi' | 'ai' | 'bookings' | 'settings';
 
 export type StatColorTheme = 'mint' | 'peach' | 'lavender' | 'softGray';
 
@@ -86,6 +86,9 @@ export interface MandiItem {
   address?: string;
   pincode?: string;
   contactPhone?: string;
+  contactEmail?: string;
+  operatorName?: string;
+  cropRates?: Array<{ crop: string; ratePerKg: number; availableKg: number }>;
   slots?: MandiSlotData[];
 }
 

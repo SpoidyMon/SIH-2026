@@ -33,6 +33,7 @@ export function MandiDashboardView() {
 
   // Modals state
   const [showVerifyModal, setShowVerifyModal] = useState(false);
+  const [targetBookingForVerify, setTargetBookingForVerify] = useState<Booking | null>(null);
   const [selectedBookingForDetails, setSelectedBookingForDetails] = useState<Booking | null>(null);
   const [selectedBookingForWeighbridge, setSelectedBookingForWeighbridge] = useState<Booking | null>(null);
   const [selectedBookingForSlip, setSelectedBookingForSlip] = useState<Booking | null>(null);
@@ -42,10 +43,12 @@ export function MandiDashboardView() {
     dispatch(updateBookingStatusThunk({ id: bookingId, status: "ACCEPTED" }));
   }, [dispatch]);
 
-  const handleReject = useCallback((bookingId: string) => {
-    const reason = prompt("Enter rejection reason (e.g. Yard intake capacity reached for this grade):");
-    if (reason !== null) {
-      dispatch(updateBookingStatusThunk({ id: bookingId, status: "REJECTED" }));
+  const handleReject = useCallback((bookingId: string, reason?: string) => {
+    const finalReason = reason !== undefined
+      ? reason
+      : prompt("Enter rejection reason (e.g. Yard intake capacity reached for this grade):");
+    if (finalReason !== null) {
+      dispatch(updateBookingStatusThunk({ id: bookingId, status: "REJECTED", rejectionReason: finalReason || undefined }));
     }
   }, [dispatch]);
 
@@ -53,8 +56,11 @@ export function MandiDashboardView() {
     dispatch(verifyGateTokenThunk(token));
   }, [dispatch]);
 
-  const handleOpenWeighbridge = useCallback((booking: Booking) => {
+  const [isWeighbridgePreVerified, setIsWeighbridgePreVerified] = useState(false);
+
+  const handleOpenWeighbridge = useCallback((booking: Booking, isPreVerified: boolean = false) => {
     setSelectedBookingForWeighbridge(booking);
+    setIsWeighbridgePreVerified(isPreVerified);
   }, []);
 
   const handleCompleteSettlement = useCallback((
@@ -76,6 +82,11 @@ export function MandiDashboardView() {
   const handleDefaultSlots = useCallback(() => {
     dispatch(applyDefaultPresetsThunk());
   }, [dispatch]);
+
+  const handleOpenVerifyModal = useCallback((booking?: Booking | null) => {
+    setTargetBookingForVerify(booking || null);
+    setShowVerifyModal(true);
+  }, []);
 
   return (
     <div className="space-y-4 w-full max-w-[1700px] mx-auto font-sans px-1 sm:px-2">
@@ -99,26 +110,36 @@ export function MandiDashboardView() {
         onOpenWeighbridge={handleOpenWeighbridge}
         onViewSlip={setSelectedBookingForSlip}
         onViewDetails={setSelectedBookingForDetails}
-        onOpenVerifyModal={() => setShowVerifyModal(true)}
+        onOpenVerifyModal={handleOpenVerifyModal}
         onDefaultSlots={handleDefaultSlots}
       />
 
       {/* Modals */}
       <VerifyTokenModal
         isOpen={showVerifyModal}
-        onClose={() => setShowVerifyModal(false)}
+        onClose={() => {
+          setShowVerifyModal(false);
+          setTargetBookingForVerify(null);
+        }}
         onVerify={handleVerifyEntry}
+        targetBooking={targetBookingForVerify}
       />
 
       <BookingDetailsModal
         booking={selectedBookingForDetails}
         onClose={() => setSelectedBookingForDetails(null)}
+        onAccept={handleAccept}
+        onReject={handleReject}
       />
 
       <WeighbridgeSettlementModal
         booking={selectedBookingForWeighbridge}
-        onClose={() => setSelectedBookingForWeighbridge(null)}
+        onClose={() => {
+          setSelectedBookingForWeighbridge(null);
+          setIsWeighbridgePreVerified(false);
+        }}
         onComplete={handleCompleteSettlement}
+        isPreVerified={isWeighbridgePreVerified}
       />
 
       <SettlementSlipModal

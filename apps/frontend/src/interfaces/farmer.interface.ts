@@ -1,102 +1,91 @@
-export interface FarmerProfileData {
-  id?: string;
-  userId?: string;
-  addressLine1?: string | null;
-  addressLine2?: string | null;
-  village?: string | null;
-  taluka?: string | null;
-  district?: string | null;
-  state?: string | null;
-  pincode?: string | null;
-  landSizeAcres?: number | null;
-  mainCrops?: string[];
-  secondaryCrops?: string[];
-  irrigationType?: string | null;
-  farmLocation?: string | null;
-  createdAt?: string;
-  updatedAt?: string;
-}
-
-export interface FarmerFullProfile {
-  id: string;
-  name: string;
-  email: string;
-  phone?: string | null;
-  role: string;
-  isVerified: boolean;
-  createdAt?: string;
-  updatedAt?: string;
-  farmerProfile?: FarmerProfileData | null;
-}
-
-export interface UpdateFarmerProfilePayload {
-  name?: string;
-  phone?: string | null;
-  addressLine1?: string | null;
-  addressLine2?: string | null;
-  village?: string | null;
-  taluka?: string | null;
-  district?: string | null;
-  state?: string | null;
-  pincode?: string | null;
-  landSizeAcres?: number | null;
-  mainCrops?: string[];
-  secondaryCrops?: string[];
-  irrigationType?: string | null;
-  farmLocation?: string | null;
-}
-
-export type FarmerRoute = "/farmer/dashboard" | "/bookings" | "/find-mandi" | "/settings";
-
-export type FarmerBookingStatus =
+export type BookingStatusType =
   | "PENDING"
   | "ACCEPTED"
-  | "IN_TRANSIT"
+  | "REJECTED"
   | "ARRIVED"
   | "VERIFIED"
   | "COMPLETED"
   | "CANCELLED";
 
-export interface FarmerBookingItem {
-  id: string;
-  tokenId: string;
-  mandiName: string;
-  mandiCode: string;
+export interface CropBookingItem {
   crop: string;
   quantityKg: number;
-  quantityQuintals: number;
-  slotDate: string;
-  slotTime: string;
-  bayAssigned: string;
-  truckNumber: string;
-  status: FarmerBookingStatus;
-  ratePerQtl: number;
-  totalEstimatedPayout: number;
+  ratePerKg?: number;
+  estimatedAmount?: number;
 }
 
-export interface SuggestedMandi {
+export interface FarmerMandiSummary {
   id: string;
   name: string;
+  mandiCode: string;
+  apmcCode?: string | null;
   district: string;
+  address: string;
+  pincode: string;
   state: string;
-  distanceKm: number;
-  operatingHours: string;
-  bestCrop: string;
-  currentRateQtl: number;
-  mspRateQtl: number;
-  availableSlotsToday: number;
-  recommendedSlotTime: string;
-  badge?: string;
-  lat: number;
-  lng: number;
-  imageUrl: string;
+  latitude?: number | null;
+  longitude?: number | null;
+  distanceKm?: number | null;
+  topCrop: string;
+  acceptedCrops: string[];
+  cropRates?: Array<{ crop: string; ratePerKg: number; availableKg: number }>;
+  modalPrice: string;
+  priceTrend: string;
+  trendDirection: string;
+  estimatedQueueTime: string;
+  activeFarmersCount: number;
+  isOpen: boolean;
+  operatingHours?: string;
+  closedDays?: string[];
+  closedHours?: string | null;
+  slots?: Array<{
+    id: string;
+    crop: string;
+    allowedCrops?: any;
+    instructions?: string | null;
+    date: string;
+    startTime: string;
+    endTime: string;
+    totalCapacityQuintals: number;
+    totalCapacityKg?: number;
+    availableBookings: number;
+    maxFarmers: number;
+    bookedFarmers: number;
+    isActive: boolean;
+  }>;
 }
 
-export interface YardMessage {
+export interface CreateFarmerBookingPayload {
+  mandiProfileId: string;
+  slotId: string;
+  cropsList: CropBookingItem[];
+  notes?: string;
+}
+
+export interface FarmerBookingRecord {
   id: string;
-  title: string;
-  time: string;
-  type: "GATE" | "PAYMENT" | "PRICE_ALERT" | "INFO";
-  content: string;
-  isRead?: boolean;
+  token?: string | null;
+  queueNumber: number;
+  farmerId: string;
+  mandiProfileId: string;
+  slotId: string;
+  crop: string;
+  cropsList?: CropBookingItem[] | null;
+  quantityKg?: number | null;
+  quantityQuintals: number;
+  estimatedPayout?: number | null;
+  qrCodeData?: string | null;
+  status: BookingStatusType;
+  rejectionReason?: string | null;
+  notes?: string | null;
+  createdAt: string;
+  mandiProfile?: FarmerMandiSummary;
+  slot?: {
+    id: string;
+    date: string;
+    startTime: string;
+    endTime: string;
+    crop: string;
+    instructions?: string | null;
+  };
 }

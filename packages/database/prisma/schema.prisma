@@ -75,6 +75,7 @@ model User {
   // Relations for Mandi & Farmer operations
   mandiProfile        MandiProfile?
   farmerBookings      Booking[]            @relation("FarmerBookings")
+  aiConversations     AIConversation[]
 
   @@index([email])
   @@index([phone])
@@ -303,4 +304,34 @@ model MandiLegalDoc {
   uploadedAt     DateTime              @default(now())
 
   @@index([mandiProfileId])
+}
+
+model AIConversation {
+  id             String      @id @default(cuid())
+  userId         String
+  user           User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  language       String?     @default("hi")
+  lastIntent     String?
+  idempotencyKey String?     @unique
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  messages       AIMessage[]
+
+  @@index([userId])
+  @@index([idempotencyKey])
+}
+
+model AIMessage {
+  id             String         @id @default(cuid())
+  conversationId String
+  conversation   AIConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender         String         // "user" | "assistant" | "system" | "tool"
+  content        String
+  audioUrl       String?
+  toolCalls      Json?
+  toolResults    Json?
+  createdAt      DateTime       @default(now())
+
+  @@index([conversationId])
 }

@@ -58,4 +58,19 @@ export interface FarmerFullProfileResponse {
   farmerProfile: FarmerProfileData | null;
   createdAt: Date;
   updatedAt: Date;
+}export interface CreateFarmerBookingInput {
+  mandiProfileId: string;
+  slotId: string;
+  crop?: string;
+  variety?: string;
+  quantityQuintals?: number;
+  quantityKg?: number;
+  cropsList?: Array<{
+    crop: string;
+    quantityKg: number;
+    ratePerKg?: number;
+    estimatedAmount?: number;
+  }>;
+  vehicleNumber?: string;
+  notes?: string;
 }
