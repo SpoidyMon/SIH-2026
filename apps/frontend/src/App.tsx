@@ -55,9 +55,11 @@ export function App() {
     <Routes>
       <Route element={<MandiLayout />}>
         <Route path="/mandi/dashboard" element={<MandiDashboardView />} />
+        <Route path="/mandi/bookings" element={<MandiBookingsView />} />
         <Route path="/mandi/manageSlot" element={<MandiSlotsView />} />
         <Route path="/mandi/GateScanner" element={<MandiGateScannerView />} />
         <Route path="/mandi/verification" element={<MandiVerificationStatusView />} />
+        <Route path="/mandi/farmers" element={<MandiFarmersView />} />
         <Route path="/mandi/history" element={<MandiHistoryView />} />
         <Route path="/mandi/settings" element={<MandiSettingsView />} />
         <Route path="/mandi/rating" element={<MandiRatingView />} />

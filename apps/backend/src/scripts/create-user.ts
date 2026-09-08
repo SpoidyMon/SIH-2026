@@ -90,8 +90,8 @@ async function main() {
   await prisma.mandiLegalDoc.deleteMany({ where: { mandiProfileId: mandiProfile.id } });
 
   // 4. Create active Mandi Slots
-  const todayStr = new Date().toISOString().split("T")[0];
-  const tomorrowStr = new Date(Date.now() + 86400000).toISOString().split("T")[0];
+  const todayStr = new Date().toISOString().split("T")[0] || "2026-09-08";
+  const tomorrowStr = new Date(Date.now() + 86400000).toISOString().split("T")[0] || "2026-09-09";
 
   const slot1 = await prisma.mandiSlot.create({
     data: {

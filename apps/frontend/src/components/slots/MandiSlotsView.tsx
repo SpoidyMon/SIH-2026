@@ -90,16 +90,7 @@ export function MandiSlotsView() {
   }, [slots, dateFilter]);
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto font-sans">
-      {/* ═══ 1. HEADER ROW (MATCHING REFERENCE TYPOGRAPHY) ═══ */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-2 border-b border-gray-200 dark:border-neutral-800">
-        <div>
-          <h1 className="text-xl font-bold text-black dark:text-[#E5E5E5] tracking-tight">
-            Manage Mandi Arrival Slots
-          </h1>
-          <p className="text-xs text-gray-500 dark:text-neutral-400 mt-0.5 font-normal">
-            Configure crop-wise intake capacity, time windows, farmer limits &amp; weighbridge buffers.
-    <div className="space-y-6 max-w-7xl mx-auto animate-fade-in pb-12">
+    <div className="space-y-6 max-w-7xl mx-auto animate-fade-in pb-12 font-sans">
       {/* ═══ HEADER & VIEW SWITCHER ═══ */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-gray-200 dark:border-neutral-800">
         <div>
@@ -127,8 +118,6 @@ export function MandiSlotsView() {
           </button>
 
           <button
-            onClick={handleOpenCreateModal}
-            className="btn-primary-green flex items-center gap-2 px-4 py-2 text-xs font-semibold cursor-pointer shadow-xs"
             type="button"
             onClick={() => setActiveTab("calendar")}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
@@ -156,92 +145,6 @@ export function MandiSlotsView() {
         </div>
       </div>
 
-      {/* ═══ 2. GRID OF SLOT CARDS (3 COLUMNS) ═══ */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-        {filteredSlots.map((slot) => {
-          const totalCap = slot.maxCapacityQuintals || slot.totalCapacityQuintals || 500;
-          const bookedPct = totalCap > 0
-            ? Math.round((slot.bookedCapacityQuintals / totalCap) * 100)
-            : 0;
-          const maxFarmers = slot.maxFarmersLimit || slot.maxFarmers || 20;
-          const currentFarmers = slot.currentFarmersBooked ?? slot.bookedFarmers ?? 0;
-          const slotDateStr = slot.slotDate || slot.date || "2026-09-01";
-
-          // Progress bar color based on utilization
-          const barColor =
-            bookedPct > 85 ? "bg-red-500" : bookedPct > 70 ? "bg-amber-500" : "bg-[#5CE65C]";
-
-          return (
-            <div
-              key={slot.id}
-              className="mandi-card p-5 space-y-4 flex flex-col justify-between"
-            >
-              {/* Top Row: Slot ID + Status */}
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-mono font-medium px-2.5 py-0.5 rounded-full bg-gray-100 dark:bg-black text-gray-700 dark:text-neutral-300 border border-gray-200 dark:border-neutral-800">
-                  {slot.id}
-                </span>
-                <span className="text-[10px] font-semibold uppercase px-2.5 py-0.5 rounded-full bg-[#5CE65C]/20 text-[#15803D] dark:text-[#5CE65C] border border-[#5CE65C]/40">
-                  OPEN FOR BOOKING
-                </span>
-              </div>
-
-              {/* Crop Title */}
-              <div>
-                <h3 className="text-base font-semibold text-black dark:text-[#E5E5E5]">
-                  {slot.crop}
-                </h3>
-              </div>
-
-              {/* Date & Window Row */}
-              <div className="grid grid-cols-2 gap-2 p-3 bg-gray-50 dark:bg-black border border-gray-100 dark:border-neutral-800/80 rounded-xl text-xs">
-                <div>
-                  <span className="text-gray-400 dark:text-neutral-500 block text-[10px] uppercase font-medium">Date</span>
-                  <span className="font-semibold text-gray-800 dark:text-[#E5E5E5]">{slotDateStr}</span>
-                </div>
-                <div>
-                  <span className="text-gray-400 dark:text-neutral-500 block text-[10px] uppercase font-medium">Window</span>
-                  <span className="font-semibold text-gray-800 dark:text-[#E5E5E5]">{slot.startTime} - {slot.endTime}</span>
-                </div>
-              </div>
-
-              {/* Capacity Progress Bar */}
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-gray-500 dark:text-neutral-400 font-medium">Intake Capacity Booked</span>
-                  <span className="font-semibold text-black dark:text-[#E5E5E5]">
-                    {slot.bookedCapacityQuintals} / {totalCap} Qtl ({bookedPct}%)
-                  </span>
-                </div>
-                <div className="w-full bg-gray-100 dark:bg-neutral-800 h-2 rounded-full overflow-hidden">
-                  <div
-                    className={`${barColor} h-full rounded-full transition-all duration-500`}
-                    style={{ width: `${Math.min(bookedPct, 100)}%` }}
-                  />
-                </div>
-              </div>
-
-              {/* Details Metrics */}
-              <div className="space-y-1 text-xs text-gray-500 dark:text-neutral-400 pt-1 border-t border-gray-100 dark:border-neutral-800/80 font-normal">
-                <div className="flex justify-between">
-                  <span>Farmers: <strong className="font-semibold text-black dark:text-[#E5E5E5]">{currentFarmers} / {maxFarmers}</strong></span>
-                  <span>Available: <strong className="font-semibold text-emerald-700 dark:text-emerald-400">{Math.max(0, maxFarmers - currentFarmers)} slots</strong></span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Buffer Time: <strong className="font-semibold text-black dark:text-[#E5E5E5]">{slot.bufferTimeMinutes || slot.bufferMinutes || 15} mins</strong></span>
-                  <span>Buffer %: <strong className="font-semibold text-black dark:text-[#E5E5E5]">+{slot.bufferTolerancePercentage || slot.bufferPercentage || 10}% tolerance</strong></span>
-                </div>
-              </div>
-
-              {/* Footer Actions */}
-              <div className="flex items-center justify-end gap-2 pt-2 border-t border-gray-100 dark:border-neutral-800/80">
-                <button
-                  onClick={() => handleOpenEditModal(slot)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-black hover:bg-gray-50 dark:hover:bg-neutral-900 text-gray-700 dark:text-[#E5E5E5] border border-gray-300 dark:border-neutral-800 rounded-lg text-xs font-semibold transition-all cursor-pointer"
-                >
-                  <Edit2 className="w-3.5 h-3.5" />
-                  <span>Edit Slot</span>
-                </button>
       {/* ═══ TAB 1: WEEKLY AVAILABILITY (SCREENSHOT MATCHING SCHEDULER) ═══ */}
       {activeTab === "availability" && (
         <section className="space-y-4 animate-fade-in">
@@ -310,15 +213,6 @@ export function MandiSlotsView() {
               )}
             </div>
 
-      {/* ═══ MODAL: CREATE / EDIT ARRIVAL SLOT ═══ */}
-      {(showCreateModal || editingSlot) && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in">
-          <div className="bg-white dark:bg-[#121212] border border-gray-300 dark:border-neutral-800 rounded-2xl w-full max-w-lg shadow-xl overflow-hidden animate-slide-up">
-            <div className="flex items-center justify-between px-5 py-3.5 bg-gray-50 dark:bg-[#171717] border-b border-gray-200 dark:border-neutral-800">
-              <div className="flex items-center gap-2 font-semibold text-xs text-black dark:text-[#E5E5E5]">
-                <Calendar className="w-4 h-4 text-[#15803D] dark:text-emerald-400" />
-                <span>{editingSlot ? "Edit Arrival Slot Window" : "Create New Mandi Arrival Slot"}</span>
-              </div>
             {/* Create Custom Slot */}
             <button
               onClick={() => handleOpenCreateModal()}
@@ -363,126 +257,6 @@ export function MandiSlotsView() {
                 Create Slot for {dateFilter || "Today"}
               </button>
             </div>
-
-            <form onSubmit={handleSaveSlot} className="p-6 space-y-4 text-xs">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block font-medium text-gray-700 dark:text-neutral-300 mb-1">Crop Type &amp; Grade</label>
-                  <select
-                    value={crop}
-                    onChange={(e) => setCrop(e.target.value)}
-                    className="w-full px-3 py-2 bg-gray-50 dark:bg-black border border-gray-300 dark:border-neutral-800 rounded-xl font-medium text-gray-800 dark:text-[#E5E5E5]"
-                  >
-                    <option value="Wheat (Sharbati)">Wheat (Sharbati)</option>
-                    <option value="Mustard (Sarson)">Mustard (Sarson)</option>
-                    <option value="Rice (Basmati 1121)">Rice (Basmati 1121)</option>
-                    <option value="Soyabean (Yellow)">Soyabean (Yellow)</option>
-                    <option value="Gram / Chana">Gram / Chana</option>
-                    <option value="Maize (Hybrid)">Maize (Hybrid)</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block font-medium text-gray-700 dark:text-neutral-300 mb-1">Arrival Date</label>
-                  <input
-                    type="date"
-                    value={date}
-                    onChange={(e) => setDate(e.target.value)}
-                    className="w-full px-3 py-2 bg-gray-50 dark:bg-black border border-gray-300 dark:border-neutral-800 rounded-xl font-medium text-gray-800 dark:text-[#E5E5E5] [color-scheme:dark]"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block font-medium text-gray-700 dark:text-neutral-300 mb-1">Start Time (Gate Open)</label>
-                  <input
-                    type="time"
-                    value={startTime}
-                    onChange={(e) => setStartTime(e.target.value)}
-                    className="w-full px-3 py-2 bg-gray-50 dark:bg-black border border-gray-300 dark:border-neutral-800 rounded-xl font-medium text-gray-800 dark:text-[#E5E5E5] [color-scheme:dark]"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-medium text-gray-700 dark:text-neutral-300 mb-1">End Time (Gate Close)</label>
-                  <input
-                    type="time"
-                    value={endTime}
-                    onChange={(e) => setEndTime(e.target.value)}
-                    className="w-full px-3 py-2 bg-gray-50 dark:bg-black border border-gray-300 dark:border-neutral-800 rounded-xl font-medium text-gray-800 dark:text-[#E5E5E5] [color-scheme:dark]"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block font-medium text-gray-700 dark:text-neutral-300 mb-1">Max Intake Capacity (Qtl)</label>
-                  <input
-                    type="number"
-                    value={maxCapacityQuintals}
-                    onChange={(e) => setMaxCapacityQuintals(Number(e.target.value))}
-                    className="w-full px-3 py-2 bg-gray-50 dark:bg-black border border-gray-300 dark:border-neutral-800 rounded-xl font-medium text-gray-800 dark:text-[#E5E5E5]"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-medium text-gray-700 dark:text-neutral-300 mb-1">Max Farmers Allowed</label>
-                  <input
-                    type="number"
-                    value={maxFarmersLimit}
-                    onChange={(e) => setMaxFarmersLimit(Number(e.target.value))}
-                    className="w-full px-3 py-2 bg-gray-50 dark:bg-black border border-gray-300 dark:border-neutral-800 rounded-xl font-medium text-gray-800 dark:text-[#E5E5E5]"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block font-medium text-gray-700 dark:text-neutral-300 mb-1">Weighbridge Buffer (Minutes)</label>
-                  <input
-                    type="number"
-                    value={bufferTimeMinutes}
-                    onChange={(e) => setBufferTimeMinutes(Number(e.target.value))}
-                    className="w-full px-3 py-2 bg-gray-50 dark:bg-black border border-gray-300 dark:border-neutral-800 rounded-xl font-medium text-gray-800 dark:text-[#E5E5E5]"
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-medium text-gray-700 dark:text-neutral-300 mb-1">Tolerance Margin (%)</label>
-                  <input
-                    type="number"
-                    value={bufferTolerancePercentage}
-                    onChange={(e) => setBufferTolerancePercentage(Number(e.target.value))}
-                    className="w-full px-3 py-2 bg-gray-50 dark:bg-black border border-gray-300 dark:border-neutral-800 rounded-xl font-medium text-gray-800 dark:text-[#E5E5E5]"
-                  />
-                </div>
-              </div>
-
-              <div className="flex justify-end gap-2 pt-3 border-t border-gray-200 dark:border-neutral-800">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowCreateModal(false);
-                    setEditingSlot(null);
-                  }}
-                  className="px-4 py-2 font-medium text-gray-600 dark:text-neutral-400 hover:bg-gray-100 dark:hover:bg-neutral-800 rounded-xl cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="btn-primary-green px-5 py-2 font-semibold cursor-pointer"
-                >
-                  {editingSlot ? "Update Window" : "Publish Arrival Slot"}
-                </button>
-              </div>
-            </form>
           </div>
         )}
       </section>

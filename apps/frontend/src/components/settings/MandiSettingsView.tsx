@@ -238,14 +238,6 @@ export function MandiSettingsView() {
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto animate-fade-in pb-12">
-      {/* ═══ TITLE ═══ */}
-      <div className="border-b border-gray-200 dark:border-neutral-800 pb-3">
-        <h1 className="text-xl font-bold text-black dark:text-[#E5E5E5] tracking-tight">
-          Mandi & KYC Settings
-        </h1>
-        <p className="text-xs text-gray-500 dark:text-neutral-400 mt-0.5 font-medium">
-          APMC accreditation, operator identity verification, and statutory legal licenses.
-        </p>
       {/* ═══ TITLE & MANDI CODE BADGE ═══ */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-200 dark:border-neutral-800 pb-4">
         <div>
