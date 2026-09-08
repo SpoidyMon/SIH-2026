@@ -18,11 +18,12 @@ interface ConsignmentBookingsTableProps {
   isActionLoading: boolean;
   onAccept: (bookingId: string) => void;
   onReject: (bookingId: string, reason?: string) => void;
-  onVerifyEntry: (token: string) => void;
+  onVerifyEntry?: (token: string) => void;
   onOpenWeighbridge: (booking: Booking) => void;
   onViewSlip: (booking: Booking) => void;
   onViewDetails: (booking: Booking) => void;
   onOpenVerifyModal: () => void;
+  onDefaultSlots?: () => void;
 }
 
 export const ConsignmentBookingsTable = React.memo(function ConsignmentBookingsTable({
@@ -36,6 +37,7 @@ export const ConsignmentBookingsTable = React.memo(function ConsignmentBookingsT
   onViewSlip,
   onViewDetails,
   onOpenVerifyModal,
+  onDefaultSlots,
 }: ConsignmentBookingsTableProps) {
   const [activeTab, setActiveTab] = useState<MandiTableTab>("pending");
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
@@ -389,11 +391,13 @@ export const ConsignmentBookingsTable = React.memo(function ConsignmentBookingsT
                           )}
                           {b.status === "ACCEPTED" && (
                             <button
-                              onClick={() => onVerifyEntry(b.token)}
+                              onClick={() => onOpenVerifyModal()}
                               disabled={isActionLoading}
-                              className="px-4 py-1 text-xs font-semibold rounded-full border border-neutral-400 dark:border-neutral-600 text-neutral-800 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-900 transition cursor-pointer"
+                              className="px-3 py-1 text-xs font-semibold rounded-full bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 flex items-center gap-1.5 transition cursor-pointer"
+                              title="Scan farmer QR code or enter token to verify gate entry"
                             >
-                              Verify Entry
+                              <QrCode className="w-3.5 h-3.5" />
+                              <span>Scan / Verify</span>
                             </button>
                           )}
                           {b.status === "VERIFIED" && (

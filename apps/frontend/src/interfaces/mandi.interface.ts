@@ -364,3 +364,10 @@ export interface CompleteBookingPayload {
   finalPayoutAmount: number;
 }
 
+export interface VerifyTokenModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onVerify: (token: string) => void;
+  initialToken?: string;
+}
+
