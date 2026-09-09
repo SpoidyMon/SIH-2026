@@ -13,6 +13,7 @@ interface DashboardHeaderProps {
   showSearchButton?: boolean;
   onSearchPress?: () => void;
   onNotificationPress?: () => void;
+  onAiPress?: () => void;
   hasUnreadNotifications?: boolean;
 }
 
@@ -25,6 +26,7 @@ export const DashboardHeader = memo(function DashboardHeader({
   showSearchButton = false,
   onSearchPress,
   onNotificationPress,
+  onAiPress,
   hasUnreadNotifications = true,
 }: DashboardHeaderProps) {
   const { t } = useLanguage();
@@ -57,6 +59,15 @@ export const DashboardHeader = memo(function DashboardHeader({
       </View>
 
       <View style={styles.actionsRow}>
+        {onAiPress ? (
+          <Pressable
+            onPress={onAiPress}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            style={({ pressed }) => [styles.aiIconButton, pressed && styles.buttonPressed]}>
+            <Ionicons name="sparkles" size={19} color="#15803D" />
+          </Pressable>
+        ) : null}
+
         {showSearchButton ? (
           <Pressable
             onPress={onSearchPress}
@@ -120,6 +131,22 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.04,
     shadowRadius: 6,
+    elevation: 2,
+    position: 'relative',
+  },
+  aiIconButton: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: '#DCFCE7',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: '#86EFAC',
+    shadowColor: '#15803D',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
     elevation: 2,
     position: 'relative',
   },

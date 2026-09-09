@@ -6,6 +6,8 @@ export type AgentIntent =
   | "CONFIRM_BOOKING"
   | "VIEW_BOOKINGS"
   | "CANCEL_BOOKING"
+  | "GREETING"
+  | "GET_CROP_RATE"
   | "UNKNOWN";
 
 export interface AgentCropInput {
@@ -79,6 +81,7 @@ export interface BookingAgentState {
   bookingToken?: string;
   bookingStatus?: string;
 
+  historyMessages?: Array<{ sender: string; content: string; toolResults?: any }>;
   missingFields?: string[];
   responseText?: string;
   error?: string;
