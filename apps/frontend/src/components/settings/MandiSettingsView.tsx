@@ -225,7 +225,7 @@ export function MandiSettingsView() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2.5">
-              <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-[#E5E5E5]">
+              <h1 className="text-2xl font-semibold tracking-tight text-slate-900 dark:text-[#E5E5E5]">
                 Mandi &amp; Yard Settings
               </h1>
               <span className="px-2.5 py-0.5 rounded-md bg-emerald-600 text-white font-mono font-bold text-xs tracking-wider shadow-xs">

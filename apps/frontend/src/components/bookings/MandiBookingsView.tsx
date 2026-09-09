@@ -187,7 +187,7 @@ export function MandiBookingsView() {
       <section className="bg-white dark:bg-[#121212] rounded-2xl p-5 shadow-subtle border border-slate-200/80 dark:border-neutral-800 shrink-0">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-[#E5E5E5]">
+            <h1 className="text-2xl font-semibold tracking-tight text-slate-900 dark:text-[#E5E5E5]">
               Consignment Bookings Manifest
             </h1>
             <p className="text-sm text-slate-500 dark:text-neutral-400 mt-1 font-normal">

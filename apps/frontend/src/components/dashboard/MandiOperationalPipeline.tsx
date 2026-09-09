@@ -78,7 +78,7 @@ export const MandiOperationalPipeline = React.memo(function MandiOperationalPipe
       {/* Header Row */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-100 dark:border-neutral-800">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-[#E5E5E5]">
+          <h1 className="text-2xl font-semibold tracking-tight text-slate-900 dark:text-[#E5E5E5]">
             Mandi Dashboard
           </h1>
           <p className="text-sm text-slate-500 dark:text-neutral-400 mt-0.5 font-normal">
