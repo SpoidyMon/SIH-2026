@@ -362,14 +362,15 @@ export const closeMandiDateThunk = createAsyncThunk(
       const response = await mandiApi.closeMandiDate(payload);
       if (response.success) {
         dispatch(fetchSlotsThunk());
-        dispatch(fetchMandiProfileThunk());
+        dispatch(fetchProfileThunk());
         dispatch(fetchCurrentBookingsThunk());
         dispatch(fetchDashboardStatsThunk());
         return { ...response.data, date: payload.date };
       }
       return rejectWithValue(response.message || "Failed to mark day as closed");
     } catch (err: any) {
-      return rejectWithValue(err.response?.data?.message || "Failed to close mandi for selected date");
+      const msg = err.response?.data?.message || err.message || "Failed to close mandi for selected date";
+      return rejectWithValue(msg);
     }
   }
 );
@@ -381,14 +382,15 @@ export const openMandiDateThunk = createAsyncThunk(
       const response = await mandiApi.openMandiDate(payload);
       if (response.success) {
         dispatch(fetchSlotsThunk());
-        dispatch(fetchMandiProfileThunk());
+        dispatch(fetchProfileThunk());
         dispatch(fetchCurrentBookingsThunk());
         dispatch(fetchDashboardStatsThunk());
         return { ...response.data, date: payload.date };
       }
       return rejectWithValue(response.message || "Failed to reopen mandi date");
     } catch (err: any) {
-      return rejectWithValue(err.response?.data?.message || "Failed to reopen mandi date");
+      const msg = err.response?.data?.message || err.message || "Failed to reopen mandi date";
+      return rejectWithValue(msg);
     }
   }
 );
@@ -656,9 +658,11 @@ export const mandiSlice = createSlice({
     builder
       .addCase(closeMandiDateThunk.pending, (state) => {
         state.isActionLoading = true;
+        state.error = null;
       })
       .addCase(closeMandiDateThunk.fulfilled, (state, action) => {
         state.isActionLoading = false;
+        state.error = null;
         state.successMessage = (action.payload as any)?.message || "Mandi closed for selected date";
         const date = (action.payload as any)?.date;
         if (state.profile && date) {
@@ -674,9 +678,11 @@ export const mandiSlice = createSlice({
       })
       .addCase(openMandiDateThunk.pending, (state) => {
         state.isActionLoading = true;
+        state.error = null;
       })
       .addCase(openMandiDateThunk.fulfilled, (state, action) => {
         state.isActionLoading = false;
+        state.error = null;
         state.successMessage = (action.payload as any)?.message || "Mandi reopened successfully";
         const date = (action.payload as any)?.date;
         if (state.profile && date && state.profile.closedDays) {

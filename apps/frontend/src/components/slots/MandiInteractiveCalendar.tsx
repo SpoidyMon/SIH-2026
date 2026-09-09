@@ -39,6 +39,7 @@ export function MandiInteractiveCalendar({
 
   const [showOpenModal, setShowOpenModal] = useState(false);
   const [isSubmittingOpen, setIsSubmittingOpen] = useState(false);
+  const [modalError, setModalError] = useState<string | null>(null);
 
   // Check if selected date is closed
   const isSelectedDateClosed = useMemo(() => {
@@ -81,10 +82,13 @@ export function MandiInteractiveCalendar({
   const handleConfirmCloseDate = async () => {
     if (!selectedDate) return;
     setIsSubmittingClose(true);
+    setModalError(null);
     try {
       await dispatch(closeMandiDateThunk({ date: selectedDate, reason: closeReason })).unwrap();
       setShowCloseModal(false);
-    } catch (err) {
+      setModalError(null);
+    } catch (err: any) {
+      setModalError(typeof err === "string" ? err : err?.message || "Failed to mark day as closed");
       console.error("Failed to close mandi for date", err);
     } finally {
       setIsSubmittingClose(false);
@@ -94,10 +98,13 @@ export function MandiInteractiveCalendar({
   const handleConfirmOpenDate = async () => {
     if (!selectedDate) return;
     setIsSubmittingOpen(true);
+    setModalError(null);
     try {
       await dispatch(openMandiDateThunk({ date: selectedDate })).unwrap();
       setShowOpenModal(false);
-    } catch (err) {
+      setModalError(null);
+    } catch (err: any) {
+      setModalError(typeof err === "string" ? err : err?.message || "Failed to reopen mandi for date");
       console.error("Failed to reopen mandi for date", err);
     } finally {
       setIsSubmittingOpen(false);
@@ -209,7 +216,10 @@ export function MandiInteractiveCalendar({
             isSelectedDateClosed ? (
               <button
                 type="button"
-                onClick={() => setShowOpenModal(true)}
+                onClick={() => {
+                  setModalError(null);
+                  setShowOpenModal(true);
+                }}
                 className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/50 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-2xs"
               >
                 <CheckCircle2 className="w-3.5 h-3.5" />
@@ -218,7 +228,10 @@ export function MandiInteractiveCalendar({
             ) : (
               <button
                 type="button"
-                onClick={() => setShowCloseModal(true)}
+                onClick={() => {
+                  setModalError(null);
+                  setShowCloseModal(true);
+                }}
                 className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 hover:bg-red-100 dark:bg-red-950/40 dark:hover:bg-red-900/50 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-900/60 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-2xs"
               >
                 <Ban className="w-3.5 h-3.5" />
@@ -421,6 +434,13 @@ export function MandiInteractiveCalendar({
               </button>
             </div>
 
+            {modalError && (
+              <div className="p-3 bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-900/60 rounded-xl text-xs text-red-600 dark:text-red-400 font-semibold flex items-center gap-2 animate-fade-in">
+                <AlertCircle className="w-4 h-4 shrink-0 text-red-500" />
+                <span>{modalError}</span>
+              </div>
+            )}
+
             <p className="text-xs text-gray-600 dark:text-neutral-400 leading-relaxed">
               Marking this date as closed will deactivate all arrival slot windows for <strong>{selectedDate}</strong>, automatically cancel pending bookings for this date, and notify farmers that the Mandi yard is not accepting consignments.
             </p>
@@ -478,6 +498,13 @@ export function MandiInteractiveCalendar({
                 <X className="w-4 h-4" />
               </button>
             </div>
+
+            {modalError && (
+              <div className="p-3 bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-900/60 rounded-xl text-xs text-red-600 dark:text-red-400 font-semibold flex items-center gap-2 animate-fade-in">
+                <AlertCircle className="w-4 h-4 shrink-0 text-red-500" />
+                <span>{modalError}</span>
+              </div>
+            )}
 
             <p className="text-xs text-gray-600 dark:text-neutral-400 leading-relaxed">
               Reopening this date will remove <strong>{selectedDate}</strong> from the closed dates list, reactivate any existing arrival slot windows for this date, and allow farmers to schedule consignments at this Mandi yard.
