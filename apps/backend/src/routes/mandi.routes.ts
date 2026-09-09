@@ -154,6 +154,13 @@ router.post(
   mandiController.closeMandiDateHandler
 );
 
+router.post(
+  "/calendar/open-date",
+  requireApprovedMandi,
+  validate(mandiSchema.closeMandiDateSchema),
+  mandiController.openMandiDateHandler
+);
+
 // ----------------------------------------------------
 // CROP PROCUREMENT PRICING (Accessible to all logged-in Mandi operators)
 // ----------------------------------------------------

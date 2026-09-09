@@ -1062,6 +1062,39 @@ export async function closeMandiDate(
   };
 }
 
+/**
+ * Reopens a closed date for a Mandi:
+ * - Reactivates arrival slots on that date
+ * - Removes the date from Mandi closedDays list
+ */
+export async function openMandiDate(
+  userId: string,
+  input: { date: string }
+) {
+  const profile = await getOrCreateMandiProfile(userId);
+  const { date } = input;
+
+  // 1. Reactivate slots on this date
+  await prisma.mandiSlot.updateMany({
+    where: { mandiProfileId: profile.id, date },
+    data: { isActive: true },
+  });
+
+  // 2. Remove from closedDays array
+  const currentClosedDays = Array.isArray(profile.closedDays) ? [...profile.closedDays] : [];
+  const updatedClosedDays = currentClosedDays.filter((d) => d !== date);
+  await prisma.mandiProfile.update({
+    where: { id: profile.id },
+    data: { closedDays: updatedClosedDays },
+  });
+
+  return {
+    success: true,
+    message: `Mandi reopened for ${date}. Arrival slot bookings are now active.`,
+    date,
+  };
+}
+
 
 // ----------------------------------------------------
 // SETTINGS, KYC & REPUTATION FUNCTIONS

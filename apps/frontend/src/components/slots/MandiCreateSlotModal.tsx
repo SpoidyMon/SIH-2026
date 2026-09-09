@@ -91,7 +91,7 @@ export function MandiCreateSlotModal({
     return dateObj.toLocaleDateString("en-US", { weekday: "long" });
   };
 
-  const isSelectedDateClosed = Boolean(closedDays.includes(getDayName(date)));
+  const isSelectedDateClosed = Boolean(closedDays.includes(getDayName(date)) || closedDays.includes(date));
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

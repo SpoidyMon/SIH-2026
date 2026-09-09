@@ -9,10 +9,11 @@ import {
   Ban,
   X,
   Check,
+  CheckCircle2,
 } from "lucide-react";
 import { MandiSlot } from "../../interfaces";
-import { useAppDispatch, useAppSelector } from "../../store";
-import { closeMandiDateThunk } from "../../store/slices/mandiSlice";
+import { useAppDispatch } from "../../store";
+import { closeMandiDateThunk, openMandiDateThunk } from "../../store/slices/mandiSlice";
 
 interface MandiInteractiveCalendarProps {
   slots: MandiSlot[];
@@ -35,6 +36,19 @@ export function MandiInteractiveCalendar({
   const [showCloseModal, setShowCloseModal] = useState(false);
   const [closeReason, setCloseReason] = useState("Administrative / Mandi Yard Holiday");
   const [isSubmittingClose, setIsSubmittingClose] = useState(false);
+
+  const [showOpenModal, setShowOpenModal] = useState(false);
+  const [isSubmittingOpen, setIsSubmittingOpen] = useState(false);
+
+  // Check if selected date is closed
+  const isSelectedDateClosed = useMemo(() => {
+    if (!selectedDate) return false;
+    const parts = selectedDate.split("-").map(Number);
+    const d = new Date(parts[0], parts[1] - 1, parts[2]);
+    const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+    const dName = dayNames[d.getDay()];
+    return Boolean(closedDays?.includes(dName) || closedDays?.includes(selectedDate));
+  }, [selectedDate, closedDays]);
 
   // Current view year & month state
   const [currentMonthDate, setCurrentMonthDate] = useState(() => {
@@ -74,6 +88,19 @@ export function MandiInteractiveCalendar({
       console.error("Failed to close mandi for date", err);
     } finally {
       setIsSubmittingClose(false);
+    }
+  };
+
+  const handleConfirmOpenDate = async () => {
+    if (!selectedDate) return;
+    setIsSubmittingOpen(true);
+    try {
+      await dispatch(openMandiDateThunk({ date: selectedDate })).unwrap();
+      setShowOpenModal(false);
+    } catch (err) {
+      console.error("Failed to reopen mandi for date", err);
+    } finally {
+      setIsSubmittingOpen(false);
     }
   };
 
@@ -120,7 +147,7 @@ export function MandiInteractiveCalendar({
         dayNumber: prevDayNum,
         isCurrentMonth: false,
         dayName: dName,
-        isClosed: closedDays.includes(dName),
+        isClosed: Boolean(closedDays?.includes(dName) || closedDays?.includes(dStr)),
         slots: slotsByDate[dStr] || [],
       });
     }
@@ -135,7 +162,7 @@ export function MandiInteractiveCalendar({
         dayNumber: dayNum,
         isCurrentMonth: true,
         dayName: dName,
-        isClosed: closedDays.includes(dName),
+        isClosed: Boolean(closedDays?.includes(dName) || closedDays?.includes(dStr)),
         slots: slotsByDate[dStr] || [],
       });
     }
@@ -151,7 +178,7 @@ export function MandiInteractiveCalendar({
         dayNumber: nextDayNum,
         isCurrentMonth: false,
         dayName: dName,
-        isClosed: closedDays.includes(dName),
+        isClosed: Boolean(closedDays?.includes(dName) || closedDays?.includes(dStr)),
         slots: slotsByDate[dStr] || [],
       });
     }
@@ -179,14 +206,25 @@ export function MandiInteractiveCalendar({
 
         <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap">
           {selectedDate && (
-            <button
-              type="button"
-              onClick={() => setShowCloseModal(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 hover:bg-red-100 dark:bg-red-950/40 dark:hover:bg-red-900/50 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-900/60 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-2xs"
-            >
-              <Ban className="w-3.5 h-3.5" />
-              <span>Mark {selectedDate} Closed</span>
-            </button>
+            isSelectedDateClosed ? (
+              <button
+                type="button"
+                onClick={() => setShowOpenModal(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/50 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-2xs"
+              >
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                <span>Reopen Mandi on {selectedDate}</span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setShowCloseModal(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 hover:bg-red-100 dark:bg-red-950/40 dark:hover:bg-red-900/50 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-900/60 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-2xs"
+              >
+                <Ban className="w-3.5 h-3.5" />
+                <span>Mark {selectedDate} Closed</span>
+              </button>
+            )
           )}
 
           <button
@@ -244,6 +282,8 @@ export function MandiInteractiveCalendar({
               className={`min-h-[105px] sm:min-h-[120px] p-2 flex flex-col justify-between transition-all cursor-pointer relative group ${
                 !cell.isCurrentMonth
                   ? "opacity-35 bg-gray-50/40 dark:bg-neutral-950/40"
+                  : isSelected && cell.isClosed
+                  ? "bg-red-50/70 dark:bg-red-950/40 ring-2 ring-red-500 dark:ring-red-400 z-10"
                   : isSelected
                   ? "bg-emerald-50/70 dark:bg-emerald-950/30 ring-2 ring-emerald-500 dark:ring-emerald-400 z-10"
                   : cell.isClosed
@@ -256,7 +296,9 @@ export function MandiInteractiveCalendar({
                 <span
                   className={`text-xs font-bold rounded-md w-6 h-6 flex items-center justify-center ${
                     isSelected
-                      ? "bg-emerald-600 text-white shadow-xs"
+                      ? cell.isClosed
+                        ? "bg-red-600 text-white shadow-xs"
+                        : "bg-emerald-600 text-white shadow-xs"
                       : cell.isCurrentMonth
                       ? "text-gray-900 dark:text-[#E5E5E5]"
                       : "text-gray-400 dark:text-neutral-600"
@@ -354,7 +396,7 @@ export function MandiInteractiveCalendar({
 
         {selectedDate && (
           <span className="text-[11px] font-bold text-gray-800 dark:text-[#E5E5E5]">
-            Selected: <strong className="text-emerald-600 dark:text-emerald-400">{selectedDate}</strong>
+            Selected: <strong className={isSelectedDateClosed ? "text-red-600 dark:text-red-400" : "text-emerald-600 dark:text-emerald-400"}>{selectedDate} {isSelectedDateClosed ? "(Closed)" : ""}</strong>
           </span>
         )}
       </div>
@@ -411,6 +453,51 @@ export function MandiInteractiveCalendar({
                 className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-xl cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
               >
                 {isSubmittingClose ? "Closing Date..." : "Confirm Close Day"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Reopen Mandi Date Confirmation Modal */}
+      {showOpenModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fade-in">
+          <div className="bg-white dark:bg-[#121212] border border-gray-200 dark:border-neutral-800 rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-gray-100 dark:border-neutral-800">
+              <div className="flex items-center gap-2.5 text-emerald-600 dark:text-emerald-400">
+                <CheckCircle2 className="w-5 h-5" />
+                <h3 className="text-base font-bold text-gray-900 dark:text-[#E5E5E5]">
+                  Reopen Mandi on {selectedDate}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowOpenModal(false)}
+                className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-neutral-800 text-gray-500 dark:text-neutral-400 cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <p className="text-xs text-gray-600 dark:text-neutral-400 leading-relaxed">
+              Reopening this date will remove <strong>{selectedDate}</strong> from the closed dates list, reactivate any existing arrival slot windows for this date, and allow farmers to schedule consignments at this Mandi yard.
+            </p>
+
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-gray-100 dark:border-neutral-800">
+              <button
+                type="button"
+                onClick={() => setShowOpenModal(false)}
+                className="px-4 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-neutral-800 dark:hover:bg-neutral-700 text-gray-700 dark:text-neutral-300 text-xs font-bold rounded-xl cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={isSubmittingOpen}
+                onClick={handleConfirmOpenDate}
+                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
+              >
+                {isSubmittingOpen ? "Reopening Date..." : "Confirm Reopen Day"}
               </button>
             </div>
           </div>
