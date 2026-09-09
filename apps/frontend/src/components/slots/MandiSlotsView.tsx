@@ -91,59 +91,61 @@ export function MandiSlotsView() {
 
   return (
     <div className="space-y-6 w-full max-w-[1700px] mx-auto animate-fade-in pb-12 font-sans px-1 sm:px-2">
-      {/* ═══ HEADER & VIEW SWITCHER ═══ */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-gray-200 dark:border-neutral-800">
-        <div>
-          <h1 className="text-xl font-bold text-gray-900 dark:text-[#E5E5E5] tracking-tight">
-            Manage Mandi Arrival Slots &amp; Availability
-          </h1>
-          <p className="text-xs text-gray-500 dark:text-neutral-400 mt-0.5 font-medium">
-            Configure weekly schedules, interactive yard calendar, arrival capacities &amp; weighbridge buffers.
-          </p>
+      {/* ═══ HEADER & VIEW SWITCHER CARD ═══ */}
+      <section className="bg-white dark:bg-[#121212] rounded-2xl p-5 shadow-subtle border border-slate-200/80 dark:border-neutral-800 shrink-0">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-[#E5E5E5]">
+              Manage Mandi Arrival Slots &amp; Availability
+            </h1>
+            <p className="text-sm text-slate-500 dark:text-neutral-400 mt-0.5 font-normal">
+              Configure weekly schedules, interactive yard calendar, arrival capacities &amp; weighbridge buffers.
+            </p>
+          </div>
+
+          {/* View Mode Navigation Tabs */}
+          <div className="flex items-center bg-slate-100 dark:bg-black p-1 rounded-xl border border-slate-200/80 dark:border-neutral-800 shadow-2xs self-start sm:self-auto">
+            <button
+              type="button"
+              onClick={() => setActiveTab("availability")}
+              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                activeTab === "availability"
+                  ? "bg-white dark:bg-neutral-900 text-slate-900 dark:text-white shadow-2xs border border-slate-200/60 dark:border-neutral-700"
+                  : "text-slate-500 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-white"
+              }`}
+            >
+              <LayoutGrid className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+              <span>Weekly Availability</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTab("calendar")}
+              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                activeTab === "calendar"
+                  ? "bg-white dark:bg-neutral-900 text-slate-900 dark:text-white shadow-2xs border border-slate-200/60 dark:border-neutral-700"
+                  : "text-slate-500 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-white"
+              }`}
+            >
+              <CalendarDays className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+              <span>Interactive Calendar</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTab("operating_rules")}
+              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                activeTab === "operating_rules"
+                  ? "bg-white dark:bg-neutral-900 text-slate-900 dark:text-white shadow-2xs border border-slate-200/60 dark:border-neutral-700"
+                  : "text-slate-500 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-white"
+              }`}
+            >
+              <Clock className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+              <span>Yard Rules &amp; Closed Days</span>
+            </button>
+          </div>
         </div>
-
-        {/* View Mode Navigation Tabs */}
-        <div className="flex items-center bg-gray-100 dark:bg-black p-1 rounded-xl border border-gray-200 dark:border-neutral-800 shadow-2xs">
-          <button
-            type="button"
-            onClick={() => setActiveTab("availability")}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-              activeTab === "availability"
-                ? "bg-white dark:bg-neutral-900 text-black dark:text-white shadow-2xs border border-gray-200/60 dark:border-neutral-700"
-                : "text-gray-500 dark:text-neutral-400 hover:text-black dark:hover:text-white"
-            }`}
-          >
-            <LayoutGrid className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-            <span>Weekly Availability</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab("calendar")}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-              activeTab === "calendar"
-                ? "bg-white dark:bg-neutral-900 text-black dark:text-white shadow-2xs border border-gray-200/60 dark:border-neutral-700"
-                : "text-gray-500 dark:text-neutral-400 hover:text-black dark:hover:text-white"
-            }`}
-          >
-            <CalendarDays className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-            <span>Interactive Calendar</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab("operating_rules")}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-              activeTab === "operating_rules"
-                ? "bg-white dark:bg-neutral-900 text-black dark:text-white shadow-2xs border border-gray-200/60 dark:border-neutral-700"
-                : "text-gray-500 dark:text-neutral-400 hover:text-black dark:hover:text-white"
-            }`}
-          >
-            <Clock className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-            <span>Yard Rules &amp; Closed Days</span>
-          </button>
-        </div>
-      </div>
+      </section>
 
       {/* ═══ TAB 1: WEEKLY AVAILABILITY (SCREENSHOT MATCHING SCHEDULER) ═══ */}
       {activeTab === "availability" && (

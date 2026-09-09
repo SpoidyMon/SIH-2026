@@ -183,25 +183,27 @@ export function MandiBookingsView() {
 
   return (
     <div className="space-y-4 w-full max-w-[1700px] mx-auto animate-fade-in font-sans pb-10 px-1 sm:px-2">
-      {/* ═══ 1. HEADER ═══ */}
-      <div className="border-b border-slate-200 dark:border-neutral-800 pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
-          <h1 className="text-xl font-bold text-slate-900 dark:text-[#E5E5E5] tracking-tight">
-            Consignment Bookings Manifest
-          </h1>
-          <p className="text-xs text-slate-500 dark:text-neutral-400 mt-0.5 font-medium">
-            Manage incoming arrivals, verify gate passes, inspect farmer profiles, and settle weighbridge clearances.
-          </p>
-        </div>
+      {/* ═══ 1. HEADER CARD ═══ */}
+      <section className="bg-white dark:bg-[#121212] rounded-2xl p-5 shadow-subtle border border-slate-200/80 dark:border-neutral-800 shrink-0">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-[#E5E5E5]">
+              Consignment Bookings Manifest
+            </h1>
+            <p className="text-sm text-slate-500 dark:text-neutral-400 mt-1 font-normal">
+              Manage incoming arrivals, verify gate passes, inspect farmer profiles, and settle weighbridge clearances.
+            </p>
+          </div>
 
-        <button
-          onClick={() => setShowVerifyModal(true)}
-          className="flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-xl text-white shadow-xs transition bg-emerald-600 hover:bg-emerald-700 cursor-pointer self-start sm:self-auto"
-        >
-          <QrCode className="w-4 h-4" />
-          <span>Verify QR / Token</span>
-        </button>
-      </div>
+          <button
+            onClick={() => setShowVerifyModal(true)}
+            className="flex items-center gap-2 px-4 py-2.5 text-xs font-bold rounded-xl text-white shadow-xs transition bg-emerald-600 hover:bg-emerald-700 cursor-pointer self-start sm:self-auto"
+          >
+            <QrCode className="w-4 h-4" />
+            <span>Verify QR / Token</span>
+          </button>
+        </div>
+      </section>
 
       {/* ═══ 2. SEGMENTED TABS & SEARCH TOOLBAR ═══ */}
       <div className="space-y-3">

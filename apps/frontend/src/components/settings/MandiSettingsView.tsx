@@ -220,37 +220,39 @@ export function MandiSettingsView() {
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto animate-fade-in pb-12">
-      {/* ═══ TITLE & MANDI CODE BADGE ═══ */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 dark:border-neutral-800 pb-4">
-        <div>
-          <div className="flex items-center gap-2.5">
-            <h1 className="text-xl font-bold text-slate-900 dark:text-[#E5E5E5] tracking-tight">
-              Mandi &amp; Yard Settings
-            </h1>
-            <span className="px-2.5 py-0.5 rounded-md bg-emerald-600 text-white font-mono font-bold text-xs tracking-wider shadow-xs">
-              {profile?.mandiCode || "MAN001"}
-            </span>
+      {/* ═══ TITLE & MANDI CODE BADGE CARD ═══ */}
+      <section className="bg-white dark:bg-[#121212] rounded-2xl p-5 shadow-subtle border border-slate-200/80 dark:border-neutral-800 shrink-0">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2.5">
+              <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-[#E5E5E5]">
+                Mandi &amp; Yard Settings
+              </h1>
+              <span className="px-2.5 py-0.5 rounded-md bg-emerald-600 text-white font-mono font-bold text-xs tracking-wider shadow-xs">
+                {profile?.mandiCode || "MAN001"}
+              </span>
+            </div>
+            <p className="text-sm text-slate-500 dark:text-neutral-400 mt-1 font-normal">
+              APMC accreditation, physical yard coordinate markup, and operating schedule.
+            </p>
           </div>
-          <p className="text-xs text-slate-500 dark:text-neutral-400 mt-1 font-medium">
-            APMC accreditation, physical yard coordinate markup, and operating schedule.
-          </p>
-        </div>
 
-        {/* Visibility Status on Farmer App */}
-        <div className="flex items-center gap-2">
-          {profile?.isLocationSet ? (
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 text-xs font-bold">
-              <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-              <span>Visible on Farmer App</span>
-            </div>
-          ) : (
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 text-amber-800 dark:text-amber-300 text-xs font-bold">
-              <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-              <span>Location Not Set • Hidden from Farmers</span>
-            </div>
-          )}
+          {/* Visibility Status on Farmer App */}
+          <div className="flex items-center gap-2 self-start sm:self-auto">
+            {profile?.isLocationSet ? (
+              <div className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 text-xs font-bold">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                <span>Visible on Farmer App</span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 text-amber-800 dark:text-amber-300 text-xs font-bold">
+                <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                <span>Location Not Set • Hidden from Farmers</span>
+              </div>
+            )}
+          </div>
         </div>
-      </div>
+      </section>
 
       {locationStatusMsg && (
         <div
