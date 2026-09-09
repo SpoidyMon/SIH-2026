@@ -34,6 +34,7 @@ import {
 } from "../../store/slices/mandiSlice";
 import { logoutThunk } from "../../store/slices/authSlice";
 import { apiClient } from "../../services/apiClient";
+import { NotificationDropdown } from "./NotificationDropdown";
 
 /** Maps URL path segments to the internal nav key used for active-state styling */
 function getActiveTab(pathname: string): string {
@@ -63,6 +64,7 @@ export function MandiLayout() {
   const [backendOnline, setBackendOnline] = useState<boolean | null>(true);
   const [isDarkTheme, setIsDarkTheme] = useState<boolean>(false);
   const [showProfileDropdown, setShowProfileDropdown] = useState<boolean>(false);
+  const [showNotifications, setShowNotifications] = useState<boolean>(false);
 
   const checkHealth = () => {
     setBackendOnline(null);
@@ -133,14 +135,16 @@ export function MandiLayout() {
             <QrCode className="w-5 h-5" />
           </button>
 
-          {/* Notification Bell */}
-          <button
-            title="Notifications"
-            className="relative p-2 text-slate-500 hover:text-slate-800 dark:text-neutral-400 dark:hover:text-neutral-100 hover:bg-slate-100 dark:hover:bg-neutral-800 rounded-xl transition cursor-pointer"
-          >
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-amber-500 rounded-full ring-2 ring-white dark:ring-[#121212]"></span>
-            <Bell className="w-5 h-5" />
-          </button>
+          {/* Notification Dropdown with Clean Popover Window */}
+          <NotificationDropdown
+            currentBookings={currentBookings}
+            isOpen={showNotifications}
+            onToggle={() => {
+              setShowNotifications(!showNotifications);
+              setShowProfileDropdown(false);
+            }}
+            onClose={() => setShowNotifications(false)}
+          />
 
           {/* Light / Dark Theme Switcher */}
           <div className="flex items-center bg-slate-100 dark:bg-neutral-900 p-1 rounded-xl border border-slate-200 dark:border-neutral-800">
@@ -173,7 +177,10 @@ export function MandiLayout() {
           {/* Profile Settings Dropdown */}
           <div className="relative">
             <button
-              onClick={() => setShowProfileDropdown(!showProfileDropdown)}
+              onClick={() => {
+                setShowProfileDropdown(!showProfileDropdown);
+                setShowNotifications(false);
+              }}
               className="flex items-center gap-2 pl-1 pr-2 py-1 rounded-xl hover:bg-slate-100 dark:hover:bg-neutral-800 transition text-left cursor-pointer"
             >
               <div className="w-8 h-8 rounded-full bg-emerald-600/20 border border-emerald-500/30 flex items-center justify-center font-bold text-emerald-700 dark:text-emerald-300 text-xs uppercase">
@@ -292,20 +299,6 @@ export function MandiLayout() {
                 </span>
               </button>
 
-              {/* Gate QR Scanner */}
-              <button
-                onClick={() => navigate("/mandi/GateScanner")}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition cursor-pointer text-left ${
-                  activeNavTab === "scanner"
-                    ? "bg-slate-100 dark:bg-neutral-800 text-slate-900 dark:text-[#E5E5E5] shadow-xs font-semibold"
-                    : "text-slate-500 hover:text-slate-800 dark:text-neutral-400 dark:hover:text-neutral-200 hover:bg-slate-50 dark:hover:bg-neutral-800/50"
-                }`}
-              >
-                <span className="w-5 h-5 flex items-center justify-center">
-                  <QrCode className="w-5 h-5" />
-                </span>
-                <span>Gate QR Scanner</span>
-              </button>
 
               {/* Verification Status */}
               <button
@@ -322,19 +315,19 @@ export function MandiLayout() {
                 <span>Verification Status</span>
               </button>
 
-              {/* Farmer Database */}
+              {/* Mandi Settings */}
               <button
-                onClick={() => navigate("/mandi/farmers")}
+                onClick={() => navigate("/mandi/settings")}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition cursor-pointer text-left ${
-                  activeNavTab === "farmers"
+                  activeNavTab === "settings"
                     ? "bg-slate-100 dark:bg-neutral-800 text-slate-900 dark:text-[#E5E5E5] shadow-xs font-semibold"
                     : "text-slate-500 hover:text-slate-800 dark:text-neutral-400 dark:hover:text-neutral-200 hover:bg-slate-50 dark:hover:bg-neutral-800/50"
                 }`}
               >
                 <span className="w-5 h-5 flex items-center justify-center">
-                  <Users className="w-5 h-5" />
+                  <Settings className="w-5 h-5" />
                 </span>
-                <span>Farmer Database</span>
+                <span>Mandi Settings</span>
               </button>
 
             </nav>
@@ -362,18 +355,6 @@ export function MandiLayout() {
               </button>
             </div>
 
-            {/* Mandi Settings Link */}
-            <button
-              onClick={() => navigate("/mandi/settings")}
-              className={`w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-xl transition cursor-pointer text-left ${
-                activeNavTab === "settings"
-                  ? "bg-slate-100 dark:bg-neutral-800 text-slate-900 dark:text-[#E5E5E5] font-semibold"
-                  : "text-slate-500 hover:text-slate-800 dark:text-neutral-400 dark:hover:text-neutral-200 hover:bg-slate-50 dark:hover:bg-neutral-800/50"
-              }`}
-            >
-              <Settings className="w-5 h-5" />
-              <span>Mandi Settings</span>
-            </button>
           </div>
         </aside>
 

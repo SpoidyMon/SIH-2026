@@ -242,9 +242,9 @@ export const VerifyTokenModal: React.FC<VerifyTokenModalProps> = ({
                 </span>
               </div>
             </div>
-            <div className="text-right">
+            <div className="text-right shrink-0">
               <span className="text-[10px] text-slate-500 dark:text-neutral-400 block font-medium">Expected Token</span>
-              <span className="font-mono font-bold text-emerald-800 dark:text-emerald-300">
+              <span className="font-mono font-bold text-emerald-800 dark:text-emerald-300 whitespace-nowrap">
                 {targetBooking.token}
               </span>
             </div>

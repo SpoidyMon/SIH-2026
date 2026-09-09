@@ -220,19 +220,22 @@ export const WeighbridgeSettlementModal: React.FC<WeighbridgeSettlementModalProp
         {/* Modal Scrollable Body */}
         <div className="p-5 space-y-4 text-xs overflow-y-auto flex-1">
           {/* Booking Summary Card */}
-          <div className="p-3 bg-neutral-50 dark:bg-neutral-900/60 border border-neutral-200 dark:border-neutral-800 rounded-xl space-y-1">
-            <div className="flex justify-between items-start">
-              <div>
-                <div className="font-bold text-neutral-900 dark:text-[#E5E5E5] text-sm">
+          <div className="p-3.5 bg-neutral-50 dark:bg-neutral-900/60 border border-neutral-200 dark:border-neutral-800 rounded-xl">
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0 flex-1">
+                <div className="font-bold text-neutral-900 dark:text-[#E5E5E5] text-sm truncate">
                   {booking.farmerName}
                 </div>
-                <div className="text-neutral-500 dark:text-neutral-400 text-[11px] mt-0.5">
+                <div className="text-neutral-500 dark:text-neutral-400 text-[11px] mt-0.5 leading-tight truncate">
                   {booking.vehicleNumber ? `Vehicle: ${booking.vehicleNumber} • ` : ""}
                   {booking.crop} (Estimated: {estimatedDisplayKg.toLocaleString("en-IN")} KG)
                 </div>
               </div>
-              <div className="text-right font-mono text-xs bg-slate-200/80 dark:bg-neutral-800 px-2 py-0.5 rounded font-semibold text-slate-800 dark:text-neutral-200">
-                Token: {booking.token}
+              <div className="shrink-0 flex items-center gap-1.5 bg-slate-100 dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 px-2.5 py-1.5 rounded-lg whitespace-nowrap shadow-2xs">
+                <span className="text-[10px] font-semibold text-slate-500 dark:text-neutral-400 uppercase tracking-wider">Token:</span>
+                <span className="font-mono text-xs font-bold text-slate-800 dark:text-neutral-100">
+                  {booking.token}
+                </span>
               </div>
             </div>
           </div>
@@ -285,7 +288,7 @@ export const WeighbridgeSettlementModal: React.FC<WeighbridgeSettlementModalProp
                   )}
                 </div>
                 <span className="text-[10px] text-amber-700 dark:text-amber-400 mt-2">
-                  Point camera at farmer's pass with token: <strong className="font-mono">{booking.token}</strong>
+                  Point camera at farmer's pass with token: <strong className="font-mono whitespace-nowrap">{booking.token}</strong>
                 </span>
               </div>
 
@@ -309,7 +312,7 @@ export const WeighbridgeSettlementModal: React.FC<WeighbridgeSettlementModalProp
                     Farmer Verified Successfully
                   </div>
                   <div className="text-[10px] text-emerald-700 dark:text-emerald-400 font-mono">
-                    Token: {booking.token} • Authorized for Weighbridge Check-in
+                    Token: <span className="whitespace-nowrap font-bold">{booking.token}</span> • Authorized for Weighbridge Check-in
                   </div>
                 </div>
               </div>
