@@ -96,23 +96,26 @@ export default function FarmerDashboardScreen() {
   const headerInfo = getHeaderInfo();
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+    <SafeAreaView style={styles.safeArea} edges={activeTab === 'ai' ? [] : ['top', 'left', 'right']}>
       <View style={styles.container}>
-        {/* Top Header with Farmer ID & KYC Badges */}
-        <DashboardHeader
-          title={headerInfo.title}
-          subtitle={headerInfo.subtitle}
-          farmerCode={farmerCode}
-          isProfileComplete={isProfileComplete}
-          onKycPress={() => setProfileModalVisible(true)}
-          showSearchButton={activeTab === 'dashboard'}
-          onSearchPress={handleSearchPress}
-          onNotificationPress={handleNotificationPress}
-          hasUnreadNotifications={true}
-        />
+        {/* Top Header with Farmer ID & KYC Badges (Hidden on AI screen to maximize chat area) */}
+        {activeTab !== 'ai' ? (
+          <DashboardHeader
+            title={headerInfo.title}
+            subtitle={headerInfo.subtitle}
+            farmerCode={farmerCode}
+            isProfileComplete={isProfileComplete}
+            onKycPress={() => setProfileModalVisible(true)}
+            showSearchButton={activeTab === 'dashboard'}
+            onSearchPress={handleSearchPress}
+            onNotificationPress={handleNotificationPress}
+            onAiPress={() => setActiveTab('ai')}
+            hasUnreadNotifications={true}
+          />
+        ) : null}
 
-        {/* Persistent Incomplete Profile Warning Banner */}
-        {!isProfileComplete ? (
+        {/* Persistent Incomplete Profile Warning Banner (Hidden on AI screen) */}
+        {!isProfileComplete && activeTab !== 'ai' ? (
           <Pressable
             onPress={() => setProfileModalVisible(true)}
             style={({ pressed }) => [styles.kycWarningBanner, pressed && styles.pressed]}>

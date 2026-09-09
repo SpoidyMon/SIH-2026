@@ -9,13 +9,13 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  Keyboard,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
-import { sendTextMessageApi, sendVoiceAudioApi } from '@/services/ai.service';
-import { createSlotBookingApi } from '@/services/farmer.service';
-import type { BookingConfirmationPayload } from '@/interfaces';
+import { sendTextMessageApi, sendVoiceAudioApi, BookingConfirmationPayload } from '@/services/ai.service';
+import { createFarmerBookingApi } from '@/services/farmer.service';
 
 interface ChatMessage {
   id: string;
@@ -63,11 +63,28 @@ export const AiSectionView = memo(function AiSectionView() {
   const [isRecording, setIsRecording] = useState(false);
   const [recordingSeconds, setRecordingSeconds] = useState(0);
   const [conversationId, setConversationId] = useState<string>('');
+  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
 
   const scrollViewRef = useRef<ScrollView>(null);
   const mediaRecorderRef = useRef<any>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const timerIntervalRef = useRef<any>(null);
+
+  // Keyboard show/hide listener for precise smooth layout shifting
+  useEffect(() => {
+    const showSub = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+      () => setIsKeyboardVisible(true)
+    );
+    const hideSub = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+      () => setIsKeyboardVisible(false)
+    );
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
 
   // Auto-scroll chat stream to bottom when new message arrives
   useEffect(() => {
@@ -110,8 +127,8 @@ export const AiSectionView = memo(function AiSectionView() {
             sender: 'ai',
             text: res.data.responseText,
             timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            confirmationRequired: res.data.confirmationRequired,
-            confirmationPayload: res.data.confirmationPayload,
+            confirmationRequired: res.data.confirmationRequired || res.data.requiresConfirmation,
+            confirmationPayload: res.data.confirmationPayload || undefined,
           };
           setMessages((prev) => [...prev, aiMsg]);
         } else {
@@ -238,8 +255,8 @@ export const AiSectionView = memo(function AiSectionView() {
       );
 
       try {
-        const bookingRes = await createSlotBookingApi(token, {
-          mandiId: payload.mandiId,
+        const bookingRes = await createFarmerBookingApi(token, {
+          mandiProfileId: payload.mandiId,
           slotId: payload.slotId,
           crop: payload.crop,
           quantityKg: payload.quantityKg,
@@ -283,9 +300,8 @@ export const AiSectionView = memo(function AiSectionView() {
   return (
     <KeyboardAvoidingView
       style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : Platform.OS === 'android' ? 'height' : undefined}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 20}
-      automaticallyAdjustKeyboardInsets={true}>
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 88 : 0}>
       {/* Header Bar */}
       <View style={styles.aiHeaderBanner}>
         <View style={styles.bannerLeft}>
@@ -437,8 +453,14 @@ export const AiSectionView = memo(function AiSectionView() {
         </View>
       ) : null}
 
-      {/* Input Bar */}
-      <View style={styles.inputContainer}>
+      {/* Input Bar with Dynamic Keyboard Avoidance Margin */}
+      <View
+        style={[
+          styles.inputContainer,
+          {
+            marginBottom: isKeyboardVisible ? 6 : Platform.OS === 'ios' ? 76 : 70,
+          },
+        ]}>
         <TextInput
           style={styles.textInput}
           placeholder={
@@ -797,7 +819,6 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: '#E2E8F0',
     gap: 10,
-    marginBottom: Platform.OS === 'ios' ? 104 : 88,
   },
   textInput: {
     flex: 1,

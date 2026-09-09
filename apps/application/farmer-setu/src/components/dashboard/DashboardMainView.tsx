@@ -155,22 +155,6 @@ export const DashboardMainView = memo(function DashboardMainView({
           onExploreMandis={onNavigateToMandi}
         />
       </ScrollView>
-
-      {/* Floating AI Voice Booking Button */}
-      <Pressable
-        style={styles.floatingAiBtn}
-        onPress={() => (onNavigateToAi ? onNavigateToAi() : setIsAiModalVisible(true))}
-      >
-        <Ionicons name="mic" size={22} color="#C8F52F" />
-        <Text style={styles.floatingAiText}>AI Voice Booking</Text>
-      </Pressable>
-
-      {/* AI Voice Assistant Modal */}
-      <AIAssistantModal
-        visible={isAiModalVisible}
-        onClose={() => setIsAiModalVisible(false)}
-        onBookingCreated={() => onNavigateToBookings()}
-      />
     </View>
   );
 });

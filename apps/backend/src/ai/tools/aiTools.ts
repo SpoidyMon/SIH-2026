@@ -139,7 +139,7 @@ export async function toolGetMandiDetails(params: { mandiId: string }) {
  * Fetches active, non-expired slots for a given date.
  */
 export async function toolGetAvailableSlots(params: { mandiId: string; date?: string }) {
-  const targetDate = params.date || new Date().toISOString().split("T")[0];
+  const targetDate: string = params.date || new Date().toISOString().slice(0, 10);
 
   let slots = await prisma.mandiSlot.findMany({
     where: {

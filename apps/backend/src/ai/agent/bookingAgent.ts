@@ -351,11 +351,15 @@ Respond to the user politely in language "${lang}". List all the mandis found ni
     };
   }
 
+  // Extract combined text from history for multi-turn fallback
+  const conversationHistoryText = (state.historyMessages || []).map((m) => m.content).join(" ");
+  const combinedText = `${userText} ${conversationHistoryText}`;
+
   // 6. Explicit Booking Intent (BOOK_SLOT)
-  const targetDate = state.date || resolveTargetDate(userText);
-  const parsedKg = parseQuantityKg(userText) || (state.crops?.[0]?.quantityKg ?? 100);
-  const cropNorm = normalizeCropName(userText);
-  const extractedQuery = state.mandiQuery || extractMandiQuery(userText);
+  const targetDate = state.date || resolveTargetDate(userText) || resolveTargetDate(conversationHistoryText);
+  const parsedKg = parseQuantityKg(userText) || parseQuantityKg(conversationHistoryText) || (state.crops?.[0]?.quantityKg ?? 100);
+  const cropNorm = normalizeCropName(userText) || normalizeCropName(conversationHistoryText);
+  const extractedQuery = state.mandiQuery || extractMandiQuery(userText) || extractMandiQuery(conversationHistoryText);
 
   let mandis: AgentMandiInfo[] = state.mandiMatches || [];
   if (!state.mandiId) {
@@ -375,8 +379,8 @@ Respond to the user politely in language "${lang}". List all the mandis found ni
     };
   }
 
-  const selectedMandi = state.mandiInfo || mandis[0];
-  const mandiId = state.mandiId || selectedMandi?.id;
+  const selectedMandi = state.mandiInfo || mandis[0] || { id: "mandi-default", name: "APMC Mandi" };
+  const mandiId = state.mandiId || selectedMandi.id;
 
   const availableSlots = await toolGetAvailableSlots({ mandiId, date: targetDate });
 
@@ -397,6 +401,7 @@ Respond to the user politely in language "${lang}". List all the mandis found ni
   }
 
   const selectedSlot = availableSlots[0];
+  const slotDate = selectedSlot.date || targetDate;
 
   const capacityCheck = await toolCheckSlotCapacity({
     slotId: selectedSlot.slotId,
@@ -422,7 +427,7 @@ Respond to the user politely in language "${lang}". List all the mandis found ni
     const promptWithContext = `User Prompt: "${userText}"
 Ground Truth from PostgreSQL DB:
 - Mandi Name: ${selectedMandi.name}
-- Slot Date: ${selectedSlot.date} (${selectedSlot.startTime} to ${selectedSlot.endTime})
+- Slot Date: ${slotDate} (${selectedSlot.startTime} to ${selectedSlot.endTime})
 - Crop: ${cropNorm.name}
 - Requested Quantity: ${parsedKg} KG
 - Rate per KG: ₹${rateInfo.ratePerKg}
@@ -441,7 +446,7 @@ Generate a warm, polite response strictly in language "${lang}". Include details
         mandiId,
         mandiName: selectedMandi.name,
         slotId: selectedSlot.slotId,
-        date: selectedSlot.date,
+        date: slotDate,
         startTime: selectedSlot.startTime,
         endTime: selectedSlot.endTime,
         crop: cropNorm.name,
@@ -452,14 +457,16 @@ Generate a warm, polite response strictly in language "${lang}". Include details
         idempotencyKey: `IDEM-${state.conversationId}-${Date.now().toString().slice(-6)}`,
       };
 
+      const slotInfo = { ...selectedSlot, date: slotDate };
+
       return {
         ...state,
         intent: "BOOK_SLOT",
         mandiId,
         mandiInfo: selectedMandi,
-        date: selectedSlot.date,
+        date: slotDate,
         slotId: selectedSlot.slotId,
-        slotInfo: selectedSlot,
+        slotInfo,
         crops: [{ cropId: cropNorm.cropId, name: cropNorm.name, quantityKg: parsedKg, ratePerKg: rateInfo.ratePerKg, estimatedAmount: estimatedPayout }],
         confirmationRequired: true,
         confirmationPayload,
@@ -474,7 +481,7 @@ Generate a warm, polite response strictly in language "${lang}". Include details
     mandiId,
     mandiName: selectedMandi.name,
     slotId: selectedSlot.slotId,
-    date: selectedSlot.date,
+    date: slotDate,
     startTime: selectedSlot.startTime,
     endTime: selectedSlot.endTime,
     crop: cropNorm.name,
@@ -485,22 +492,24 @@ Generate a warm, polite response strictly in language "${lang}". Include details
     idempotencyKey: `IDEM-${state.conversationId}-${Date.now().toString().slice(-6)}`,
   };
 
-  let responseText = `Slot available at ${selectedMandi.name} on ${selectedSlot.date} (${selectedSlot.startTime} – ${selectedSlot.endTime}).\nCrop: ${cropNorm.name} (${parsedKg} KG)\nEstimated Payout: ₹${estimatedPayout.toLocaleString("en-IN")} (Rate: ₹${rateInfo.ratePerKg}/KG)\n\nWould you like me to submit this booking request? (Say Yes or tap Confirm)`;
+  let responseText = `Slot available at ${selectedMandi.name} on ${slotDate} (${selectedSlot.startTime} – ${selectedSlot.endTime}).\nCrop: ${cropNorm.name} (${parsedKg} KG)\nEstimated Payout: ₹${estimatedPayout.toLocaleString("en-IN")} (Rate: ₹${rateInfo.ratePerKg}/KG)\n\nWould you like me to submit this booking request? (Say Yes or tap Confirm)`;
 
   if (lang === "hi") {
-    responseText = `${selectedMandi.name} में ${selectedSlot.date} को सुबह ${selectedSlot.startTime} – ${selectedSlot.endTime} का स्लॉट उपलब्ध है।\nफसल: ${cropNorm.name} (${parsedKg} KG)\nअनुमानित मूल्य: ₹${estimatedPayout.toLocaleString("en-IN")} (दर: ₹${rateInfo.ratePerKg}/KG)\n\nक्या मैं यह booking request सबमिट कर दूँ? (हाँ / Confirm कहें)`;
+    responseText = `${selectedMandi.name} में ${slotDate} को सुबह ${selectedSlot.startTime} – ${selectedSlot.endTime} का स्लॉट उपलब्ध है।\nफसल: ${cropNorm.name} (${parsedKg} KG)\nअनुमानित मूल्य: ₹${estimatedPayout.toLocaleString("en-IN")} (दर: ₹${rateInfo.ratePerKg}/KG)\n\nक्या मैं यह booking request सबमिट कर दूँ? (हाँ / Confirm कहें)`;
   } else if (lang === "mr") {
-    responseText = `${selectedMandi.name} मध्ये ${selectedSlot.date} रोजी सकाळी ${selectedSlot.startTime} – ${selectedSlot.endTime} चा स्लॉट उपलब्ध आहे.\nपीक: ${cropNorm.name} (${parsedKg} KG)\nअंदाजे उत्पन्न: ₹${estimatedPayout.toLocaleString("en-IN")} (दर: ₹${rateInfo.ratePerKg}/KG)\n\nमी ही बुकिंग विनंती सबमिट करू का? (होय / Confirm म्हणा)`;
+    responseText = `${selectedMandi.name} मध्ये ${slotDate} रोजी सकाळी ${selectedSlot.startTime} – ${selectedSlot.endTime} चा स्लॉट उपलब्ध आहे.\nपीक: ${cropNorm.name} (${parsedKg} KG)\nअंदाजे उत्पन्न: ₹${estimatedPayout.toLocaleString("en-IN")} (दर: ₹${rateInfo.ratePerKg}/KG)\n\nमी ही बुकिंग विनंती सबमिट करू का? (होय / Confirm म्हणा)`;
   }
+
+  const slotInfo = { ...selectedSlot, date: slotDate };
 
   return {
     ...state,
     intent: "BOOK_SLOT",
     mandiId,
     mandiInfo: selectedMandi,
-    date: selectedSlot.date,
+    date: slotDate,
     slotId: selectedSlot.slotId,
-    slotInfo: selectedSlot,
+    slotInfo,
     crops: [{ cropId: cropNorm.cropId, name: cropNorm.name, quantityKg: parsedKg, ratePerKg: rateInfo.ratePerKg, estimatedAmount: estimatedPayout }],
     confirmationRequired: true,
     confirmationPayload,

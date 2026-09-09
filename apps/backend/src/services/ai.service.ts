@@ -18,12 +18,30 @@ export async function processAiTextMessage(
   let conversationId = input.conversationId;
 
   // 1. Get or create conversation record
+  let pastMessages: any[] = [];
+  let pastConfirmationPayload: any = null;
+
   if (conversationId) {
     const existing = await prisma.aIConversation.findFirst({
       where: { id: conversationId, userId },
+      include: {
+        messages: {
+          orderBy: { createdAt: "asc" },
+        },
+      },
     });
     if (!existing) {
       conversationId = undefined;
+    } else {
+      pastMessages = existing.messages;
+      // Search for past confirmation payload from recent assistant toolResults
+      for (let i = pastMessages.length - 1; i >= 0; i--) {
+        const msg = pastMessages[i];
+        if (msg.sender === "assistant" && msg.toolResults && (msg.toolResults as any).mandiId && (msg.toolResults as any).slotId) {
+          pastConfirmationPayload = msg.toolResults;
+          break;
+        }
+      }
     }
   }
 
@@ -47,6 +65,12 @@ export async function processAiTextMessage(
     },
   });
 
+  const historyMessages = pastMessages.map((m) => ({
+    sender: m.sender,
+    content: m.content,
+    toolResults: m.toolResults,
+  }));
+
   // 2. Build initial agent state
   const initialState: BookingAgentState = {
     userId,
@@ -55,6 +79,8 @@ export async function processAiTextMessage(
     userMessage: input.message,
     confirmed: Boolean(input.confirmed),
     confirmationRequired: false,
+    historyMessages,
+    confirmationPayload: pastConfirmationPayload || undefined,
   };
 
   // 3. Execute agent state machine

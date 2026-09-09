@@ -22,6 +22,7 @@ export interface AgentResponsePayload {
   responseText: string;
   language: string;
   requiresConfirmation: boolean;
+  confirmationRequired?: boolean;
   confirmationPayload?: BookingConfirmationPayload | null;
   bookingResult?: {
     id: string;
