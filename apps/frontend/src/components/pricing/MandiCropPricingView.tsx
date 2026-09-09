@@ -234,131 +234,128 @@ export function MandiCropPricingView() {
   }, [localRates]);
 
   return (
-    <div className="flex-1 flex flex-col h-full overflow-y-auto bg-transparent px-4 sm:px-6 py-5 space-y-6">
-      {/* ═══ TOP HEADER ═══ */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800/80">
-              <Radio className="w-3 h-3 animate-pulse text-emerald-600 dark:text-emerald-400" />
-              Real-time APMC Procurement
-            </span>
-            <span className="text-xs text-slate-400 dark:text-neutral-500">•</span>
-            <span className="text-xs text-slate-500 dark:text-neutral-400">
-              {profile?.mandiName || "Indore APMC Central Grain Yard"}
-            </span>
-          </div>
-
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-neutral-100 tracking-tight mt-1.5 flex items-center gap-2.5">
-            Crop Procurement Pricing
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-500 dark:text-neutral-400 mt-1">
-            Configure live default purchase prices for commodities. Updated rates are synced instantly with the Farmer Setu App, gate token intake, and AI voice/chat booking.
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2.5 shrink-0">
-          <button
-            onClick={() => dispatch(fetchCropRatesThunk())}
-            disabled={isLoading || isActionLoading}
-            className="p-2.5 rounded-xl border border-slate-200 dark:border-neutral-800 hover:bg-slate-100 dark:hover:bg-neutral-900 text-slate-600 dark:text-neutral-300 transition cursor-pointer"
-            title="Refresh latest prices from server"
-          >
-            <RefreshCw className={`w-4 h-4 ${isLoading ? "animate-spin text-emerald-600" : ""}`} />
-          </button>
-
-          <button
-            onClick={() => {
-              resetForm();
-              setEditingCrop(null);
-              setIsAddModalOpen(true);
-            }}
-            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-neutral-800 dark:hover:bg-neutral-700 text-white text-xs font-semibold shadow-sm transition cursor-pointer"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Add Commodity</span>
-          </button>
-
-          <button
-            onClick={handleSaveAll}
-            disabled={isActionLoading || !hasUnsavedChanges}
-            className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition shadow-sm cursor-pointer ${
-              hasUnsavedChanges
-                ? "bg-emerald-600 hover:bg-emerald-500 text-white animate-pulse"
-                : "bg-slate-200 dark:bg-neutral-800 text-slate-400 dark:text-neutral-500 cursor-not-allowed"
-            }`}
-          >
-            <Save className="w-4 h-4" />
-            <span>{isActionLoading ? "Syncing..." : hasUnsavedChanges ? "Save & Broadcast" : "Rates Synced"}</span>
-          </button>
-        </div>
-      </div>
-
-      {/* ═══ LIVE METRICS BAR ═══ */}
-      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
-        {/* Metric 1 */}
-        <div className="p-4 rounded-2xl bg-white dark:bg-[#121212] border border-slate-200/80 dark:border-neutral-800 shadow-xs flex items-center justify-between">
+    <div className="space-y-4 w-full max-w-[1700px] mx-auto font-sans px-1 sm:px-2 pb-24">
+      {/* ═══ TOP SECTION: HEADER & LIVE APMC METRICS ═══ */}
+      <section className="bg-white dark:bg-[#121212] rounded-2xl p-5 shadow-subtle border border-slate-200/80 dark:border-neutral-800 shrink-0">
+        {/* Header Row */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-100 dark:border-neutral-800">
           <div>
-            <p className="text-[11px] font-semibold text-slate-400 dark:text-neutral-400 uppercase tracking-wider">
-              Procured Crops
-            </p>
-            <p className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-neutral-100 mt-1">
-              {activeCount} <span className="text-xs font-normal text-slate-400">/ {localRates.length} active</span>
+            <div className="flex items-center gap-2 mb-1">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800/80">
+                <Radio className="w-2.5 h-2.5 animate-pulse text-emerald-600 dark:text-emerald-400" />
+                Real-time APMC Procurement
+              </span>
+              <span className="text-xs text-slate-400 dark:text-neutral-500">•</span>
+              <span className="text-xs text-slate-500 dark:text-neutral-400">
+                {profile?.mandiName || "Indore APMC Central Grain Yard"}
+              </span>
+            </div>
+
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-[#E5E5E5]">
+              Crop Procurement Pricing
+            </h1>
+            <p className="text-sm text-slate-500 dark:text-neutral-400 mt-0.5 font-normal">
+              Configure live default purchase prices for commodities. Updated rates are synced instantly with the Farmer Setu App, gate token intake, and AI voice/chat booking.
             </p>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
-            <Sprout className="w-5 h-5" />
+
+          <div className="flex items-center gap-2.5 shrink-0 self-start md:self-auto">
+            <button
+              onClick={() => dispatch(fetchCropRatesThunk())}
+              disabled={isLoading || isActionLoading}
+              className="p-2 rounded-xl border border-slate-200 dark:border-neutral-800 hover:bg-slate-100 dark:hover:bg-neutral-900 text-slate-600 dark:text-neutral-300 transition cursor-pointer"
+              title="Refresh latest prices from server"
+            >
+              <RefreshCw className={`w-4 h-4 ${isLoading ? "animate-spin text-emerald-600" : ""}`} />
+            </button>
+
+            <button
+              onClick={() => {
+                resetForm();
+                setEditingCrop(null);
+                setIsAddModalOpen(true);
+              }}
+              className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-neutral-800 dark:hover:bg-neutral-700 text-white text-xs font-semibold shadow-xs transition cursor-pointer"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Add Commodity</span>
+            </button>
+
+            <button
+              onClick={handleSaveAll}
+              disabled={isActionLoading || !hasUnsavedChanges}
+              className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition shadow-xs cursor-pointer ${
+                hasUnsavedChanges
+                  ? "bg-emerald-600 hover:bg-emerald-500 text-white animate-pulse"
+                  : "bg-slate-100 dark:bg-neutral-800 text-slate-400 dark:text-neutral-500 cursor-not-allowed border border-slate-200 dark:border-neutral-700"
+              }`}
+            >
+              <Save className="w-4 h-4" />
+              <span>{isActionLoading ? "Syncing..." : hasUnsavedChanges ? "Save & Broadcast" : "Rates Synced"}</span>
+            </button>
           </div>
         </div>
 
-        {/* Metric 2 */}
-        <div className="p-4 rounded-2xl bg-white dark:bg-[#121212] border border-slate-200/80 dark:border-neutral-800 shadow-xs flex items-center justify-between">
-          <div>
-            <p className="text-[11px] font-semibold text-slate-400 dark:text-neutral-400 uppercase tracking-wider">
-              Average APMC Rate
-            </p>
-            <p className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-neutral-100 mt-1">
-              ₹{avgRate} <span className="text-xs font-normal text-slate-400">/ kg</span>
+        {/* 4 Clean Real-time KPI Metric Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 pt-4">
+          {/* KPI 1 */}
+          <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-[#171717] border border-slate-200/70 dark:border-neutral-800">
+            <div className="flex items-center justify-between text-slate-500 dark:text-neutral-400 text-xs font-medium">
+              <span>Procured Crops</span>
+              <span className="p-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400">
+                <Sprout className="w-3.5 h-3.5" />
+              </span>
+            </div>
+            <p className="text-xl font-bold text-slate-900 dark:text-[#E5E5E5] mt-1.5">
+              {activeCount}{" "}
+              <span className="text-xs font-normal text-slate-400">/ {localRates.length} active</span>
             </p>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 flex items-center justify-center">
-            <IndianRupee className="w-5 h-5" />
-          </div>
-        </div>
 
-        {/* Metric 3 */}
-        <div className="p-4 rounded-2xl bg-white dark:bg-[#121212] border border-slate-200/80 dark:border-neutral-800 shadow-xs flex items-center justify-between">
-          <div>
-            <p className="text-[11px] font-semibold text-slate-400 dark:text-neutral-400 uppercase tracking-wider">
-              Top Valued Crop
+          {/* KPI 2 */}
+          <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-[#171717] border border-slate-200/70 dark:border-neutral-800">
+            <div className="flex items-center justify-between text-slate-500 dark:text-neutral-400 text-xs font-medium">
+              <span>Average APMC Rate</span>
+              <span className="p-1.5 rounded-lg bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400">
+                <IndianRupee className="w-3.5 h-3.5" />
+              </span>
+            </div>
+            <p className="text-xl font-bold text-slate-900 dark:text-[#E5E5E5] mt-1.5">
+              ₹{avgRate}{" "}
+              <span className="text-xs font-normal text-slate-400">/ kg</span>
             </p>
-            <p className="text-base sm:text-lg font-bold text-slate-900 dark:text-neutral-100 mt-1 truncate max-w-[140px]">
+          </div>
+
+          {/* KPI 3 */}
+          <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-[#171717] border border-slate-200/70 dark:border-neutral-800">
+            <div className="flex items-center justify-between text-slate-500 dark:text-neutral-400 text-xs font-medium">
+              <span>Top Valued Crop</span>
+              <span className="p-1.5 rounded-lg bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400">
+                <TrendingUp className="w-3.5 h-3.5" />
+              </span>
+            </div>
+            <p className="text-lg font-bold text-slate-900 dark:text-[#E5E5E5] mt-1.5 truncate">
               {topCrop ? `${topCrop.crop} (₹${topCrop.ratePerKg})` : "N/A"}
             </p>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400 flex items-center justify-center">
-            <TrendingUp className="w-5 h-5" />
-          </div>
-        </div>
 
-        {/* Metric 4: Sync Status */}
-        <div className="p-4 rounded-2xl bg-white dark:bg-[#121212] border border-slate-200/80 dark:border-neutral-800 shadow-xs flex items-center justify-between">
-          <div>
-            <p className="text-[11px] font-semibold text-slate-400 dark:text-neutral-400 uppercase tracking-wider">
-              Farmer Sync
-            </p>
-            <div className="flex items-center gap-1.5 mt-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping"></span>
+          {/* KPI 4 */}
+          <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-[#171717] border border-slate-200/70 dark:border-neutral-800">
+            <div className="flex items-center justify-between text-slate-500 dark:text-neutral-400 text-xs font-medium">
+              <span>Farmer Sync</span>
+              <span className="p-1.5 rounded-lg bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400">
+                <Scale className="w-3.5 h-3.5" />
+              </span>
+            </div>
+            <div className="flex items-center gap-1.5 mt-2">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
               <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
                 Live on Farmer Portal
               </span>
             </div>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 flex items-center justify-center">
-            <Scale className="w-5 h-5" />
-          </div>
         </div>
-      </div>
+      </section>
 
       {/* ═══ SEARCH & FILTER BAR ═══ */}
       <div className="p-4 rounded-2xl bg-white dark:bg-[#121212] border border-slate-200/80 dark:border-neutral-800 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3">
