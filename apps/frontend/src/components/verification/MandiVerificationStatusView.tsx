@@ -236,11 +236,11 @@ export function MandiVerificationStatusView() {
               <span className="p-2 rounded-xl bg-emerald-50 dark:bg-black border border-emerald-200 dark:border-emerald-800/60 text-emerald-600 dark:text-emerald-400">
                 <ShieldCheck className="w-5 h-5" />
               </span>
-              <h1 className="text-2xl font-bold text-slate-900 dark:text-[#E5E5E5] tracking-tight">
+              <h1 className="text-2xl font-semibold tracking-tight text-slate-900 dark:text-[#E5E5E5]">
                 Mandi Statutory Verification &amp; KYC Hub
               </h1>
             </div>
-            <p className="text-xs text-slate-500 dark:text-neutral-400 max-w-3xl leading-relaxed">
+            <p className="text-sm text-slate-500 dark:text-neutral-400 max-w-3xl leading-relaxed mt-0.5">
               Official regulatory compliance management for APMC Indore Central (Yard B). Manage officer biometric Aadhaar credentials, statutory APMC trading permits, legal deeds, and officer identity verification.
             </p>
           </div>

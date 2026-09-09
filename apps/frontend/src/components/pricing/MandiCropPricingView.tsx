@@ -300,7 +300,7 @@ export function MandiCropPricingView() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 pt-4">
           {/* KPI 1 */}
           <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-[#171717] border border-slate-200/70 dark:border-neutral-800">
-            <div className="flex items-center justify-between text-slate-500 dark:text-neutral-400 text-xs font-medium">
+            <div className="flex items-center justify-between text-slate-500 dark:text-neutral-400 text-sm font-medium">
               <span>Procured Crops</span>
               <span className="p-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400">
                 <Sprout className="w-3.5 h-3.5" />
@@ -308,13 +308,13 @@ export function MandiCropPricingView() {
             </div>
             <p className="text-xl font-bold text-slate-900 dark:text-[#E5E5E5] mt-1.5">
               {activeCount}{" "}
-              <span className="text-xs font-normal text-slate-400">/ {localRates.length} active</span>
+              <span className="text-sm font-normal text-slate-500 dark:text-neutral-400">/ {localRates.length} active</span>
             </p>
           </div>
 
           {/* KPI 2 */}
           <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-[#171717] border border-slate-200/70 dark:border-neutral-800">
-            <div className="flex items-center justify-between text-slate-500 dark:text-neutral-400 text-xs font-medium">
+            <div className="flex items-center justify-between text-slate-500 dark:text-neutral-400 text-sm font-medium">
               <span>Average APMC Rate</span>
               <span className="p-1.5 rounded-lg bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400">
                 <IndianRupee className="w-3.5 h-3.5" />
@@ -322,13 +322,13 @@ export function MandiCropPricingView() {
             </div>
             <p className="text-xl font-bold text-slate-900 dark:text-[#E5E5E5] mt-1.5">
               ₹{avgRate}{" "}
-              <span className="text-xs font-normal text-slate-400">/ kg</span>
+              <span className="text-sm font-normal text-slate-500 dark:text-neutral-400">/ kg</span>
             </p>
           </div>
 
           {/* KPI 3 */}
           <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-[#171717] border border-slate-200/70 dark:border-neutral-800">
-            <div className="flex items-center justify-between text-slate-500 dark:text-neutral-400 text-xs font-medium">
+            <div className="flex items-center justify-between text-slate-500 dark:text-neutral-400 text-sm font-medium">
               <span>Top Valued Crop</span>
               <span className="p-1.5 rounded-lg bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400">
                 <TrendingUp className="w-3.5 h-3.5" />
@@ -341,7 +341,7 @@ export function MandiCropPricingView() {
 
           {/* KPI 4 */}
           <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-[#171717] border border-slate-200/70 dark:border-neutral-800">
-            <div className="flex items-center justify-between text-slate-500 dark:text-neutral-400 text-xs font-medium">
+            <div className="flex items-center justify-between text-slate-500 dark:text-neutral-400 text-sm font-medium">
               <span>Farmer Sync</span>
               <span className="p-1.5 rounded-lg bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400">
                 <Scale className="w-3.5 h-3.5" />

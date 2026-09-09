@@ -97,56 +97,56 @@ export const MandiOperationalPipeline = React.memo(function MandiOperationalPipe
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 pt-4">
         {/* KPI 1 */}
         <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-[#171717] border border-slate-200/70 dark:border-neutral-800">
-          <div className="flex items-center justify-between text-slate-500 dark:text-neutral-400 text-xs font-medium">
+          <div className="flex items-center justify-between text-slate-500 dark:text-neutral-400 text-sm font-medium">
             <span>Today's Arrival Slots</span>
             <span className="w-2.5 h-2.5 rounded-full bg-blue-500"></span>
           </div>
           <p className="text-2xl text-slate-900 dark:text-[#E5E5E5] mt-1 font-semibold">
             {arrivalSlots} Windows
           </p>
-          <p className="text-[11px] text-slate-500 dark:text-neutral-400 mt-1 flex items-center gap-1 font-normal">
+          <p className="text-xs text-slate-500 dark:text-neutral-400 mt-1 flex items-center gap-1 font-normal">
             <span className="text-emerald-600 dark:text-emerald-400 font-semibold">{uniqueCrops}</span> in morning shift
           </p>
         </div>
 
         {/* KPI 2 */}
         <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-[#171717] border border-slate-200/70 dark:border-neutral-800">
-          <div className="flex items-center justify-between text-slate-500 dark:text-neutral-400 text-xs font-medium">
+          <div className="flex items-center justify-between text-slate-500 dark:text-neutral-400 text-sm font-medium">
             <span>Active Bookings</span>
             <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
           </div>
           <p className="text-2xl text-slate-900 dark:text-[#E5E5E5] mt-1 font-semibold">
             {totalActiveBookings} Consignments
           </p>
-          <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium mt-1">
+          <p className="text-xs text-emerald-600 dark:text-emerald-400 font-medium mt-1">
             {pendingCount} Pending Review • {acceptedCount} Accepted
           </p>
         </div>
 
         {/* KPI 3 */}
         <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-[#171717] border border-slate-200/70 dark:border-neutral-800">
-          <div className="flex items-center justify-between text-slate-500 dark:text-neutral-400 text-xs font-medium">
+          <div className="flex items-center justify-between text-slate-500 dark:text-neutral-400 text-sm font-medium">
             <span>Yard Clearance Today</span>
             <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
           </div>
           <p className="text-2xl text-slate-900 dark:text-[#E5E5E5] mt-1 font-semibold">
             {clearedCount} Cleared
           </p>
-          <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium mt-1">
+          <p className="text-xs text-emerald-600 dark:text-emerald-400 font-medium mt-1">
             {weighedCount} Weighed &amp; Escrow Settled
           </p>
         </div>
 
         {/* KPI 4 */}
         <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-[#171717] border border-slate-200/70 dark:border-neutral-800">
-          <div className="flex items-center justify-between text-slate-500 dark:text-neutral-400 text-xs font-medium">
+          <div className="flex items-center justify-between text-slate-500 dark:text-neutral-400 text-sm font-medium">
             <span>Total Net Turnover</span>
             <span className="w-2.5 h-2.5 rounded-full bg-purple-500"></span>
           </div>
           <p className="text-2xl text-slate-900 dark:text-[#E5E5E5] mt-1 font-semibold">
             ₹ {turnoverLakhs} Lakhs
           </p>
-          <p className="text-[11px] text-slate-500 dark:text-neutral-400 mt-1 font-normal">
+          <p className="text-xs text-slate-500 dark:text-neutral-400 mt-1 font-normal">
             Avg. settlement: {avgSettlementMins} mins
           </p>
         </div>
