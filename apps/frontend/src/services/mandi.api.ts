@@ -10,6 +10,8 @@ import {
   AadhaarKycPayload,
   LegalDocPayload,
   CompleteBookingPayload,
+  CropRateItem,
+  UpdateCropRatesPayload,
   ApiResponse,
 } from "../interfaces";
 
@@ -144,5 +146,17 @@ export const mandiApi = {
     const response = await apiClient.get<ApiResponse<{ commodities: Array<{ id: string; name: string; category?: string }> }>>("/mandi/commodities");
     return response.data;
   },
+
+  // 8. Crop Procurement Pricing
+  getCropRates: async (): Promise<ApiResponse<{ cropRates: CropRateItem[] }>> => {
+    const response = await apiClient.get<ApiResponse<{ cropRates: CropRateItem[] }>>("/mandi/crop-prices");
+    return response.data;
+  },
+
+  updateCropRates: async (payload: UpdateCropRatesPayload): Promise<ApiResponse<{ cropRates: CropRateItem[]; profile: MandiProfile }>> => {
+    const response = await apiClient.put<ApiResponse<{ cropRates: CropRateItem[]; profile: MandiProfile }>>("/mandi/crop-prices", payload);
+    return response.data;
+  },
 };
+
 

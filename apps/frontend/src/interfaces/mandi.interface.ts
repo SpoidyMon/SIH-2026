@@ -341,12 +341,29 @@ export type NavTab =
   | "dashboard"
   | "bookings"
   | "slots"
+  | "prices"
   | "scanner"
   | "verification"
   | "farmers"
   | "history"
   | "settings"
   | "rating";
+
+export interface CropRateItem {
+  crop: string;
+  ratePerKg: number;
+  minRate?: number;
+  maxRate?: number;
+  unit?: string;
+  trend?: "up" | "down" | "stable";
+  variety?: string;
+  isActive?: boolean;
+  updatedAt?: string;
+}
+
+export interface UpdateCropRatesPayload {
+  cropRates: CropRateItem[];
+}
 
 export interface AadhaarKycPayload {
   aadhaarNumber: string;
@@ -378,4 +395,5 @@ export interface WeighbridgeSettlementModalProps {
   onComplete: (bookingId: string, actualWeightQuintals: number, finalPayoutAmount: number) => void;
   isPreVerified?: boolean;
 }
+
 

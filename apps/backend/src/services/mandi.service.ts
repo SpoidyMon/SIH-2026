@@ -1337,3 +1337,110 @@ export async function getFarmersForMandi(userId: string) {
   return Array.from(farmerMap.values());
 }
 
+/**
+ * Returns the current crop procurement rates for the Mandi.
+ * If not initialized yet, returns default APMC benchmark rates.
+ */
+export async function getCropRates(userId: string) {
+  const profile = await prisma.mandiProfile.findUnique({
+    where: { userId },
+  });
+
+  if (!profile) {
+    throw { status: 404, message: "Mandi profile not found." };
+  }
+
+  // If crop rates are already stored, return them
+  if (profile.cropRates && Array.isArray(profile.cropRates) && (profile.cropRates as any[]).length > 0) {
+    return (profile.cropRates as any[]);
+  }
+
+  // Baseline APMC defaults
+  const baselineRates = [
+    { crop: "Wheat", ratePerKg: 28, minRate: 26, maxRate: 31, trend: "up", variety: "Sharbati / Lokwan", isActive: true, unit: "kg" },
+    { crop: "Mustard", ratePerKg: 54, minRate: 50, maxRate: 58, trend: "up", variety: "Black / Yellow", isActive: true, unit: "kg" },
+    { crop: "Soyabean", ratePerKg: 46, minRate: 43, maxRate: 49, trend: "stable", variety: "JS-335 / Yellow", isActive: true, unit: "kg" },
+    { crop: "Onion", ratePerKg: 22, minRate: 18, maxRate: 25, trend: "down", variety: "Nashik Red", isActive: true, unit: "kg" },
+    { crop: "Tomato", ratePerKg: 25, minRate: 20, maxRate: 28, trend: "up", variety: "Hybrid Grade A", isActive: true, unit: "kg" },
+    { crop: "Potato", ratePerKg: 20, minRate: 17, maxRate: 23, trend: "stable", variety: "Jyoti / Pukhraj", isActive: true, unit: "kg" },
+    { crop: "Chana", ratePerKg: 52, minRate: 49, maxRate: 55, trend: "stable", variety: "Desi / Kabuli", isActive: true, unit: "kg" },
+    { crop: "Maize", ratePerKg: 23, minRate: 21, maxRate: 25, trend: "stable", variety: "Yellow Feed", isActive: true, unit: "kg" },
+  ];
+
+  // If the mandi already has custom acceptedCrops, merge them in
+  if (profile.acceptedCrops && profile.acceptedCrops.length > 0) {
+    for (const cropName of profile.acceptedCrops) {
+      if (!baselineRates.some((r) => r.crop.toLowerCase() === cropName.toLowerCase())) {
+        baselineRates.push({
+          crop: cropName,
+          ratePerKg: 25,
+          minRate: 22,
+          maxRate: 28,
+          trend: "stable",
+          variety: "Standard Mandi Grade",
+          isActive: true,
+          unit: "kg",
+        });
+      }
+    }
+  }
+
+  // Persist baseline so it remains stable
+  await prisma.mandiProfile.update({
+    where: { id: profile.id },
+    data: {
+      cropRates: baselineRates as any,
+    },
+  });
+
+  return baselineRates;
+}
+
+/**
+ * Updates the crop procurement rates for the Mandi.
+ * Automatically synchronizes acceptedCrops and modalPrice for farmers.
+ */
+export async function updateCropRates(userId: string, cropRates: any[]) {
+  const profile = await prisma.mandiProfile.findUnique({
+    where: { userId },
+  });
+
+  if (!profile) {
+    throw { status: 404, message: "Mandi profile not found." };
+  }
+
+  // Active crop names
+  const activeCrops = cropRates
+    .filter((c) => c.isActive !== false)
+    .map((c) => c.crop);
+
+  // Compute representative modalPrice and top crops
+  let modalPrice = "₹28 / kg";
+  let topCrop = "Wheat & Mustard";
+  if (activeCrops.length > 0) {
+    const activeRateItems = cropRates.filter((c) => c.isActive !== false);
+    const avgRate = Math.round(
+      activeRateItems.reduce((sum, r) => sum + (Number(r.ratePerKg) || 0), 0) /
+        activeRateItems.length
+    );
+    modalPrice = `₹${avgRate} / kg`;
+    topCrop = activeCrops.slice(0, 2).join(" & ");
+  }
+
+  const updated = await prisma.mandiProfile.update({
+    where: { id: profile.id },
+    data: {
+      cropRates: cropRates as any,
+      acceptedCrops: activeCrops.length > 0 ? activeCrops : profile.acceptedCrops,
+      modalPrice,
+      topCrop: topCrop || profile.topCrop,
+    },
+  });
+
+  return {
+    cropRates,
+    profile: updated,
+  };
+}
+
+

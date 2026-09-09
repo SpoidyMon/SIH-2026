@@ -187,6 +187,7 @@ model MandiProfile {
   longitude           Float?
   topCrop             String?              // e.g. "Onion (Red) & Grapes"
   acceptedCrops       String[]             @default([]) // Official commodities accepted at this mandi
+  cropRates           Json?                // Real-time crop procurement rates: [{ crop: string, ratePerKg: number, minRate?: number, maxRate?: number, trend?: string, variety?: string, isActive?: boolean, updatedAt?: string }]
   modalPrice          String?              // e.g. "₹2,680 / qtl"
   priceTrend          String?              // e.g. "+₹120 today"
   trendDirection      String?              @default("up")

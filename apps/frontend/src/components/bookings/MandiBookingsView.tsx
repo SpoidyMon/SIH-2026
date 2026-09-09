@@ -399,7 +399,7 @@ export function MandiBookingsView() {
                       className="hover:bg-slate-50 dark:hover:bg-neutral-900/60 transition cursor-pointer"
                     >
                       <td className="py-4 pl-6 pr-4 align-middle whitespace-nowrap">
-                        <span className="font-bold text-emerald-600 dark:text-emerald-400 text-sm hover:underline">
+                        <span className="font-semibold text-emerald-600 dark:text-emerald-400 text-sm hover:underline">
                           {b.token || `REQ-#${b.queueNumber || 1}`}
                         </span>
                         <span className="block text-[11px] text-slate-400 dark:text-neutral-500 mt-0.5 font-mono">
@@ -408,39 +408,39 @@ export function MandiBookingsView() {
                       </td>
 
                       <td className="py-4 px-4 align-middle whitespace-nowrap">
-                        <span className="font-bold text-slate-900 dark:text-[#E5E5E5] text-sm block">
+                        <span className="font-semibold text-slate-900 dark:text-neutral-100 text-sm block">
                           {b.farmerName || "Registered Producer"}
                         </span>
-                        <span className="text-[11px] text-slate-400 dark:text-neutral-400 mt-0.5 block">
+                        <span className="text-[11px] text-slate-400 dark:text-neutral-400 mt-0.5 block font-normal">
                           {b.farmerPhone || "KYC Verified"}
                         </span>
                       </td>
 
                       <td className="py-4 px-4 align-middle whitespace-nowrap">
-                        <span className="text-slate-900 dark:text-[#E5E5E5] text-sm block font-semibold">
+                        <span className="font-semibold text-slate-900 dark:text-neutral-100 text-sm block">
                           {b.crop}
                         </span>
-                        <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 mt-0.5 block">
+                        <span className="text-[11px] font-normal text-emerald-600 dark:text-emerald-400 mt-0.5 block">
                           {b.variety || "Grade-A Produce"}
                         </span>
                       </td>
 
                       <td className="py-4 px-4 align-middle whitespace-nowrap">
-                        <span className="text-slate-900 dark:text-[#E5E5E5] text-sm block font-bold">
+                        <span className="font-semibold text-slate-900 dark:text-neutral-100 text-sm block">
                           {displayKg.toLocaleString()} KG
                         </span>
                         {b.estimatedPayout ? (
-                          <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-bold block">
+                          <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-normal block">
                             ₹{b.estimatedPayout.toLocaleString()} est.
                           </span>
                         ) : null}
                       </td>
 
                       <td className="py-4 px-4 align-middle whitespace-nowrap">
-                        <span className="text-slate-900 dark:text-[#E5E5E5] text-sm block font-semibold">
+                        <span className="font-semibold text-slate-900 dark:text-neutral-100 text-sm block">
                           {b.slotTimeWindow || (b.slot?.startTime ? `${b.slot?.startTime} - ${b.slot?.endTime}` : "09:00 - 13:30")}
                         </span>
-                        <span className="text-[11px] text-slate-400 dark:text-neutral-400 mt-0.5 block">
+                        <span className="text-[11px] text-slate-400 dark:text-neutral-400 mt-0.5 block font-normal">
                           {b.arrivalDate || b.slot?.date || "Today"}
                         </span>
                       </td>

@@ -154,5 +154,16 @@ router.post(
   mandiController.closeMandiDateHandler
 );
 
+// ----------------------------------------------------
+// CROP PROCUREMENT PRICING (Accessible to all logged-in Mandi operators)
+// ----------------------------------------------------
+router.get("/crop-prices", mandiController.getCropRatesHandler);
+router.put(
+  "/crop-prices",
+  validate(mandiSchema.updateCropRatesSchema),
+  mandiController.updateCropRatesHandler
+);
+
 export default router;
+
 

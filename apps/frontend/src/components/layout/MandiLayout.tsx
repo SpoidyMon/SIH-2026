@@ -21,6 +21,7 @@ import {
   Bell,
   Users,
   Ticket,
+  IndianRupee,
 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "../../store";
 import {
@@ -39,6 +40,7 @@ import { NotificationDropdown } from "./NotificationDropdown";
 /** Maps URL path segments to the internal nav key used for active-state styling */
 function getActiveTab(pathname: string): string {
   if (pathname.startsWith("/mandi/manageSlot") || pathname.startsWith("/mandi/slots")) return "slots";
+  if (pathname.startsWith("/mandi/crop-prices") || pathname.startsWith("/mandi/prices")) return "prices";
   if (pathname.startsWith("/mandi/GateScanner") || pathname.startsWith("/mandi/scanner")) return "scanner";
   if (pathname.startsWith("/mandi/bookings")) return "bookings";
   if (pathname.startsWith("/mandi/farmers")) return "farmers";
@@ -296,6 +298,24 @@ export function MandiLayout() {
                 <span>Manage slots</span>
                 <span className="ml-auto text-[10px] text-emerald-600 bg-emerald-50 dark:bg-black border dark:border-emerald-800/60 px-1.5 py-0.5 rounded-md font-semibold">
                   {slots.length > 0 ? `${slots.length} Open` : "Open"}
+                </span>
+              </button>
+
+              {/* Crop Pricing */}
+              <button
+                onClick={() => navigate("/mandi/crop-prices")}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition cursor-pointer text-left ${
+                  activeNavTab === "prices"
+                    ? "bg-slate-100 dark:bg-neutral-800 text-slate-900 dark:text-[#E5E5E5] shadow-xs font-semibold"
+                    : "text-slate-500 hover:text-slate-800 dark:text-neutral-400 dark:hover:text-neutral-200 hover:bg-slate-50 dark:hover:bg-neutral-800/50"
+                }`}
+              >
+                <span className="w-5 h-5 flex items-center justify-center">
+                  <IndianRupee className="w-5 h-5" />
+                </span>
+                <span>Crop Pricing</span>
+                <span className="ml-auto text-[10px] text-emerald-600 bg-emerald-50 dark:bg-black border dark:border-emerald-800/60 px-1.5 py-0.5 rounded-md font-semibold">
+                  Live
                 </span>
               </button>
 

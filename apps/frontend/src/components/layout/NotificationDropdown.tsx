@@ -202,7 +202,7 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
 
       {/* Floating Small Window (Dropdown without Background Blur) */}
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white dark:bg-[#141414] rounded-2xl shadow-2xl border border-slate-200 dark:border-neutral-800 z-50 text-xs overflow-hidden animate-fade-in flex flex-col max-h-[520px]">
+        <div className="absolute right-0 mt-2 w-[calc(100vw-2rem)] sm:w-[440px] bg-white dark:bg-[#141414] rounded-2xl shadow-2xl border border-slate-200 dark:border-neutral-800 z-50 text-xs overflow-hidden animate-fade-in flex flex-col max-h-[540px]">
           {/* Header */}
           <div className="px-4 py-3 border-b border-slate-100 dark:border-neutral-800/80 flex items-center justify-between bg-slate-50/60 dark:bg-neutral-900/40">
             <div className="flex items-center gap-2">

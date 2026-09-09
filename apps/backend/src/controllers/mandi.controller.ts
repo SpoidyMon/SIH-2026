@@ -521,4 +521,43 @@ export async function closeMandiDateHandler(
   }
 }
 
+export async function getCropRatesHandler(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const userId = req.user!.userId;
+    const cropRates = await mandiService.getCropRates(userId);
+
+    res.status(200).json({
+      success: true,
+      data: { cropRates },
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function updateCropRatesHandler(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const userId = req.user!.userId;
+    const { cropRates } = req.body;
+    const result = await mandiService.updateCropRates(userId, cropRates);
+
+    res.status(200).json({
+      success: true,
+      message: "Mandi crop procurement prices updated and synced successfully.",
+      data: result,
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+
 

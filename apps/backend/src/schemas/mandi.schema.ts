@@ -207,3 +207,21 @@ export const legalDocUploadSchema = z.object({
   }),
   fileUrl: z.string().optional(),
 });
+
+// Crop Pricing Schemas
+export const cropRateItemSchema = z.object({
+  crop: z.string().min(1, "Crop name is required"),
+  ratePerKg: z.number().positive("Rate per KG must be positive"),
+  minRate: z.number().positive().optional(),
+  maxRate: z.number().positive().optional(),
+  unit: z.string().default("kg").optional(),
+  trend: z.enum(["up", "down", "stable"]).default("stable").optional(),
+  variety: z.string().optional(),
+  isActive: z.boolean().default(true).optional(),
+  updatedAt: z.string().optional(),
+});
+
+export const updateCropRatesSchema = z.object({
+  cropRates: z.array(cropRateItemSchema).min(1, "At least one crop rate is required"),
+});
+

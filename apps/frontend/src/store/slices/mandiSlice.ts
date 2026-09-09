@@ -10,6 +10,8 @@ import {
   AadhaarKycPayload,
   LegalDocPayload,
   CompleteBookingPayload,
+  CropRateItem,
+  UpdateCropRatesPayload,
 } from "../../interfaces";
 import { mandiApi } from "../../services/mandi.api";
 
@@ -17,6 +19,7 @@ export interface MandiState {
   stats: MandiDashboardStats | null;
   profile: MandiProfile | null;
   slots: MandiSlot[];
+  cropRates: CropRateItem[];
   currentBookings: Booking[];
   previousBookings: Booking[];
   previousBookingsTotal: number;
@@ -28,7 +31,7 @@ export interface MandiState {
   isActionLoading: boolean;
   error: string | null;
   successMessage: string | null;
-  activeNavTab: "dashboard" | "bookings" | "slots" | "scanner" | "verification" | "farmers" | "history" | "settings" | "rating" | "bayAllocation";
+  activeNavTab: "dashboard" | "bookings" | "slots" | "prices" | "scanner" | "verification" | "farmers" | "history" | "settings" | "rating" | "bayAllocation";
 }
 
 const defaultInitialStats: MandiDashboardStats = {
@@ -49,6 +52,7 @@ const initialState: MandiState = {
   stats: defaultInitialStats,
   profile: null,
   slots: [],
+  cropRates: [],
   currentBookings: [],
   previousBookings: [],
   previousBookingsTotal: 0,
@@ -238,6 +242,38 @@ export const batchCreateSlotsThunk = createAsyncThunk(
     }
   }
 );
+
+export const fetchCropRatesThunk = createAsyncThunk(
+  "mandi/fetchCropRates",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await mandiApi.getCropRates();
+      if (response.success && response.data?.cropRates) {
+        return response.data.cropRates;
+      }
+      return rejectWithValue(response.message || "Failed to fetch crop pricing");
+    } catch (err: any) {
+      return rejectWithValue(err.response?.data?.message || "Error loading crop pricing");
+    }
+  }
+);
+
+export const updateCropRatesThunk = createAsyncThunk(
+  "mandi/updateCropRates",
+  async (payload: UpdateCropRatesPayload, { dispatch, rejectWithValue }) => {
+    try {
+      const response = await mandiApi.updateCropRates(payload);
+      if (response.success && response.data) {
+        dispatch(fetchProfileThunk());
+        return response.data.cropRates;
+      }
+      return rejectWithValue(response.message || "Failed to update crop pricing");
+    } catch (err: any) {
+      return rejectWithValue(err.response?.data?.message || "Error updating crop pricing");
+    }
+  }
+);
+
 
 export const updateWeeklyScheduleThunk = createAsyncThunk(
   "mandi/updateWeeklySchedule",
@@ -569,8 +605,35 @@ export const mandiSlice = createSlice({
     builder.addCase(fetchCommoditiesThunk.fulfilled, (state, action) => {
       state.commodities = action.payload;
     });
+
+    // Crop Procurement Pricing
+    builder
+      .addCase(fetchCropRatesThunk.pending, (state) => {
+        state.isLoading = true;
+      })
+      .addCase(fetchCropRatesThunk.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.cropRates = action.payload;
+      })
+      .addCase(fetchCropRatesThunk.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = (action.payload as string) || "Failed to load crop pricing";
+      })
+      .addCase(updateCropRatesThunk.pending, (state) => {
+        state.isActionLoading = true;
+      })
+      .addCase(updateCropRatesThunk.fulfilled, (state, action) => {
+        state.isActionLoading = false;
+        state.cropRates = action.payload;
+        state.successMessage = "Crop procurement prices updated! Live prices broadcast to Farmers.";
+      })
+      .addCase(updateCropRatesThunk.rejected, (state, action) => {
+        state.isActionLoading = false;
+        state.error = (action.payload as string) || "Failed to update crop pricing";
+      });
   },
 });
+
 
 export const {
   setActiveNavTab,

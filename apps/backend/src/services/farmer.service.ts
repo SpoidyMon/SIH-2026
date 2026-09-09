@@ -325,8 +325,8 @@ export async function listApprovedMandis(userLat?: number, userLng?: number) {
         ? m.topCrop.split(",").map((s) => s.trim())
         : ["Wheat", "Mustard", "Onion", "Tomato"];
 
-    // Build structured crop rates per KG from slots or defaults
-    const defaultCropRates: Record<string, { crop: string; ratePerKg: number; availableKg: number }> = {
+    // Build structured crop rates per KG from mandiProfile.cropRates, slots or defaults
+    const defaultCropRates: Record<string, { crop: string; ratePerKg: number; availableKg: number; variety?: string; trend?: string }> = {
       Tomato: { crop: "Tomato", ratePerKg: 24, availableKg: 1000 },
       Wheat: { crop: "Wheat", ratePerKg: 28, availableKg: 5000 },
       Mustard: { crop: "Mustard", ratePerKg: 52, availableKg: 2500 },
@@ -334,6 +334,22 @@ export async function listApprovedMandis(userLat?: number, userLng?: number) {
       Potato: { crop: "Potato", ratePerKg: 22, availableKg: 4000 },
     };
 
+    // 1. Primary Source of Truth: MandiProfile.cropRates configured by Mandi Operator
+    if (m.cropRates && Array.isArray(m.cropRates)) {
+      (m.cropRates as any[]).forEach((item) => {
+        if (item?.crop && item.isActive !== false) {
+          defaultCropRates[item.crop] = {
+            crop: item.crop,
+            ratePerKg: Number(item.ratePerKg) || 25,
+            availableKg: 5000,
+            variety: item.variety,
+            trend: item.trend,
+          };
+        }
+      });
+    }
+
+    // 2. Slot-specific overrides if defined
     m.slots.forEach((s) => {
       if (s.allowedCrops && Array.isArray(s.allowedCrops)) {
         (s.allowedCrops as any[]).forEach((item) => {
@@ -342,6 +358,8 @@ export async function listApprovedMandis(userLat?: number, userLng?: number) {
               crop: item.crop,
               ratePerKg: Number(item.ratePerKg) || defaultCropRates[item.crop]?.ratePerKg || 25,
               availableKg: Number(item.quantityKg) || defaultCropRates[item.crop]?.availableKg || 1000,
+              variety: defaultCropRates[item.crop]?.variety,
+              trend: defaultCropRates[item.crop]?.trend,
             };
           }
         });

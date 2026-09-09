@@ -311,7 +311,7 @@ export const ConsignmentBookingsTable = React.memo(function ConsignmentBookingsT
                         </span>
                       </td>
                       <td className="py-4 px-4 align-middle whitespace-nowrap">
-                        <span className="font-semibold text-slate-900 dark:text-[#E5E5E5] text-sm block">
+                        <span className="font-semibold text-slate-900 dark:text-neutral-100 text-sm block">
                           {b.farmerName || "Registered Farmer"}
                         </span>
                         <span className="text-[11px] text-slate-400 dark:text-neutral-400 mt-0.5 block font-normal">
@@ -319,25 +319,25 @@ export const ConsignmentBookingsTable = React.memo(function ConsignmentBookingsT
                         </span>
                       </td>
                       <td className="py-4 px-4 align-middle whitespace-nowrap">
-                        <span className="text-slate-900 dark:text-[#E5E5E5] text-sm block font-medium">
+                        <span className="font-semibold text-slate-900 dark:text-neutral-100 text-sm block">
                           {b.crop}
                         </span>
-                        <span className="text-[11px] font-medium text-emerald-600 dark:text-emerald-400 mt-0.5 block">
+                        <span className="text-[11px] font-normal text-emerald-600 dark:text-emerald-400 mt-0.5 block">
                           {b.variety || "Grade-A Crops"}
                         </span>
                       </td>
                       <td className="py-4 px-4 align-middle whitespace-nowrap">
-                        <span className="text-slate-900 dark:text-[#E5E5E5] text-sm block font-bold">
+                        <span className="font-semibold text-slate-900 dark:text-neutral-100 text-sm block">
                           {displayKg.toLocaleString()} KG
                         </span>
                         {b.estimatedPayout && b.estimatedPayout > 0 ? (
-                          <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium block">
+                          <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-normal block">
                             ₹ {b.estimatedPayout.toLocaleString()} est.
                           </span>
                         ) : null}
                       </td>
                       <td className="py-4 px-4 align-middle whitespace-nowrap">
-                        <span className="text-slate-900 dark:text-[#E5E5E5] text-sm block font-medium">
+                        <span className="font-semibold text-slate-900 dark:text-neutral-100 text-sm block">
                           {b.slotTimeWindow || b.slot?.startTime ? `${b.slot?.startTime} - ${b.slot?.endTime}` : "09:00 - 13:00"}
                         </span>
                         <span className="text-[11px] text-slate-400 dark:text-neutral-400 mt-0.5 block font-normal">

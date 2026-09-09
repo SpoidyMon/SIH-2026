@@ -15,6 +15,7 @@ import { MandiRatingView } from "./components/rating/MandiRatingView";
 import { MandiVerificationStatusView } from "./components/verification/MandiVerificationStatusView";
 import { MandiFarmersView } from "./components/farmers/MandiFarmersView";
 import { MandiBookingsView } from "./components/bookings/MandiBookingsView";
+import { MandiCropPricingView } from "./components/pricing/MandiCropPricingView";
 
 // Farmer Components
 import { FarmerLayout } from "./components/layout/FarmerLayout";
@@ -88,6 +89,8 @@ export function App() {
         <Route path="/mandi/dashboard" element={<MandiDashboardView />} />
         <Route path="/mandi/bookings" element={<MandiBookingsView />} />
         <Route path="/mandi/manageSlot" element={<MandiSlotsView />} />
+        <Route path="/mandi/crop-prices" element={<MandiCropPricingView />} />
+        <Route path="/mandi/prices" element={<Navigate to="/mandi/crop-prices" replace />} />
         <Route path="/mandi/GateScanner" element={<MandiGateScannerView />} />
         <Route path="/mandi/verification" element={<MandiVerificationStatusView />} />
         <Route path="/mandi/farmers" element={<MandiFarmersView />} />
